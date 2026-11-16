@@ -148,9 +148,9 @@ export const OverviewDashboard: React.FC<{ refreshKey: number; days: number; onO
         {boardOk && <Tile label="Joined" value={rows.filter((r) => stageOf(r.status) === 4).length} tone="blue" Icon={UserCheck} trend={d.trend.joined} />}
       </section>
 
-      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {boardOk && (
-          <Card title="Hiring Funnel">
+          <Card className="xl:col-start-1 xl:row-start-1" title="Hiring Funnel">
             <div className="flex flex-wrap items-center gap-6">
               <svg viewBox="0 0 240 170" className="h-36 w-48 shrink-0" role="img" aria-label={funnel.map(([l, v]) => `${l} ${v}`).join(', ')}>
                 {funnel.map((_, i) => {
@@ -167,7 +167,7 @@ export const OverviewDashboard: React.FC<{ refreshKey: number; days: number; onO
         )}
 
         {x && (
-          <Card title="Time to Hire">
+          <Card className="xl:col-start-2 xl:row-start-1" title="Time to Hire">
             {x.timeToHire.averageDays === null ? <p className="py-6 text-sm text-slate-500">No hires finished yet, so there is nothing to average.</p> : <>
               <div className="flex flex-wrap items-baseline gap-3">
                 <div className="text-5xl font-bold tracking-tight text-slate-950">{x.timeToHire.averageDays} <span className="text-3xl">days</span></div>
@@ -181,8 +181,22 @@ export const OverviewDashboard: React.FC<{ refreshKey: number; days: number; onO
           </Card>
         )}
 
+        {act.data && act.data.items.length > 0 && (
+          <Card className="xl:col-start-3 xl:row-start-1" title="Recent Activity" right={<button type="button" onClick={() => setAllActivity((v) => !v)} className="text-sm font-semibold text-violet-700 hover:underline">{allActivity ? 'Show less' : 'View All →'}</button>}>
+            <ul className="max-h-[23rem] divide-y divide-slate-100 overflow-y-auto">
+              {act.data.items.map((a, i) => (
+                <li key={i} className="flex items-center gap-3 py-2.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><UserRound className="h-5 w-5" /></span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-slate-800"><b>{a.candidateName}</b> · {a.text}</span>
+                  <span className="shrink-0 text-xs text-slate-500">{ago(a.at)}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
         {boardOk && parts.length > 0 && (
-          <Card title="Hiring by Department">
+          <Card className="xl:col-start-2 xl:row-start-2" title="Hiring by Department">
             <div className="flex flex-wrap items-center gap-6">
               <div className="relative h-44 w-44 shrink-0" role="img" aria-label={parts.map((p) => `${p.name} ${Math.round((p.value / total) * 100)}%`).join(', ')}>
                 <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
@@ -199,27 +213,13 @@ export const OverviewDashboard: React.FC<{ refreshKey: number; days: number; onO
         )}
 
         {x && x.recentHires.length > 0 && (
-          <Card title="Recent Hires" right={onOpenRequisitions ? <button type="button" onClick={onOpenRequisitions} className="text-sm font-semibold text-violet-700 hover:underline">View All →</button> : undefined}>
+          <Card className="xl:col-start-1 xl:row-start-2" title="Recent Hires" right={onOpenRequisitions ? <button type="button" onClick={onOpenRequisitions} className="text-sm font-semibold text-violet-700 hover:underline">View All →</button> : undefined}>
             <ul className="divide-y divide-slate-100">
               {x.recentHires.map((h, i) => (
                 <li key={i} className="flex items-center gap-3 py-2.5">
                   <Avatar name={h.candidateName} />
                   <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-slate-900">{h.candidateName}</span><span className="block truncate text-xs text-slate-500">{h.designation}{h.department ? ` · ${h.department}` : ''}</span></span>
                   <span className="shrink-0 text-xs text-slate-500">{new Date(`${h.date}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-
-        {act.data && act.data.items.length > 0 && (
-          <Card className="xl:col-start-3 xl:row-span-2 xl:row-start-1" title="Recent Activity" right={<button type="button" onClick={() => setAllActivity((v) => !v)} className="text-sm font-semibold text-violet-700 hover:underline">{allActivity ? 'Show less' : 'View All →'}</button>}>
-            <ul className="divide-y divide-slate-100">
-              {act.data.items.map((a, i) => (
-                <li key={i} className="flex items-center gap-3 py-2.5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><UserRound className="h-5 w-5" /></span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-800"><b>{a.candidateName}</b> · {a.text}</span>
-                  <span className="shrink-0 text-xs text-slate-500">{ago(a.at)}</span>
                 </li>
               ))}
             </ul>
