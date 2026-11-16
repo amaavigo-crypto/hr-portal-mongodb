@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import './landing.css';
-import { Footer, Header } from './Layout';
-import { HomePage, HowItWorksPage, ModuleDetailPage, ModulesPage, SecurityPage, SmartFeaturesPage } from './pages';
-import { NAVIGATE_EVENT, isMarketingPath, moduleKeyFromPath, normalizePath } from './routes';
+import type { LandingOverrides } from '../../shared/landingContent';
+import { ContentProvider } from './content';
+import { MarketingShell } from './MarketingShell';
+import { NAVIGATE_EVENT, isMarketingPath, normalizePath } from './routes';
+import { applySeo } from './seoClient';
 
-const TITLES: Record<string, string> = {
-  '/': 'Amaavigo: the HR platform for growing teams',
-  '/modules': 'Modules · Amaavigo',
-  '/smart-features': 'Smart features · Amaavigo',
-  '/security': 'Security and control · Amaavigo',
-  '/how-it-works': 'How it works · Amaavigo',
-};
+/** The server puts the saved wording into the page (see api/_lib/landingSeo.ts); read it so the first paint matches what search engines saw. */
+function readInjectedContent(): LandingOverrides | null {
+  try {
+    const raw = document.getElementById('landing-content')?.textContent;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? { text: parsed.text || {}, seo: parsed.seo || {}, updatedAt: parsed.updatedAt } : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * The public marketing site: several pages, one shell. It keeps its own current path and moves
@@ -18,6 +24,7 @@ const TITLES: Record<string, string> = {
  */
 export const MarketingSite: React.FC = () => {
   const [path, setPath] = useState(() => normalizePath(window.location.pathname));
+  const [overrides, setOverrides] = useState<LandingOverrides | null>(() => readInjectedContent());
 
   useEffect(() => {
     const sync = () => {
@@ -37,27 +44,33 @@ export const MarketingSite: React.FC = () => {
     };
   }, []);
 
+  // No wording came with the page (development, or the server could not add it): ask for it. Without an answer the built-in wording shows.
+  useEffect(() => {
+    if (overrides) return;
+    let cancelled = false;
+    fetch('/api/tenant/landing-content', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!cancelled && j?.success) setOverrides({ text: j.text || {}, seo: j.seo || {}, updatedAt: j.updatedAt });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [overrides]);
+
   useEffect(() => {
     window.scrollTo({ top: 0 });
-    const key = moduleKeyFromPath(path);
-    document.title = key ? `${key.charAt(0).toUpperCase()}${key.slice(1)} · Amaavigo` : TITLES[path] || TITLES['/'];
   }, [path]);
 
-  const moduleKey = moduleKeyFromPath(path);
-  let page: React.ReactNode;
-  if (moduleKey) page = <ModuleDetailPage k={moduleKey} />;
-  else if (path === '/modules') page = <ModulesPage />;
-  else if (path === '/smart-features') page = <SmartFeaturesPage />;
-  else if (path === '/security') page = <SecurityPage />;
-  else if (path === '/how-it-works') page = <HowItWorksPage />;
-  else page = <HomePage />;
+  useEffect(() => {
+    applySeo(path, overrides);
+  }, [path, overrides]);
 
   return (
-    <div className="lp-root">
-      <Header path={path} />
-      <main key={path} className="lp-page">{page}</main>
-      <Footer />
-    </div>
+    <ContentProvider overrides={overrides}>
+      <MarketingShell path={path} />
+    </ContentProvider>
   );
 };
 

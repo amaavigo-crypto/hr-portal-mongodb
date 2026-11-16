@@ -13,6 +13,7 @@ import { randomBytes } from 'node:crypto';
 import type { DocumentReference, Firestore, Query } from 'firebase-admin/firestore';
 import { FieldValue } from './fieldValue.js';
 import { routeData } from './dataApi.js';
+import { getLandingContentRoute, saveLandingContentRoute, undoLandingContentRoute } from './landingContentApi.js';
 import { adminApp, adminAuth, adminDb, isAdminConfigured } from './firebaseAdmin.js';
 import { authenticate, requirePermission, requirePlatformAdmin, authErrorResponse, AuthError, type AuthContext } from './authContext.js';
 import { dispatchLiveEmail } from './serverEmail.js';
@@ -966,6 +967,8 @@ async function diagnose(): Promise<TenantResult> {
 export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
   try {
     if (r.method === 'GET' && r.action === 'diagnose') return await diagnose();
+    // The public website's own wording: anyone may read it, and it falls back to the built-in text if the database is unavailable.
+    if (r.method === 'GET' && r.action === 'landing-content') return await getLandingContentRoute();
     if (!isAdminConfigured()) {
       return fail(503, 'Server is not configured for multi-company mode (FIREBASE_SERVICE_ACCOUNT_JSON is missing).');
     }
@@ -986,6 +989,8 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
       case 'suspend-company': return await setCompanyStatus(headers, b, 'SUSPENDED');
       case 'update-company-modules': return await updateCompanyModules(headers, b);
       case 'delete-company': return await deleteCompany(headers, b);
+      case 'landing-content-save': return await saveLandingContentRoute(headers, b);
+      case 'landing-content-undo': return await undoLandingContentRoute(headers);
       case 'create-user': return await createUser(headers, b, origin);
       case 'import-users': return await importUsers(headers, b, origin);
       case 'update-user': return await updateUser(headers, b, origin);

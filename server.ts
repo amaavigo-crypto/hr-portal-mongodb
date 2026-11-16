@@ -21,6 +21,8 @@ import { routeHome } from './api/_lib/homeApi';
 import { UserRole } from './src/types';
 import { routeOnboarding } from './api/_lib/onboarding';
 import { routeTenant } from './api/_lib/tenantAdmin';
+import { loadLandingContent } from './api/_lib/landingContentApi';
+import { buildRobotsTxt, buildSitemapXml, isLandingRequest, renderLandingPage, siteOrigin } from './api/_lib/landingSeo';
 import { authErrorResponse, requireActiveTenant } from './api/_lib/authContext';
 import { signStorageToken, verifyStorageToken } from './api/_lib/storageToken';
 import { generateCorporatePdfBlob } from './src/utils/pdfGenerator';
@@ -1002,6 +1004,26 @@ async function startServer() {
   const rootIndexPath = path.join(process.cwd(), 'index.html');
 
   if (isCompiledServer && fs.existsSync(distIndexPath)) {
+    // Landing pages are served with their search-engine tags and text already in the HTML (saved wording, see
+    // api/_lib/landingSeo.ts). These must come before express.static, which would otherwise answer "/" with the bare shell.
+    let shellHtml = '';
+    const shell = () => (shellHtml ||= fs.readFileSync(distIndexPath, 'utf8'));
+    app.get('/robots.txt', (req, res) => {
+      res.type('text/plain').send(buildRobotsTxt(siteOrigin(req.headers as any, req.protocol)));
+    });
+    app.get('/sitemap.xml', async (req, res) => {
+      res.type('application/xml').send(buildSitemapXml(siteOrigin(req.headers as any, req.protocol), await loadLandingContent()));
+    });
+    app.get(['/', '/modules', '/modules/:key', '/smart-features', '/security', '/how-it-works'], async (req, res, next) => {
+      try {
+        if (!isLandingRequest(req.path, req.query as any)) return next();
+        const html = await renderLandingPage(shell(), req.path, await loadLandingContent(), siteOrigin(req.headers as any, req.protocol));
+        res.set('Cache-Control', 'no-cache').type('html').send(html);
+      } catch (err) {
+        console.warn('[landing] could not pre-render, serving the plain page:', (err as any)?.message || err);
+        next(); // falls through to the static shell, so the site still loads
+      }
+    });
     // Production compiled server mode: Serve static assets from dist
     app.use(express.static(distPath));
     app.get('*', (req, res) => {

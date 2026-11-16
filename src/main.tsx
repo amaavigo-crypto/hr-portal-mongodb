@@ -17,6 +17,9 @@ const isScreenPage = new URLSearchParams(window.location.search).has('screen');
 // Public skills test page (opened from the test email): /?test=<token>.
 const isTestPage = new URLSearchParams(window.location.search).has('test');
 
+// A landing page arrives pre-rendered for search engines and stays hidden; React takes over from here.
+document.getElementById('root')!.removeAttribute('data-ssr');
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {isCandidateUpload ? <CandidateUploadPage /> : isOfferPage ? <OfferResponsePage /> : isScreenPage ? <ScreeningLinkPage /> : isTestPage ? <SkillTestPage /> : <App />}

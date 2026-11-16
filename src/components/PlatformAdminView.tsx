@@ -3,6 +3,7 @@ import { AlertCircle, Check, Loader2, LogOut, Pause, Play, RefreshCw, Trash2, X 
 import type { Company } from '../types';
 import { platformApi } from '../services/adminService';
 import { MODULES } from '../../shared/permissions';
+import { LandingContentAdmin } from './LandingContentAdmin';
 
 interface Props {
   email: string;
@@ -20,6 +21,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState<'companies' | 'landing'>('companies');
   const [busyId, setBusyId] = useState('');
   // Module choices per company that are being edited but not saved yet
   const [draft, setDraft] = useState<Record<string, string[]>>({});
@@ -121,7 +123,19 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
+      <main className={`mx-auto space-y-4 p-4 sm:p-6 ${tab === 'landing' ? 'max-w-7xl' : 'max-w-5xl'}`}>
+        <div className="flex gap-1 border-b border-slate-200">
+          {([['companies', 'Companies'], ['landing', 'Landing page']] as const).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-bold ${tab === id ? 'border-[#FA7014] text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === 'landing' ? <LandingContentAdmin /> : <>
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Companies</h1>
           <p className="text-sm text-slate-500">
@@ -215,6 +229,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
             {!companies.length && <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-400">No companies have registered yet.</div>}
           </div>
         )}
+        </>}
       </main>
 
       {toDelete && (

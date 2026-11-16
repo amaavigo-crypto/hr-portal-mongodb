@@ -79,6 +79,22 @@ export const platformApi = {
     apiJson<{ success: true; done: boolean; deleted: Record<string, number> }>('/api/tenant/delete-company', { companyId, confirmName }),
 };
 
+/** Landing-page wording and search-engine text (platform administrators save; reading is public). */
+export interface LandingContentState {
+  text: Record<string, string>;
+  seo: Record<string, Partial<{ title: string; description: string; ogTitle: string; ogDescription: string; ogImage: string; noindex: boolean }>>;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+  canUndo?: boolean;
+}
+
+export const landingApi = {
+  get: () => apiJson<LandingContentState & { success: true }>('/api/tenant/landing-content'),
+  save: (body: { text: Record<string, string>; seo: LandingContentState['seo'] }) =>
+    apiJson<LandingContentState & { success: true }>('/api/tenant/landing-content-save', body),
+  undo: () => apiJson<LandingContentState & { success: true }>('/api/tenant/landing-content-undo', {}),
+};
+
 /** Minimal CSV parser (quoted fields, commas, newlines). Header names are matched case-insensitively. */
 export function parseCsv(text: string): Record<string, string>[] {
   const rows: string[][] = [];

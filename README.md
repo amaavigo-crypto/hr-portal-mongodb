@@ -78,6 +78,19 @@ gives read-only company reports. Existing roles need `leave.manage` / `leave.rep
 
 Employee → Reports → **Employee 360** (Company Admin, `lifecycle.manage` or `leave.manage` only). Searchable list of all employees (filter by department, include former staff, CSV of the basic list). Opening a row shows that person's employment details, identity documents (numbers masked until revealed, photos viewable), personal information, family and qualifications (with certificates) on one read-only page. It reuses the existing profile endpoints, so the server-side permission checks are unchanged.
 
+## Landing page content and SEO
+
+Platform administrators control every text on the public landing site from **Platform administration > Landing page**.
+
+- **What can be edited:** all wording on Home, Modules, the seven module pages, Smart features, Security and How it works; the menu, top strip, footer and call-to-action band; the questions and answers; and the labels and captions inside the sample screens. For each page there is also a **search title, meta description, share title, share description and share image**, and a "do not list this page" switch.
+- **What stays fixed:** the numbers, names and amounts shown inside the sample screens (they are examples), and the layout (how many cards or steps a section has).
+- **Highlight words:** put `*stars*` around words to show them in the highlight colour. `{name}`, `{year}` and `{rotor}` are filled in by the site. Clearing a field brings back the original wording. **Undo last save** goes back one version.
+- **Where the wording lives:** the built-in text is in `shared/landingContent.ts` (one key per text, in the order the admin screen shows it). Saved changes are stored in the `landingContent` collection (one document, only the differences from the defaults). The landing components read everything through `useT()` / `useRich()` in `src/landing/content.tsx`. To add a new text, add it to `shared/landingContent.ts` and read it with `t('your.key')`; it then appears in the admin screen by itself.
+- **API:** `GET /api/tenant/landing-content` (public, never fails: it falls back to the built-in text), `POST /api/tenant/landing-content-save` and `landing-content-undo` (platform administrators only; the save is audited in `platformAudit`). They live under `/api/tenant`, so no new Vercel function is used.
+- **What search engines see:** on the Node server (`npm start`) every landing page is sent with its saved title, description, canonical address, Open Graph / Twitter tags, structured data **and the page's text already in the HTML** (rendered on the server from the same React pages). The browser then swaps in the live page. `/sitemap.xml` and `/robots.txt` are served too. Saved wording is cached on the server for about a minute. If rendering ever fails, the plain page is served, so the site still loads. Set `APP_URL` to the public address so canonical links and the sitemap use it.
+- **Sign-in and offer links:** `/?offer=`, `/?screen=` and `/?test=` are never pre-rendered.
+- Tests: `npx tsx tests/landing.content.test.ts`.
+
 ## Home page
 
 Everyone lands on Home after signing in. It shows a profile card (reporting and approving manager, or the manager covering today), a mood check-in, a leave calendar, online attendance (punch in/out with remarks), quick links and reports, employees on leave, birthdays and anniversaries, important files, CEO speak, announcements, acknowledgements and (for people who manage users) a web/mobile login chart. The old "needs your attention" widgets stay on top.
