@@ -54,66 +54,25 @@ export const AmaavigoLogo: React.FC<AmaavigoLogoProps> = ({
     );
   }
 
-  // Full or Compact Logo matching the official website typography
+  // Full or Compact logo: the official Amaavigo artwork (wordmark + "Where Brand takes Flight").
+  // Files live in /public so the server-rendered landing pages can reference them by plain URL.
+  const withTagline = showTagline && variant === 'full';
+  const renderHeight = height || (withTagline ? currentSize.height : currentSize.height * 0.78);
   const isCentered = align === 'center';
-  const viewBoxWidth = 230;
-  const viewBoxHeight = showTagline && variant === 'full' ? 52 : 36;
-  const renderHeight = height || (showTagline && variant === 'full' ? currentSize.height : currentSize.height * 0.78);
-  const textX = isCentered ? '50%' : '0';
-  const textAnchor = isCentered ? 'middle' : 'start';
+  // The artwork has dark lettering, so on dark backgrounds it sits on a small white plate to stay readable.
+  const plate = theme === 'dark' ? 'bg-white rounded-lg px-2.5 py-1.5' : '';
 
   return (
-    <div className={`inline-flex flex-col select-none shrink-0 ${className}`}>
-      <svg
-        viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-auto shrink-0"
-        style={{ height: renderHeight, minHeight: renderHeight }}
-        role="img"
-        aria-label="Amaavigo - Where Brand takes Flight"
-      >
-        <g id="amaavigo-wordmark">
-          {/* Main wordmark "amaavig" with "o" */}
-          <text
-            x={textX}
-            y="28"
-            textAnchor={textAnchor}
-            style={{
-              fontFamily:
-                '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-              fontWeight: 900,
-              fontSize: '32px',
-              letterSpacing: '-0.04em',
-            }}
-          >
-            <tspan fill={textColor}>amaavig</tspan>
-            <tspan fill={orangeBrand}>o</tspan>
-          </text>
-        </g>
-
-        {/* Tagline: "Where Brand takes Flight" */}
-        {showTagline && variant === 'full' && (
-          <g id="amaavigo-tagline">
-            <text
-              x={textX}
-              y="46"
-              textAnchor={textAnchor}
-              fill={taglineColor}
-              style={{
-                fontFamily:
-                  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                fontWeight: 600,
-                fontSize: '11px',
-                letterSpacing: '0.04em',
-              }}
-            >
-              Where Brand takes Flight
-            </text>
-          </g>
-        )}
-      </svg>
+    <div className={`inline-flex select-none shrink-0 ${isCentered ? 'justify-center' : ''} ${plate} ${className}`}>
+      <img
+        src={withTagline ? '/amaavigo-logo.png' : '/amaavigo-logo-wordmark.png'}
+        alt="Amaavigo - Where Brand takes Flight"
+        width={165}
+        height={withTagline ? 35 : 25}
+        draggable={false}
+        style={{ height: renderHeight, width: 'auto' }}
+        className="shrink-0"
+      />
     </div>
   );
 };
-
