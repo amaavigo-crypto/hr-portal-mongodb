@@ -75,6 +75,12 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<'creator' | 'reviewer' | 'employee' | 'compliance' | 'suggestions' | 'audit' | 'notifications'>('creator');
 
+  // Company admins author documents AND oversee approvals, so inside Document Version Control they can switch between the
+  // HR author screen and the approver's screen. (Deciding on a version stays with the Approver role; admins see it read-only.)
+  const [docView, setDocView] = useState<'creator' | 'approver'>(() => {
+    try { return localStorage.getItem('amaavigo_doc_view') === 'approver' ? 'approver' : 'creator'; } catch { return 'creator'; }
+  });
+
   // Everyone lands on Home, their own dashboard; the sidebar then shows only the modules they may open.
   const [hrAgentModule, setHrAgentModule] = useState<HRAgentModule>('home');
 
@@ -648,9 +654,17 @@ export default function App() {
           )}
 
           {/* Selected Module: Document Version Control (Default) */}
-          {hrAgentModule === 'document-version-control' && (
+          {hrAgentModule === 'document-version-control' && (() => {
+            const canSwitchDocView = !!currentUser.isCompanyAdmin && currentUser.role === UserRole.CREATOR;
+            const approverScreen = currentUser.role !== UserRole.CREATOR || (canSwitchDocView && docView === 'approver');
+            const chooseDocView = (v: 'creator' | 'approver') => {
+              setDocView(v);
+              try { localStorage.setItem('amaavigo_doc_view', v); } catch { /* ignore */ }
+              setActiveTab(v === 'approver' ? 'reviewer' : 'creator');
+            };
+            return (
             <div className="flex-1 flex flex-col min-w-0">
-              {currentUser.role === UserRole.CREATOR ? (
+              {!approverScreen ? (
                 <HRHeader
                   currentUser={currentUser}
                   onLogout={handleLogout}
@@ -675,7 +689,27 @@ export default function App() {
               )}
 
               <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {currentUser.role === UserRole.CREATOR ? (
+                {canSwitchDocView && (
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <div role="tablist" aria-label="Document screen" className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+                      {([['creator', 'HR author screen'], ['approver', "Approver's screen"]] as const).map(([key, label]) => (
+                        <button
+                          key={key}
+                          id={`doc-view-${key}`}
+                          type="button"
+                          role="tab"
+                          aria-selected={(approverScreen ? 'approver' : 'creator') === key}
+                          onClick={() => chooseDocView(key)}
+                          className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${(approverScreen ? 'approver' : 'creator') === key ? 'bg-violet-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {approverScreen && <span className="text-xs text-slate-500">You can open every submission; approving or returning a version is done by the Approver.</span>}
+                  </div>
+                )}
+                {!approverScreen ? (
                   <>
                     {/* Policy Suggestions Dashboard (Beside Compliance Tracker) */}
                     {activeTab === 'suggestions' && (
@@ -764,7 +798,8 @@ export default function App() {
                 )}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Module: Talent Acquisition Overview Dashboard (HR & Approver) */}
           {(hrAgentModule === 'talent-acquisition' || hrAgentModule === 'talent-acquisition-overview') && currentUser && (
