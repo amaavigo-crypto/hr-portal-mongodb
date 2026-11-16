@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sparkles, Bot, ShieldCheck, Zap } from 'lucide-react';
-import hrAIAgentShowcaseImg from '../assets/images/hr_ai_agent_showcase_1789457077569.jpg';
+import hrAIAgentShowcaseImg from '../assets/images/hr_ai_agent_showcase_1789457077569.webp';
 
 export const LoginShowcase: React.FC = () => {
   return (

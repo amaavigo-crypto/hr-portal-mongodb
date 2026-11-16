@@ -1,4 +1,5 @@
-import { jsPDF } from 'jspdf';
+// jsPDF (about 350 KB) loads only when someone clicks Download.
+import type { jsPDF } from 'jspdf';
 import { monthLabel } from '../../services/payrollService';
 
 /** Money for the PDF: the standard PDF fonts have no rupee sign, so numbers are printed with the Indian digit grouping. */
@@ -31,7 +32,8 @@ export function slipRows(slip: any): SlipRows {
   return { earn, ded, reimb };
 }
 
-export function downloadPayslipPdf(slip: any) {
+export async function downloadPayslipPdf(slip: any): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const M = 40;

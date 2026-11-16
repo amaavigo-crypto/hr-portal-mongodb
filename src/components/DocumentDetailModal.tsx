@@ -26,7 +26,7 @@ import { governanceEngine } from '../services/governance';
 import { auditService } from '../services/audit';
 import { formatIST } from '../utils/dateFormat';
 import { formatDDMMYYYY, calculateDynamicReReviewDate } from '../utils/documentHeaderFooter';
-import { downloadDocumentWithIntactFormat } from '../utils/documentStamper';
+import { downloadDocumentWithIntactFormat } from '../utils/documentTools';
 
 interface DocumentDetailModalProps {
   document: DocumentMaster;

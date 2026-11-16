@@ -1,9 +1,11 @@
-import { jsPDF } from 'jspdf';
+// jsPDF (about 350 KB) loads only when someone clicks Download.
+import type { jsPDF } from 'jspdf';
 import { monthLabel } from '../../services/payrollService';
 import { num } from './payslipPdf';
 
 /** The annual tax statement: the figures behind Form 130 (the Income-tax Act 2025 replacement for Form 16), from payroll paid in this system. */
-export function downloadTaxStatementPdf(st: any) {
+export async function downloadTaxStatementPdf(st: any): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const M = 40;

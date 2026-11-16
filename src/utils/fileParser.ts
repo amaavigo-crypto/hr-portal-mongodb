@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 import { stripPolicyMetadataHeader } from './documentHeaderFooter';
 import { removePolicyMetadataFromDocxXml, cleanDocxBytes } from './documentStamper';
 
@@ -40,6 +39,7 @@ export async function getBrowserPdfjs() {
  * Extract clean text and structure from a Word .docx file using JSZip & XML DOM Parser
  */
 export async function extractTextFromDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
   const loadedZip = await zip.loadAsync(arrayBuffer);
 

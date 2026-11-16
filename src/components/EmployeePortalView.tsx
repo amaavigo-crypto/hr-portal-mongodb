@@ -28,7 +28,7 @@ import {
 import { governanceEngine, isEmployeeInDepartment } from '../services/governance';
 import { formatISTDate } from '../utils/dateFormat';
 import { formatDDMMYYYY } from '../utils/documentHeaderFooter';
-import { downloadDocumentWithIntactFormat } from '../utils/documentStamper';
+import { downloadDocumentWithIntactFormat } from '../utils/documentTools';
 import { SubmitSuggestionModal } from './SubmitSuggestionModal';
 import { KpiCard, KpiGrid, PageHeader, tbl } from './common/pageChrome';
 

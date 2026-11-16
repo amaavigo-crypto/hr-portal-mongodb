@@ -41,7 +41,7 @@ import { auditService } from '../services/audit';
 import { DocumentViewer } from './DocumentViewer';
 import { formatIST, formatISTDate } from '../utils/dateFormat';
 import { formatDDMMYYYY, calculateDynamicReReviewDate } from '../utils/documentHeaderFooter';
-import { downloadDocumentWithIntactFormat } from '../utils/documentStamper';
+import { downloadDocumentWithIntactFormat } from '../utils/documentTools';
 import { extractPointByPointDiffs, PointDiffItem } from '../services/comparison';
 
 interface ReviewDocumentModalProps {

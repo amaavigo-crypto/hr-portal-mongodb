@@ -21,7 +21,7 @@ import { parseUploadedFile, extractTextFromRawPdfStream, isRawPdfStream } from '
 import { stripPolicyMetadataHeader, extractCleanBody, formatDDMMYYYY, calculateDynamicReReviewDate, parseAnyDate, DocumentHeaderTable } from '../utils/documentHeaderFooter';
 import { WysiwygDocumentEditor } from './WysiwygDocumentEditor';
 import { DocumentViewer } from './DocumentViewer';
-import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter } from '../utils/documentStamper';
+import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter } from '../utils/documentTools';
 
 interface CreateVersionModalProps {
   currentUser: User;
