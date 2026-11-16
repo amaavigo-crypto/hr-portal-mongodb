@@ -17,6 +17,23 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ status: 'ok', runtime: 'vercel-serverless', timestamp: new Date().toISOString() });
   }
 
+  // Landing pages, sitemap and robots.txt arrive here from vercel.json (see api/_lib/landingVercel.ts). Loaded on demand, so a
+  // problem there can never affect the rest of the API; the last resort is the plain app page.
+  // (Keyed on the helper parameter as well as the path, so it works whichever address Vercel reports for a rewritten request.)
+  if (path === '/api/landing' || req.query?.__k) {
+    try {
+      const { handleLanding } = await import('./_lib/landingVercel.js');
+      await handleLanding(req, res);
+    } catch (err: any) {
+      console.error('[landing] failed:', err?.message || err);
+      if (!res.headersSent) {
+        res.setHeader('Cache-Control', 'no-store');
+        res.redirect(307, '/app-shell.html');
+      }
+    }
+    return;
+  }
+
   return res.status(404).json({
     success: false,
     error: `API route not found: ${req.method} ${req.url}`,

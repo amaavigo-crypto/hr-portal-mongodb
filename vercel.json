@@ -2,12 +2,44 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/api/landing?__k=page&__p=/"
+    },
+    {
+      "source": "/modules",
+      "destination": "/api/landing?__k=page&__p=/modules"
+    },
+    {
+      "source": "/modules/:key",
+      "destination": "/api/landing?__k=page&__p=/modules/:key"
+    },
+    {
+      "source": "/smart-features",
+      "destination": "/api/landing?__k=page&__p=/smart-features"
+    },
+    {
+      "source": "/security",
+      "destination": "/api/landing?__k=page&__p=/security"
+    },
+    {
+      "source": "/how-it-works",
+      "destination": "/api/landing?__k=page&__p=/how-it-works"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/landing?__k=sitemap"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api/landing?__k=robots"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
     {
       "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "destination": "/app-shell.html"
     }
   ],
   "crons": [
