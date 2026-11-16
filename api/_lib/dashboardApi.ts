@@ -9,6 +9,7 @@
  * queried when the person holds the matching permission, and personal data is always scoped to their own id.
  */
 import { authErrorResponse, requireActiveTenant } from './authContext.js';
+import { cached } from './serverCache.js';
 import { hasAnyPerm, hasPerm } from '../../shared/permissions.js';
 import { addDays, istToday } from '../../shared/leaveEngine.js';
 import {
@@ -242,7 +243,12 @@ async function me(headers: Record<string, any>): Promise<Result> {
 
 export async function routeDashboard(r: DashboardRequestIn): Promise<Result> {
   try {
-    if (r.method === 'GET' && r.action === 'me') return await me(r.headers);
+    if (r.method === 'GET' && r.action === 'me') {
+      const ctx = await requireActiveTenant(r.headers);
+      // Per person and permission set; any write clears it (serverCache.ts), so a decision made elsewhere shows up straight away.
+      const key = `dash:${ctx.companyId}:${ctx.uid}:${ctx.isCompanyAdmin ? 'a' : ''}:${[...ctx.perms].sort().join(',')}`;
+      return await cached(key, () => me(r.headers), { keep: (res) => res.status === 200 });
+    }
     return fail(404, `Unknown dashboard action: ${r.action}`);
   } catch (err: any) {
     const known = authErrorResponse(err);

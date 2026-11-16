@@ -20,6 +20,8 @@
  * and falls back to "check that nothing you read has changed, then apply the writes", which is safe for a
  * single app server but not atomic across several writers.
  */
+import { enableServerCache, markDataChanged } from './serverCache.js';
+import { MONGO_INDEXES, indexName } from './mongoIndexes.js';
 import { randomBytes } from 'node:crypto';
 import { MongoClient, type ClientSession, type Collection, type Db, type Document } from 'mongodb';
 
@@ -80,15 +82,18 @@ async function getClient(): Promise<MongoClient> {
   return handle.client!;
 }
 
-/** Every record carries a companyId and nearly every query filters on it, so index it the first time a collection is used. */
-function ensureIndexes(col: Collection<Document>, name: string) {
+/** Every record carries a companyId and nearly every query filters on it, so index it (plus the extra indexes in mongoIndexes.ts) the first time a collection is used. */
+export function ensureIndexes(col: Collection<Document>, name: string) {
   if (handle.indexed.has(name)) return;
   handle.indexed.add(name);
-  Promise.resolve()
-    .then(() => (col as any).createIndex?.({ companyId: 1 }, { name: 'companyId_1' }))
-    .catch(() => {
-      /* an index is a speed-up, never a reason to fail a request */
-    });
+  // Each index on its own, so one failure (e.g. an existing index with other options) does not stop the rest.
+  for (const keys of [{ companyId: 1 } as Record<string, 1>, ...(MONGO_INDEXES[name] || [])]) {
+    Promise.resolve()
+      .then(() => (col as any).createIndex?.(keys, { name: indexName(keys) }))
+      .catch(() => {
+        /* an index is a speed-up, never a reason to fail a request */
+      });
+  }
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -231,6 +236,7 @@ export class MongoDocRef {
     } else {
       await col.replaceOne({ _id: this.id as any }, resolveForReplace(data), { upsert: true, session });
     }
+    markDataChanged();
   }
 
   async updateIn(session: Sess, data: Doc) {
@@ -241,6 +247,7 @@ export class MongoDocRef {
       return;
     }
     const res = await col.updateOne({ _id: this.id as any }, ops as Document, { session });
+    markDataChanged();
     if (res.matchedCount === 0) throw notFound();
   }
 
@@ -252,11 +259,13 @@ export class MongoDocRef {
       if (err?.code === 11000) throw Object.assign(new Error('6 ALREADY_EXISTS: Document already exists.'), { code: 6 });
       throw err;
     }
+    markDataChanged();
   }
 
   async deleteIn(session: Sess) {
     const col = await this.fs.col(this.collectionName);
     await col.deleteOne({ _id: this.id as any }, { session });
+    markDataChanged();
   }
 }
 
@@ -356,7 +365,10 @@ export class MongoFirestore {
   private cache = new Map<string, Promise<Collection<Document>>>();
 
   /** `testDb` lets tests run the adapter against an in-memory stand-in for the MongoDB driver (no transactions there). */
-  constructor(private testDb?: Db) {}
+  constructor(private testDb?: Db) {
+    // The real database reports every write (see markDataChanged), so dashboard reads may be cached briefly.
+    if (!testDb) enableServerCache();
+  }
 
   private database(): Promise<Db> { return this.testDb ? Promise.resolve(this.testDb) : getDb(); }
   private client(): Promise<MongoClient | null> { return this.testDb ? Promise.resolve(null) : getClient(); }
@@ -422,12 +434,16 @@ export class MongoFirestore {
       update: (r: MongoDocRef, d: Doc) => { ops.push((s) => r.updateIn(s, d)); return api; },
       create: (r: MongoDocRef, d: Doc) => { ops.push((s) => r.createIn(s, d)); return api; },
       delete: (r: MongoDocRef) => { ops.push((s) => r.deleteIn(s)); return api; },
-      commit: async () => { await this.atomic(async (s) => { for (const op of ops) await op(s); }); },
+      commit: async () => { try { await this.atomic(async (s) => { for (const op of ops) await op(s); }); } finally { markDataChanged(); } },
     };
     return api;
   }
 
   async runTransaction<T>(fn: (tx: any) => Promise<T>, _opts?: unknown): Promise<T> {
+    try { return await this.runTransactionInner(fn); } finally { markDataChanged(); }
+  }
+
+  private async runTransactionInner<T>(fn: (tx: any) => Promise<T>): Promise<T> {
     const client = await this.client();
     if (client && transactionsSupported !== false) {
       try {
