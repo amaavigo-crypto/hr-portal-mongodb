@@ -690,11 +690,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                       </div>
                     </div>
 
-                    {activeModule === 'document-version-control' && (
-                      <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </div>
-                    )}
                   </button>
                 )}
 
@@ -732,11 +727,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                     </div>
                   </div>
                   <NavBadge tone="dark" count={sumOf(badges.leave)} className="ml-1.5" />
-                  {activeModule === 'leave-management' && (
-                    <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                  )}
                 </button>
                 {activeModule !== 'leave-management' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                 {activeModule === 'leave-management' && (
@@ -793,11 +783,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                     </div>
                   </div>
                   <NavBadge tone="dark" count={sumOf(badges.payroll)} className="ml-1.5" />
-                  {activeModule === 'payroll' && (
-                    <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                  )}
                 </button>
                 {activeModule !== 'payroll' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                 {activeModule === 'payroll' && (
@@ -855,11 +840,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                         <span className="hidden">{m.sub}</span>
                       </div>
                     </div>
-                    {activeModule === m.key && (
-                      <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </div>
-                    )}
                   </button>
                   {m.key === 'hrbp' && activeModule !== 'hrbp' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                   {m.key === 'hrbp' && activeModule === 'hrbp' && (
@@ -967,11 +947,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                     </div>
                   </div>
                   <NavBadge tone="dark" count={sumOf(badges.people)} className="ml-1.5" />
-                  {activeModule === 'people' && (
-                    <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                  )}
                 </button>
                 {activeModule !== 'people' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                 {activeModule === 'people' && (
@@ -1027,11 +1002,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                     </div>
                   </div>
                   <NavBadge tone="dark" count={sumOf(badges.employee)} className="ml-1.5" />
-                  {activeModule === 'employee' && (
-                    <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                  )}
                 </button>
                 {activeModule !== 'employee' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                 {activeModule === 'employee' && (
@@ -1085,11 +1055,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                         <span className="hidden">People, departments &amp; roles</span>
                       </div>
                     </div>
-                    {activeModule === 'administration' && (
-                      <div className="w-5 h-5 rounded-full bg-white text-violet-700 flex items-center justify-center shrink-0 ml-1.5">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </div>
-                    )}
                   </button>
                 )}
               </nav>
