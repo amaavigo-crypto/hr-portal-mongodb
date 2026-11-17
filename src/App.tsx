@@ -17,6 +17,8 @@ import { ApproverHeader } from './components/ApproverHeader';
 import { HomePage } from './components/home/HomePage';
 import { leaveNav } from './components/leave/leaveNav';
 import { payrollNav } from './components/payroll/payrollNav';
+import { QuickClaimLauncher } from './components/payroll/QuickClaimLauncher';
+import { ClaimApp, claimAppMode } from './components/claimapp/ClaimApp';
 import { peopleNav } from './components/lifecycle/peopleNav';
 import { EmployeeModule } from './components/employee/EmployeeModule';
 import type { WidgetTarget } from '../shared/dashboard';
@@ -580,10 +582,13 @@ export default function App() {
           <p className="max-w-md text-sm font-bold text-slate-700">{session.message}</p>
           <button onClick={handleLogout} className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-black text-white">Sign out</button>
         </div>
-      ) : (!currentUser || session.kind === 'signedOut') && isMarketingPath(window.location.pathname) ? (
+      ) : (!currentUser || session.kind === 'signedOut') && isMarketingPath(window.location.pathname) && !claimAppMode() ? (
         <LandingPage />
       ) : !currentUser || session.kind === 'signedOut' ? (
         <AuthScreen />
+      ) : session.kind === 'ready' && claimAppMode() ? (
+        /* The installed phone app only does claims. */
+        <ClaimApp onLogout={handleLogout} />
       ) : (
         /* Every signed-in person uses the same shell; what it shows follows their permissions. */
         <HRAgentShell
@@ -1035,6 +1040,7 @@ export default function App() {
         isOpen={isNotifDrawerOpen}
         onClose={() => setIsNotifDrawerOpen(false)}
       />
+      {session.kind === 'ready' && currentUser && !claimAppMode() && <QuickClaimLauncher />}
     </>
   );
 }

@@ -29,6 +29,9 @@ import {
   PayrollError, actorName, clean, commitChunks, fail, grossOf, lineId, loadInputs, loadLines, loadLoans, loadPayrollSettings, loadStructures,
   money, needManage, needMonth, needOpenMonth, needView, ok, runOf, structureId, type Result, type Who,
 } from './payrollKit.js';
+import { createHash } from 'node:crypto';
+import { claimFlags, suggestCategory, type Flag, type ScanInfo } from '../../shared/claimScan.js';
+import { scanBill } from './claimQuickApi.js';
 import { declarationFor, loadDeclaration, monthlyTds, paidLinesInFy, sumPaid } from './payrollTax.js';
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && isIsoDate(v);
@@ -245,7 +248,7 @@ interface ClaimDoc {
   description: string;
   amount: number;
   expenseDate: string;
-  status: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PAID';
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PAID';
   approvedAmount: number;
   decisionNote: string;
   decidedBy: string;
@@ -254,7 +257,16 @@ interface ClaimDoc {
   hasBill: boolean;
   billName: string;
   createdAt: string;
+  /** Photos kept for this claim (the pictures themselves live in payrollClaimFiles). A bill is the receipt; proof is anything else the approver may want to see. */
+  files?: ClaimFile[];
+  /** What the AI read off the bill, kept so the approver can compare it with what was claimed. */
+  scan?: ScanInfo | null;
+  /** Things for the approver to look at (duplicate, amount not matching the bill). Never blocks the claim. */
+  flags?: Flag[];
+  billHash?: string;
+  vendor?: string;
 }
+interface ClaimFile { id: string; kind: 'BILL' | 'PROOF'; name: string; type: string; takenAt: string }
 
 const BILL_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_BILL_CHARS = 700_000; // base64 text; about 500 KB of file, which keeps the document under the 1 MB limit
@@ -274,13 +286,112 @@ export async function isLineManager(cid: string, uid: string): Promise<boolean> 
   return (await reportsOf(cid, uid)).size > 0;
 }
 
-const claimView = (c: ClaimDoc & { id: string }, name = '') => ({ ...c, name });
+/** What the browser gets for a claim. The file hash is never sent; flags and the bill reading go to approvers only. */
+const claimView = (c: ClaimDoc & { id: string }, name = '', forApprover = false) => {
+  const { billHash, flags, scan, ...rest } = c;
+  void billHash;
+  return { ...rest, name, ...(forApprover ? { flags: flags || [], scan: scan || null } : {}) };
+};
+
+const MAX_FILES = 6;
+const fileDocId = (claimId: string, fileId: string) => `${claimId}__${fileId}`;
+const hashOf = (data: string) => createHash('sha256').update(data).digest('hex').slice(0, 32);
 
 async function myClaims(who: Who): Promise<Result> {
   const snap = await db().collection('payrollClaims').where('companyId', '==', who.cid).where('uid', '==', who.ctx.uid).get();
   const { settings } = await loadPayrollSettings(who.cid);
-  const items = snap.docs.map((d) => claimView({ id: d.id, ...(d.data() as ClaimDoc) })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return ok({ items, categories: settings.claims.categories, billRequiredAbove: settings.claims.billRequiredAbove });
+  const all = snap.docs.map((d) => claimView({ id: d.id, ...(d.data() as ClaimDoc) })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return ok({
+    items: all.filter((c) => c.status !== 'DRAFT'), drafts: all.filter((c) => c.status === 'DRAFT'),
+    categories: settings.claims.categories, billRequiredAbove: settings.claims.billRequiredAbove,
+  });
+}
+
+function cleanFile(f: any): { kind: 'BILL' | 'PROOF'; name: string; type: string; data: string; takenAt: string } {
+  const type = String(f?.type || '');
+  if (!BILL_TYPES.includes(type)) throw new PayrollError(400, 'Photos must be JPG, PNG or WebP (a bill can also be a PDF).');
+  const kind = f?.kind === 'PROOF' ? 'PROOF' : 'BILL';
+  if (kind === 'PROOF' && type === 'application/pdf') throw new PayrollError(400, 'A proof must be a photo.');
+  if (typeof f?.data !== 'string' || !f.data) throw new PayrollError(400, 'One of the photos is empty.');
+  if (f.data.length > MAX_BILL_CHARS) throw new PayrollError(400, 'A photo is too large. Take it again or use a smaller one.');
+  const taken = typeof f?.takenAt === 'string' && !Number.isNaN(Date.parse(f.takenAt)) ? new Date(f.takenAt).toISOString() : nowIso();
+  return { kind, name: str(f?.name, 100) || (kind === 'BILL' ? 'bill' : 'proof'), type, data: f.data, takenAt: taken };
+}
+
+async function loadMyDraft(who: Who, id: string) {
+  const ref = db().collection('payrollClaims').doc(str(id, 128));
+  const snap = await ref.get();
+  if (!snap.exists || snap.get('companyId') !== who.cid || snap.get('uid') !== who.ctx.uid || snap.get('status') !== 'DRAFT') throw new PayrollError(404, 'This draft was not found. It may have been sent already.');
+  return { ref, doc: snap.data() as ClaimDoc };
+}
+
+/** Creates a draft claim or adds photos to one. Anything typed so far is kept too. Nothing is sent to an approver. */
+async function saveDraft(who: Who, body: any): Promise<Result> {
+  const incoming: any[] = Array.isArray(body?.files) ? body.files : [];
+  const keep = (v: unknown, max: number) => str(v, max);
+  let ref; let doc: ClaimDoc;
+  if (body?.id) ({ ref, doc } = await loadMyDraft(who, body.id));
+  else {
+    ref = db().collection('payrollClaims').doc();
+    doc = {
+      companyId: who.cid, uid: who.ctx.uid, category: '', description: '', amount: 0, expenseDate: '', status: 'DRAFT', approvedAmount: 0, decisionNote: '',
+      decidedBy: '', decidedAt: '', paidMonth: '', hasBill: false, billName: '', createdAt: nowIso(), files: [],
+    };
+  }
+  const files = [...(doc.files || [])];
+  if (files.length + incoming.length > MAX_FILES) throw new PayrollError(400, `A claim can have up to ${MAX_FILES} photos.`);
+  const writes: { id: string; data: any }[] = [];
+  for (const raw of incoming) {
+    const f = cleanFile(raw);
+    const id = `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    files.push({ id, kind: f.kind, name: f.name, type: f.type, takenAt: f.takenAt });
+    writes.push({ id, data: { companyId: who.cid, uid: who.ctx.uid, claimId: ref.id, kind: f.kind, name: f.name, type: f.type, data: f.data } });
+    if (f.kind === 'BILL' && !doc.billHash) doc.billHash = hashOf(f.data);
+  }
+  for (const w of writes) await db().collection('payrollClaimFiles').doc(fileDocId(ref.id, w.id)).set(w.data);
+  const bill = files.find((f) => f.kind === 'BILL');
+  const next: ClaimDoc = {
+    ...doc, files, hasBill: !!bill, billName: bill ? bill.name : '',
+    ...(body?.category !== undefined ? { category: keep(body.category, 60) } : {}),
+    ...(body?.description !== undefined ? { description: keep(body.description, 300) } : {}),
+    ...(body?.expenseDate !== undefined ? { expenseDate: isDate(body.expenseDate) ? body.expenseDate : '' } : {}),
+    ...(body?.amount !== undefined ? { amount: Math.max(0, Math.min(1_000_000, Number(body.amount) || 0)) } : {}),
+  };
+  await ref.set(next);
+  return ok({ draft: claimView({ id: ref.id, ...next }) });
+}
+
+async function removeDraftFile(who: Who, body: any): Promise<Result> {
+  const { ref, doc } = await loadMyDraft(who, body?.id);
+  const fileId = str(body?.fileId, 60);
+  const files = (doc.files || []).filter((f) => f.id !== fileId);
+  if (files.length === (doc.files || []).length) return fail(404, 'That photo was not found.');
+  await db().collection('payrollClaimFiles').doc(fileDocId(ref.id, fileId)).delete();
+  const bill = files.find((f) => f.kind === 'BILL');
+  const next: ClaimDoc = { ...doc, files, hasBill: !!bill, billName: bill ? bill.name : '', billHash: bill ? doc.billHash || '' : '', scan: bill ? doc.scan ?? null : null };
+  await ref.set(next);
+  return ok({ draft: claimView({ id: ref.id, ...next }) });
+}
+
+/** Reads the bill photo of a draft so the form can be filled in. Never blocks: when AI is off or cannot read it, the person types the details. */
+async function scanDraft(who: Who, body: any): Promise<Result> {
+  const { ref, doc } = await loadMyDraft(who, body?.id);
+  const bill = (doc.files || []).find((f) => f.kind === 'BILL');
+  if (!bill) return fail(400, 'Add a photo of the bill first.');
+  const { settings } = await loadPayrollSettings(who.cid);
+  const cats = settings.claims.categories;
+  const file = await db().collection('payrollClaimFiles').doc(fileDocId(ref.id, bill.id)).get();
+  if (!file.exists) return fail(404, 'The bill photo is missing. Add it again.');
+  const r = await scanBill(who.cid, who.ctx.uid, { type: String(file.get('type')), data: String(file.get('data')), name: bill.name }, cats, istToday());
+  if (r.notABill) return ok({ scanned: false, notABill: true });
+  if (!r.scan) return ok({ scanned: false, off: !!r.off, note: r.off ? '' : 'The bill could not be read. Please type the details.' });
+  // This company's earlier claims show which category a shop usually belongs to.
+  const past = await db().collection('payrollClaims').where('companyId', '==', who.cid).get();
+  const history = past.docs.map((d) => d.data() as ClaimDoc).filter((c) => c.status !== 'DRAFT' && c.status !== 'REJECTED' && c.vendor).map((c) => ({ vendor: c.vendor!, category: c.category }));
+  const sug = suggestCategory(r.scan.vendor, cats, history);
+  const category = sug.reason === 'HISTORY' ? sug.category : r.scan.category || sug.category;
+  await ref.set({ ...doc, scan: r.scan, vendor: r.scan.vendor });
+  return ok({ scanned: true, scan: r.scan, category, categoryReason: sug.reason === 'HISTORY' ? 'HISTORY' : r.scan.category ? 'AI' : sug.reason });
 }
 
 async function submitClaim(who: Who, body: any): Promise<Result> {
@@ -296,20 +407,37 @@ async function submitClaim(who: Who, body: any): Promise<Result> {
   if (expenseDate < addDays(istToday(), -366)) return fail(400, 'Claims older than a year cannot be raised.');
   const description = str(body?.description, 300);
   if (!description) return fail(400, 'Say what the expense was for.');
+
+  // A claim either comes from a draft (photos already uploaded) or, as before, from one bill sent in the same request.
+  let ref; let base: ClaimDoc | null = null;
+  if (body?.draftId) ({ ref, doc: base } = await loadMyDraft(who, body.draftId));
+  else ref = db().collection('payrollClaims').doc();
+  let files: ClaimFile[] = base?.files ? [...base.files] : [];
+  let billHash = base?.billHash || '';
   const bill = body?.bill;
-  if (!bill && amount > settings.claims.billRequiredAbove) return fail(400, `Attach the bill for claims above ${settings.claims.billRequiredAbove}.`);
-  if (bill) {
-    if (!BILL_TYPES.includes(String(bill.type))) return fail(400, 'The bill must be a JPG, PNG, WebP or PDF file.');
-    if (typeof bill.data !== 'string' || bill.data.length === 0) return fail(400, 'The bill file is empty.');
-    if (bill.data.length > MAX_BILL_CHARS) return fail(400, 'The bill is too large. Use a photo under 500 KB or a smaller PDF.');
+  if (!base) {
+    if (bill) {
+      const f = cleanFile({ ...bill, kind: 'BILL' });
+      const id = 'f0';
+      files = [{ id, kind: 'BILL', name: f.name, type: f.type, takenAt: f.takenAt }];
+      billHash = hashOf(f.data);
+      await db().collection('payrollClaimFiles').doc(fileDocId(ref.id, id)).set({ companyId: who.cid, uid: who.ctx.uid, claimId: ref.id, kind: 'BILL', name: f.name, type: f.type, data: f.data });
+    }
   }
-  const ref = db().collection('payrollClaims').doc();
+  const hasBill = files.some((f) => f.kind === 'BILL');
+  if (!hasBill && amount > settings.claims.billRequiredAbove) return fail(400, `Attach the bill for claims above ${settings.claims.billRequiredAbove}.`);
+
+  const scan = base?.scan || null;
+  const all = await db().collection('payrollClaims').where('companyId', '==', who.cid).get();
+  const others = all.docs.map((d) => ({ id: d.id, ...(d.data() as ClaimDoc) }));
+  const flags = claimFlags({ id: ref.id, uid: who.ctx.uid, amount, expenseDate, billHash, vendor: scan?.vendor }, scan, others);
+  const billMeta = files.find((f) => f.kind === 'BILL');
   const doc: ClaimDoc = {
     companyId: who.cid, uid: who.ctx.uid, category, description, amount, expenseDate, status: 'SUBMITTED', approvedAmount: 0, decisionNote: '',
-    decidedBy: '', decidedAt: '', paidMonth: '', hasBill: !!bill, billName: bill ? str(bill.name, 100) : '', createdAt: nowIso(),
+    decidedBy: '', decidedAt: '', paidMonth: '', hasBill, billName: billMeta ? billMeta.name : '', createdAt: nowIso(),
+    files, scan, flags, billHash, vendor: scan?.vendor || '',
   };
   await ref.set(doc);
-  if (bill) await db().collection('payrollClaimFiles').doc(ref.id).set({ companyId: who.cid, uid: who.ctx.uid, name: doc.billName, type: bill.type, data: bill.data });
   return ok({ id: ref.id });
 }
 
@@ -317,9 +445,10 @@ async function withdrawClaim(who: Who, body: any): Promise<Result> {
   const ref = db().collection('payrollClaims').doc(str(body?.id, 128));
   const snap = await ref.get();
   if (!snap.exists || snap.get('companyId') !== who.cid || snap.get('uid') !== who.ctx.uid) return fail(404, 'Claim not found.');
-  if (snap.get('status') !== 'SUBMITTED') throw new PayrollError(409, 'Only a claim that is still waiting can be withdrawn.');
+  if (snap.get('status') !== 'SUBMITTED' && snap.get('status') !== 'DRAFT') throw new PayrollError(409, 'Only a claim that is still waiting can be withdrawn.');
   await ref.delete();
-  if (snap.get('hasBill')) await db().collection('payrollClaimFiles').doc(ref.id).delete();
+  for (const f of ((snap.get('files') as ClaimFile[]) || [])) await db().collection('payrollClaimFiles').doc(fileDocId(ref.id, f.id)).delete();
+  if (snap.get('hasBill')) await db().collection('payrollClaimFiles').doc(ref.id).delete().catch(() => undefined); // claims made before photos had their own records
   return ok({});
 }
 
@@ -330,8 +459,8 @@ async function claimsList(who: Who, q: any): Promise<Result> {
   const snap = await db().collection('payrollClaims').where('companyId', '==', who.cid).get();
   const people = await loadPeople(who.cid);
   const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as ClaimDoc) }))
-    .filter((c) => (who.canView ? true : reports.has(c.uid)) && (!status || c.status === status))
-    .map((c) => claimView(c, people.find((p) => p.uid === c.uid)?.name || ''))
+    .filter((c) => c.status !== 'DRAFT' && (who.canView ? true : reports.has(c.uid)) && (!status || c.status === status))
+    .map((c) => claimView(c, people.find((p) => p.uid === c.uid)?.name || '', true))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return ok({ items, scope: who.canView ? 'ALL' : 'REPORTS' });
 }
@@ -365,7 +494,11 @@ async function claimBill(who: Who, q: any): Promise<Result> {
   if (!claim.exists || claim.get('companyId') !== who.cid) return fail(404, 'Claim not found.');
   const owner = claim.get('uid') === who.ctx.uid;
   if (!owner && !who.canView && !(await reportsOf(who.cid, who.ctx.uid)).has(String(claim.get('uid')))) throw new PayrollError(403, 'You cannot open this bill.');
-  const file = await db().collection('payrollClaimFiles').doc(id).get();
+  // A photo of the claim (fileId), or the bill: the first bill photo, or the single file kept by older claims.
+  const files = (claim.get('files') as ClaimFile[]) || [];
+  const wanted = str(q?.fileId, 60);
+  const meta = wanted ? files.find((f) => f.id === wanted) : files.find((f) => f.kind === 'BILL');
+  const file = await db().collection('payrollClaimFiles').doc(meta ? fileDocId(id, meta.id) : id).get();
   if (!file.exists) return fail(404, 'No bill was attached.');
   return ok({ name: file.get('name'), type: file.get('type'), data: file.get('data') });
 }
@@ -726,6 +859,10 @@ export async function routeExtras(action: string, method: string, who: Who, body
     case 'claims': return GET ? claimsList(who, q) : wrong;
     case 'decide-claim': return POST ? decideClaim(who, body) : wrong;
     case 'claim-bill': return GET ? claimBill(who, q) : wrong;
+    case 'claim-file': return GET ? claimBill(who, q) : wrong;
+    case 'claim-draft-save': return POST ? saveDraft(who, body) : wrong;
+    case 'claim-draft-scan': return POST ? scanDraft(who, body) : wrong;
+    case 'claim-draft-remove-file': return POST ? removeDraftFile(who, body) : wrong;
     case 'settlements': return GET ? settlementsList(who) : wrong;
     case 'settlement': return GET ? settlementOf(who, q) : wrong;
     case 'save-settlement': return POST ? saveSettlement(who, body) : wrong;

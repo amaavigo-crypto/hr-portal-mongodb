@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Briefcase, CheckCircle2, Coins, Download, Eye, FileText, Fuel, Hourglass, Laptop, MoreHorizontal, Paperclip, Plane, Plus, Receipt, UtensilsCrossed, X, XCircle } from 'lucide-react';
+import { AlertTriangle, Briefcase, CheckCircle2, Coins, Download, Eye, FileText, Fuel, Hourglass, Laptop, MoreHorizontal, Paperclip, Plane, Plus, Receipt, UtensilsCrossed, X, XCircle } from 'lucide-react';
 import { Avatar } from '../home/parts';
+import { InstallAppCard } from './InstallAppCard';
 import { inr, monthLabel, payrollService } from '../../services/payrollService';
 import { Drawer, Field, Notice, Skeleton, btnGhost, input, todayIst, useRunner } from '../leave/ui';
 import { btnOutline, btnViolet, dmy, field, Kpi, Pager, PageHead, Panel, Pill, SearchBox, Select, Tabs, THead } from '../leave/kit';
@@ -58,16 +59,23 @@ async function fileToBill(file: File): Promise<{ name: string; type: string; dat
   }
 }
 
-async function openBill(id: string) {
-  const b = await payrollService.claimBill(id);
+async function openBill(id: string, fileId?: string) {
+  const b = fileId ? await payrollService.claimFile(id, fileId) : await payrollService.claimBill(id);
   const bytes = Uint8Array.from(atob(b.data), (c) => c.charCodeAt(0));
   const url = URL.createObjectURL(new Blob([bytes], { type: b.type }));
   window.open(url, '_blank', 'noopener');
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+/** Small picture of a claim photo, fetched when it appears. */
+export const Thumb: React.FC<{ claimId: string; fileId: string }> = ({ claimId, fileId }) => {
+  const [src, setSrc] = useState('');
+  useEffect(() => { let on = true; payrollService.claimFile(claimId, fileId).then((b: any) => { if (on) setSrc(`data:${b.type};base64,${b.data}`); }).catch(() => undefined); return () => { on = false; }; }, [claimId, fileId]);
+  return src ? <img src={src} alt="" className="h-24 w-full object-cover" /> : <div className="h-24 animate-pulse bg-slate-100" />;
+};
+
 /** Claim facts and the steps it went through, shown beside the list. */
-const ClaimDetails: React.FC<{ c: any; onClose?: () => void; children?: React.ReactNode; person?: boolean; onBill: (id: string) => void }> = ({ c, onClose, children, person, onBill }) => {
+const ClaimDetails: React.FC<{ c: any; onClose?: () => void; children?: React.ReactNode; person?: boolean; onBill: (id: string, fileId?: string) => void }> = ({ c, onClose, children, person, onBill }) => {
   const Ic = catIcon(c.category);
   const steps: { title: string; sub: string; done: boolean }[] = [{ title: 'Claim Submitted', sub: stamp(c.createdAt), done: true }];
   if (c.status === 'SUBMITTED') steps.push({ title: 'Pending with Manager', sub: `Since ${stamp(c.createdAt)}`, done: false });
@@ -97,12 +105,39 @@ const ClaimDetails: React.FC<{ c: any; onClose?: () => void; children?: React.Re
         {rows.map(([k, v]) => <div key={k} className="grid grid-cols-[7.5rem_1fr] gap-2"><dt className="text-slate-600">{k}</dt><dd className="font-medium text-slate-900 break-words">{v}</dd></div>)}
         {c.decisionNote && <div className="grid grid-cols-[7.5rem_1fr] gap-2"><dt className="text-slate-600">Note</dt><dd className="font-medium text-slate-900 break-words">{c.decisionNote}</dd></div>}
       </dl>
-      <div className="mt-4 text-sm text-slate-700"><Paperclip className="mr-1.5 inline h-4 w-4" />Attachments ({c.hasBill ? 1 : 0})</div>
-      {c.hasBill && (
-        <button type="button" onClick={() => onBill(c.id)} className="mt-2 flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm hover:border-violet-300 cursor-pointer">
-          <span className="flex min-w-0 items-center gap-2"><FileText className="h-5 w-5 shrink-0 text-rose-500" /><b className="truncate">{c.billName || 'Bill'}</b></span><Download className="h-4 w-4 shrink-0 text-slate-700" />
-        </button>
+      {c.flags?.length > 0 && (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="flex items-center gap-1.5 font-bold"><AlertTriangle className="h-4 w-4" />Please check before approving</div>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">{c.flags.map((f: any, i: number) => <li key={i}>{f.text}</li>)}</ul>
+        </div>
       )}
+      {c.scan && c.scan.vendor !== undefined && (
+        <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900">
+          <div className="font-bold">Read from the bill (automatic, may have mistakes)</div>
+          <div className="mt-1">
+            {[c.scan.vendor, c.scan.amount != null ? inr(c.scan.amount) : '', c.scan.date ? dmy(c.scan.date) : ''].filter(Boolean).join(' · ') || 'Nothing could be read clearly.'}
+            {c.scan.gstin && <div>GST number {c.scan.gstin}: {c.scan.gstinValid ? 'looks valid' : 'does not look valid'}</div>}
+          </div>
+        </div>
+      )}
+      {(() => {
+        const files: any[] = c.files?.length ? c.files : c.hasBill ? [{ id: '', kind: 'BILL', name: c.billName || 'Bill', type: '' }] : [];
+        return (
+          <>
+            <div className="mt-4 text-sm text-slate-700"><Paperclip className="mr-1.5 inline h-4 w-4" />Attachments ({files.length})</div>
+            {files.length > 0 && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {files.map((f) => (
+                  <button key={f.id || 'bill'} type="button" onClick={() => onBill(c.id, f.id || undefined)} className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left text-xs hover:border-violet-300 cursor-pointer">
+                    {f.id && f.type !== 'application/pdf' ? <Thumb claimId={c.id} fileId={f.id} /> : <div className="flex h-24 items-center justify-center bg-slate-50"><FileText className="h-7 w-7 text-rose-500" /></div>}
+                    <div className="flex items-center justify-between gap-1 px-2 py-1.5"><b className="truncate">{f.kind === 'PROOF' ? 'Proof photo' : 'Bill'}</b><Eye className="h-3.5 w-3.5 shrink-0 text-slate-500" /></div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
       {!person && (
         <>
           <hr className="my-5 border-slate-100" />
@@ -167,6 +202,20 @@ export const MyClaims: React.FC = () => {
   return (
     <div className="space-y-5">
       <PageHead title="My Claims" subtitle="Submit, track and manage your reimbursement claims." />
+      <InstallAppCard onSent={() => void load().catch(() => undefined)} />
+      {data?.drafts?.length > 0 && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <b>You have {data.drafts.length} unfinished claim{data.drafts.length > 1 ? 's' : ''}.</b> The photos were uploaded but the claim was never sent. Use the Quick claim button to start again, or remove it.
+          <ul className="mt-2 space-y-1.5">
+            {data.drafts.map((d: any) => (
+              <li key={d.id} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
+                <span>{(d.files || []).length} photo{(d.files || []).length === 1 ? '' : 's'}, started {stamp(d.createdAt)}</span>
+                <button type="button" disabled={busy} onClick={() => void run(async () => { await payrollService.withdrawClaim(d.id); await load(); }, 'Removed.')} className="font-bold text-rose-700 cursor-pointer">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Kpi label="Total Claims" value={items.length} tone="violet" Icon={FileText} />
         <Kpi label="Approved" value={count((c) => ['APPROVED', 'PAID'].includes(c.status))} tone="green" Icon={CheckCircle2} />
@@ -241,7 +290,7 @@ export const MyClaims: React.FC = () => {
           )}
         </Panel>
 
-        <Panel>{sel ? <ClaimDetails c={sel} onBill={(id) => void run(() => openBill(id))} /> : <p className="py-10 text-center text-sm text-slate-500">Pick a claim to see its details.</p>}</Panel>
+        <Panel>{sel ? <ClaimDetails c={sel} onBill={(id, fid) => void run(() => openBill(id, fid))} /> : <p className="py-10 text-center text-sm text-slate-500">Pick a claim to see its details.</p>}</Panel>
       </div>
 
       <Drawer open={drawer} onClose={() => setDrawer(false)} title="New claim" subtitle="Money you spent for work. Once approved it is added to your salary as a reimbursement (not taxed)."
@@ -323,6 +372,7 @@ export const ClaimApprovals: React.FC<{ canManage: boolean }> = ({ canManage }) 
   return (
     <div className="space-y-5">
       <PageHead title="Claim Approvals" subtitle="Review and take action on employee reimbursement claims." />
+      <InstallAppCard onSent={() => void load()} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Kpi label="Total Claims" value={items.length} tone="violet" Icon={FileText} />
         <Kpi label="Approved" value={n('APPROVED')} tone="green" Icon={CheckCircle2} />
@@ -380,7 +430,7 @@ export const ClaimApprovals: React.FC<{ canManage: boolean }> = ({ canManage }) 
 
         <Panel>
           {sel ? (
-            <ClaimDetails c={sel} person onClose={() => setPickId(null)} onBill={(id) => void run(() => openBill(id))}>
+            <ClaimDetails c={sel} person onClose={() => setPickId(null)} onBill={(id, fid) => void run(() => openBill(id, fid))}>
               {can(sel) ? (
                 <div className="mt-5 space-y-3">
                   <Field label="Amount to approve (₹)"><input type="number" className={field + ' w-full'} value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>

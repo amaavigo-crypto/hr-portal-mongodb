@@ -51,6 +51,10 @@ export const payrollService = {
   claims: (status?: string) => get('claims', { status }),
   decideClaim: (b: unknown) => post('decide-claim', b),
   claimBill: (id: string) => get('claim-bill', { id }),
+  claimFile: (id: string, fileId: string) => get('claim-file', { id, fileId }),
+  saveClaimDraft: (b: unknown) => post('claim-draft-save', b),
+  scanClaimDraft: (id: string) => post('claim-draft-scan', { id }),
+  removeClaimDraftFile: (id: string, fileId: string) => post('claim-draft-remove-file', { id, fileId }),
   // full and final settlement
   settlements: () => get('settlements'),
   settlement: (uid?: string) => get('settlement', { uid }),
