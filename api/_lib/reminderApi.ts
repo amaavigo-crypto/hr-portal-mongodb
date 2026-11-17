@@ -6,6 +6,7 @@
 import { db, inApp, loadPeople, loadProfiles, loadSettings, notify, nowIso, type Person } from './leaveCore.js';
 import { RULES, ackDue, claimDue, digest, reviewDue, type ReminderItem } from '../../shared/reminderRules.js';
 import { istToday } from '../../shared/leaveEngine.js';
+import { sendTeamWeeklySummaries } from './teamWeekApi.js';
 
 const logId = (cid: string, uid: string, key: string) => `${cid}__${uid}__${key}`.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 200);
 const day = (v: unknown) => String(v || '').slice(0, 10);
@@ -88,7 +89,11 @@ export async function runReminders(cid: string, today: string = istToday()): Pro
 export async function runAllReminders(today: string = istToday()): Promise<Record<string, any>> {
   const snap = await db().collection('companies').where('status', '==', 'ACTIVE').get();
   const out: Record<string, any> = {};
-  for (const d of snap.docs) { try { out[d.id] = await runReminders(d.id, today); } catch (e: any) { out[d.id] = { error: e?.message || 'failed' }; } }
+  for (const d of snap.docs) {
+    try {
+      out[d.id] = { ...(await runReminders(d.id, today)), teamWeek: await sendTeamWeeklySummaries(d.id, today).catch((e: any) => ({ error: e?.message || 'failed' })) };
+    } catch (e: any) { out[d.id] = { error: e?.message || 'failed' }; }
+  }
   return out;
 }
 export { RULES };

@@ -11,6 +11,8 @@ export const CandidateAi: React.FC<{ applicationId: string; onChanged: () => voi
   const { run, busy, note } = useRunner();
   const [res, setRes] = useState<any>(null);
   const [rec, setRec] = useState<any>(null);
+  const [kit, setKit] = useState<any>(null);
+  const [panel, setPanel] = useState<any>(null);
   const [draft, setDraft] = useState<{ purpose: string; subject: string; body: string } | null>(null);
   const [purpose, setPurpose] = useState('next_round');
   return (
@@ -19,6 +21,8 @@ export const CandidateAi: React.FC<{ applicationId: string; onChanged: () => voi
       <div className="flex flex-wrap gap-2">
         <button className={btnGhost} disabled={busy} onClick={() => run(async () => { const r = await aiService.resume(applicationId); setRes(r); onChanged(); })}>Read resume with AI</button>
         <button className={btnGhost} disabled={busy} onClick={() => run(async () => setRec(await aiService.recommend(applicationId)))}>Hiring recommendation</button>
+        <button className={btnGhost} disabled={busy} onClick={() => run(async () => setKit(await aiService.questions(applicationId)))}>Interview questions</button>
+        <button className={btnGhost} disabled={busy} onClick={() => run(async () => setPanel(await aiService.panel(applicationId)))}>Founder summary</button>
         <button className={btnGhost} disabled={busy} onClick={() => run(async () => { await screenLinkService.create(applicationId, true); }, 'Screening link emailed to the candidate.')}>Send screening link</button>
       </div>
       {res?.aiOff && <Notice tone="warn">{res.note}</Notice>}
@@ -26,6 +30,7 @@ export const CandidateAi: React.FC<{ applicationId: string; onChanged: () => voi
         <div className="mt-3 space-y-1 text-sm text-slate-700">
           <p>{res.extraction.summary}</p>
           <p className="text-xs">Skills: {res.extraction.skills.join(', ') || 'none found'}. Certifications: {res.extraction.certifications.join(', ') || 'none'}.</p>
+          <p className="text-xs">Experience: {res.extraction.yearsExperience ?? 'not found'} years{res.extraction.yearsSource === 'HISTORY' ? ' (counted from job dates)' : res.extraction.yearsSource === 'STATED' ? ' (as written on the resume, not checked)' : ''}. Notice period: {res.extraction.noticePeriod || 'not mentioned'}.</p>
           <p className="text-xs">{res.analysis.jobs} jobs, average stay {res.analysis.averageTenureMonths ?? '-'} months, stability {res.analysis.stabilityScore ?? '-'}/100.</p>
           {res.analysis.gaps.length > 0 && <p className="text-xs text-amber-700">Gaps: {res.analysis.gaps.map((g: any) => `${g.from} to ${g.to} (${g.months} months)`).join('; ')}</p>}
         </div>
@@ -35,6 +40,24 @@ export const CandidateAi: React.FC<{ applicationId: string; onChanged: () => voi
           <Pill tone={VTONE[rec.verdict] || 'slate' as any}>{rec.verdictLabel}</Pill> <span className="text-xs text-slate-500">{rec.points} points</span>
           <p>{rec.narrative}</p>
           {rec.note && <p className="text-[11px] text-slate-400">{rec.note}</p>}
+        </div>
+      )}
+      {kit && (
+        <div className="mt-3 space-y-2 text-sm text-slate-700">
+          <p className="text-xs font-semibold text-slate-500">Interview questions {kit.generatedBy === 'AI' ? '(written by AI, edit as you like)' : '(standard set)'}{kit.resumeRead ? '' : ' - read the resume first for questions about this person'}</p>
+          <ol className="list-decimal space-y-1.5 pl-5">
+            {(kit.questions || []).map((q: any, i: number) => <li key={i}><span className="font-medium">{q.question}</span> <span className="text-[11px] text-slate-400">[{q.area}] {q.why}</span></li>)}
+          </ol>
+          {kit.note && <p className="text-[11px] text-slate-400">{kit.note}</p>}
+          <button className={btnGhost} onClick={() => navigator.clipboard?.writeText((kit.questions || []).map((q: any, i: number) => `${i + 1}. ${q.question}`).join('\n'))}>Copy questions</button>
+        </div>
+      )}
+      {panel && (
+        <div className="mt-3 space-y-1 text-sm text-slate-700">
+          <Pill tone={VTONE[panel.verdict] || 'slate' as any}>{panel.verdictLabel}</Pill> <span className="text-xs text-slate-500">{panel.points} points</span>
+          {panel.interviewsPending > 0 && <p className="text-xs text-amber-700">{panel.interviewsPending} interview(s) still waiting for the whole panel, not counted yet.</p>}
+          <p>{panel.narrative}</p>
+          {panel.note && <p className="text-[11px] text-slate-400">{panel.note}</p>}
         </div>
       )}
       <div className="mt-4 border-t border-slate-100 pt-3">

@@ -45,11 +45,43 @@ export function analyseHistory(history: Job[], todayYm: string): HistoryAnalysis
   return { jobs: jobs.length, totalMonths: tenures.reduce((a, c) => a + c, 0), averageTenureMonths: Math.round(avg * 10) / 10, shortStints: short, gaps, stabilityScore: score, label };
 }
 
+/**
+ * Years of experience counted from the job dates: overlapping jobs are counted once, and a gap is not counted.
+ * Returns null when no job has usable dates, so a model's own figure is never passed off as a count.
+ */
+export function experienceYears(history: Job[], todayYm: string): number | null {
+  const spans = history
+    .map((j) => ({ from: j.from, to: j.to === 'present' || !j.to ? todayYm : j.to }))
+    .filter((j) => ym(j.from) && ym(j.to) && monthIndex(j.to) >= monthIndex(j.from))
+    .map((j) => [monthIndex(j.from), monthIndex(j.to) + 1] as [number, number])
+    .sort((a, b) => a[0] - b[0]);
+  if (!spans.length) return null;
+  let months = 0, [s, e] = spans[0];
+  for (const [a, b] of spans.slice(1)) { if (a <= e) e = Math.max(e, b); else { months += e - s; s = a; e = b; } }
+  months += e - s;
+  return Math.round((months / 12) * 10) / 10;
+}
+
+/** "30 days", "2 months", "6 weeks", "immediate" as days. Anything else is not guessed. */
+export function noticeDays(text: string): number | null {
+  const t = String(text || '').toLowerCase().trim();
+  if (!t) return null;
+  if (/\b(immediate|immediately|serving notice|no notice)\b/.test(t)) return 0;
+  const m = t.match(/(\d+(?:\.\d+)?)\s*(day|week|month)/);
+  if (!m) return null;
+  const n = Number(m[1]) * (m[2] === 'day' ? 1 : m[2] === 'week' ? 7 : 30);
+  return n >= 0 && n <= 365 ? Math.round(n) : null;
+}
+
 // ------------------------------------------------------------------ cleaning a model's answer
 
 export interface Extraction {
   skills: string[]; yearsExperience: number | null; education: { degree: string; institute: string; year: string }[]; certifications: string[];
   history: Job[]; projects: string[]; summary: string;
+  /** Notice period as written on the resume, and the same in days (worked out in code). */
+  noticePeriod?: string; noticePeriodDays?: number | null;
+  /** Where yearsExperience came from: counted from the job dates, or only stated on the resume. */
+  yearsSource?: 'HISTORY' | 'STATED' | null;
 }
 const strs = (v: unknown, n: number, len: number): string[] => (Array.isArray(v) ? v.map((x) => String(x ?? '').trim().slice(0, len)).filter(Boolean).slice(0, n) : []);
 
@@ -65,6 +97,8 @@ export function cleanExtraction(raw: any): Extraction {
     history: (Array.isArray(raw?.history) ? raw.history : []).slice(0, 20).map((j: any) => ({ company: String(j?.company ?? '').slice(0, 100), role: String(j?.role ?? '').slice(0, 100), from: ymOrPresent(j?.from), to: ymOrPresent(j?.to) })).filter((j: Job) => j.from && j.to),
     projects: strs(raw?.projects, 8, 200),
     summary: String(raw?.summary ?? '').trim().slice(0, 600),
+    noticePeriod: String(raw?.noticePeriod ?? '').trim().slice(0, 60),
+    noticePeriodDays: noticeDays(String(raw?.noticePeriod ?? '')),
   };
 }
 

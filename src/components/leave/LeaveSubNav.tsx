@@ -1,10 +1,10 @@
 import React from 'react';
-import { Briefcase, CalendarCheck, ClipboardCheck, FilePenLine, FileBarChart, CalendarDays, Home, Inbox, Palmtree } from 'lucide-react';
+import { Briefcase, CalendarCheck, ClipboardCheck, FilePenLine, FileBarChart, CalendarDays, CalendarRange, Home, Inbox, Palmtree } from 'lucide-react';
 import { LeaveSection, resolveSection, useLeaveNav, leaveNav } from './leaveNav';
 import { NavBadge } from '../NavBadge';
 
 export const LEAVE_ICON: Record<LeaveSection, React.FC<{ className?: string }>> = {
-  today: Home, my: Palmtree, attendance: CalendarCheck, regularization: ClipboardCheck, application: FilePenLine, reports: FileBarChart, team: CalendarDays, approvals: Inbox, manage: Briefcase,
+  today: Home, my: Palmtree, attendance: CalendarCheck, regularization: ClipboardCheck, application: FilePenLine, reports: FileBarChart, team: CalendarDays, teamweek: CalendarRange, approvals: Inbox, manage: Briefcase,
 };
 
 /**

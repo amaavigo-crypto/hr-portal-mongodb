@@ -18,7 +18,7 @@ const monthLabel = (m: string) => {
 };
 const sel = 'border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#6d4cf0]/40';
 
-interface FlagSettings { payroll: boolean; late: boolean; leave: boolean; latePer30: number; lateStreak: number; payChangePct: number; totalChangePct: number; leaveAdjacent: number; shortSick: number }
+interface FlagSettings { payroll: boolean; late: boolean; leave: boolean; latePer30: number; lateStreak: number; payChangePct: number; totalChangePct: number; leaveAdjacent: number; shortSick: number; weekdayRepeat: number; teamLimitPct: number }
 
 /** Thresholds, kept small and folded away: defaults are fine for most companies. */
 const Thresholds: React.FC<{ canEdit: boolean; onSaved: () => void }> = ({ canEdit, onSaved }) => {
@@ -48,7 +48,7 @@ const Thresholds: React.FC<{ canEdit: boolean; onSaved: () => void }> = ({ canEd
           <div className="flex flex-wrap gap-4">{tog('payroll', 'Payroll checks')}{tog('late', 'Late marks')}{tog('leave', 'Leave patterns')}</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {num('payChangePct', 'Pay change (%)')}{num('totalChangePct', 'Total payroll change (%)')}{num('latePer30', 'Late marks in 30 days')}{num('lateStreak', 'Late days in a row')}
-            {num('leaveAdjacent', 'Leaves next to a weekend or holiday (90 days)')}{num('shortSick', 'Short sick leaves (60 days)')}
+            {num('leaveAdjacent', 'Leaves next to a weekend or holiday (90 days)')}{num('shortSick', 'Short sick leaves (60 days)')}{num('weekdayRepeat', 'Leaves starting Monday or ending Friday (90 days)')}{num('teamLimitPct', 'Team on leave on one day (% of team)')}
           </div>
           {canEdit && <button className={btnPrimary} disabled={busy} onClick={() => run(async () => { await leaveService.saveFlagSettings(s as any); onSaved(); }, 'Thresholds saved. They apply from the next check.')}>Save thresholds</button>}
         </div>

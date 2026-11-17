@@ -25,6 +25,7 @@ export const leaveService = {
   clearDelegation: (managerUid?: string) => post('clear-delegation', { managerUid }),
   decide: (id: string, decision: 'APPROVE' | 'REJECT' | 'INFO', comment = '') => post('decide', { id, decision, comment }),
   teamCalendar: (from: string, to: string) => get('team-calendar', { from, to }),
+  teamWeek: () => get('team-week'),
   checkIn: (remarks = '') => post('check-in', { remarks }),
   checkOut: (remarks = '') => post('check-out', { remarks }),
   attendance: (month: string, uid?: string) => get('attendance', { month, uid }),

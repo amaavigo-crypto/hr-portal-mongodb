@@ -49,6 +49,8 @@ export const aiService = {
   dupMerge: (keepId: string, mergeIds: string[]) => post('dup-merge', { keepId, mergeIds, confirm: true }),
   compare: (applicationIds: string[]) => post('ai-compare', { applicationIds }),
   recommend: (applicationId: string) => post('ai-recommend', { applicationId }),
+  questions: (applicationId: string) => post('ai-questions', { applicationId }),
+  panel: (applicationId: string) => post('ai-panel', { applicationId }),
   followup: (applicationId: string, purpose: string, note?: string) => post('ai-followup', { applicationId, purpose, note }),
   followupSend: (applicationId: string, subject: string, body: string) => post('ai-followup-send', { applicationId, subject, body }),
 };

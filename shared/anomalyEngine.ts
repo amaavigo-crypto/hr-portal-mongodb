@@ -45,10 +45,14 @@ export interface FlagSettings {
   leaveAdjacent: number;
   /** Short sick leaves (2 days or fewer) in the last 60 days. */
   shortSick: number;
+  /** Leaves in the last 90 days that start on a Monday or end on a Friday. */
+  weekdayRepeat: number;
+  /** A team is flagged when more than this share of its people are on leave on the same day. */
+  teamLimitPct: number;
 }
 
 export const DEFAULT_FLAG_SETTINGS: FlagSettings = {
-  payroll: true, late: true, leave: true, latePer30: 4, lateStreak: 3, payChangePct: 15, totalChangePct: 10, leaveAdjacent: 3, shortSick: 3,
+  payroll: true, late: true, leave: true, latePer30: 4, lateStreak: 3, payChangePct: 15, totalChangePct: 10, leaveAdjacent: 3, shortSick: 3, weekdayRepeat: 3, teamLimitPct: 40,
 };
 
 const clampInt = (v: unknown, lo: number, hi: number, d: number) => {
@@ -64,6 +68,7 @@ export function sanitizeFlagSettings(input: any): FlagSettings {
     latePer30: clampInt(o.latePer30, 2, 30, d.latePer30), lateStreak: clampInt(o.lateStreak, 2, 15, d.lateStreak),
     payChangePct: clampInt(o.payChangePct, 1, 100, d.payChangePct), totalChangePct: clampInt(o.totalChangePct, 1, 100, d.totalChangePct),
     leaveAdjacent: clampInt(o.leaveAdjacent, 2, 20, d.leaveAdjacent), shortSick: clampInt(o.shortSick, 2, 20, d.shortSick),
+    weekdayRepeat: clampInt(o.weekdayRepeat, 2, 20, d.weekdayRepeat), teamLimitPct: clampInt(o.teamLimitPct, 20, 100, d.teamLimitPct),
   };
 }
 
@@ -249,6 +254,16 @@ export function leaveFlags(today: string, people: { uid: string; name: string; i
         facts: { leaves: adjacent.length }, sig: `${adjacent.length}`,
       });
     }
+    const dow = (iso: string) => new Date(`${iso}T00:00:00Z`).getUTCDay();
+    const edge = taken.filter((r) => dow(r.from) === 1 || dow(r.to) === 5);
+    if (edge.length >= s.weekdayRepeat) {
+      out.push({
+        key: keyOf('FLAG', 'LEAVE', 'EDGE', p.uid), type: 'LEAVE', code: 'MONDAY_FRIDAY_LEAVES', severity: 'LOW', uid: p.uid, name: p.name, month,
+        message: `${edge.length} leaves in the last 90 days started on a Monday or ended on a Friday.`,
+        evidence: edge.slice(-6).map((r) => (r.from === r.to ? shortDay(r.from) : `${shortDay(r.from)} to ${shortDay(r.to)}`)),
+        facts: { leaves: edge.length }, sig: `${edge.length}`,
+      });
+    }
     const sick = taken.filter((r) => /sick|medical/i.test(r.typeName) && r.from >= since60 && r.days <= 2);
     if (sick.length >= s.shortSick) {
       out.push({
@@ -267,6 +282,45 @@ export function leaveFlags(today: string, people: { uid: string; name: string; i
     }
   }
   return out;
+}
+
+// ------------------------------------------------------------------ teams on leave together
+
+export interface TeamIn {
+  managerUid: string;
+  managerName: string;
+  members: { uid: string; name: string; isOff: (date: string) => boolean; requests: LeaveItem[] }[];
+}
+
+const mondayOf = (iso: string) => addDays(iso, -((new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7));
+
+/**
+ * Teams with more people on leave on the same day than the allowed share, in the next two weeks. One flag per team per week,
+ * showing the busiest day. Approved and waiting requests both count, so HR sees the clash before it happens.
+ */
+export function teamLeaveFlags(today: string, teams: TeamIn[], s: FlagSettings, minSize = 3, horizon = 14): Flag[] {
+  if (!s.leave) return [];
+  const out = new Map<string, Flag>();
+  for (const t of teams) {
+    const size = t.members.length;
+    if (size < minSize) continue;
+    const allowed = (size * s.teamLimitPct) / 100;
+    for (let i = 0; i < horizon; i++) {
+      const day = addDays(today, i);
+      const away = t.members.filter((m) => !m.isOff(day) && m.requests.some((r) => ['APPROVED', 'PENDING'].includes(r.status) && r.from <= day && day <= r.to));
+      if (away.length < 2 || away.length <= allowed) continue;
+      const week = mondayOf(day);
+      const key = keyOf('FLAG', 'LEAVE', 'TEAM', t.managerUid, week);
+      const cur = out.get(key);
+      if (cur && Number(cur.facts.away) >= away.length) continue;
+      out.set(key, {
+        key, type: 'LEAVE', code: 'TEAM_LEAVE_OVER_LIMIT', severity: 'MEDIUM', uid: t.managerUid, name: `Team of ${t.managerName}`, month: day.slice(0, 7),
+        message: `${away.length} of ${size} people in ${t.managerName}'s team are on leave on ${shortDay(day)}, above the ${s.teamLimitPct}% limit.`,
+        evidence: away.slice(0, 6).map((m) => m.name), facts: { away: away.length, team: size, limitPct: s.teamLimitPct, day }, sig: `${away.length}/${size}`,
+      });
+    }
+  }
+  return [...out.values()];
 }
 
 export const SEVERITY_ORDER: Record<FlagSeverity, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };

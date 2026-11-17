@@ -1915,6 +1915,7 @@ export async function routeLeave(r: LeaveRequestIn): Promise<Result> {
       case 'doc-set': if (POST) return await docSet(who, body); break;
       case 'doc-get': if (GET) return await docGet(who, r.query); break;
       case 'team-calendar': if (GET) return await teamCalendar(who, r.query); break;
+      case 'team-week': if (GET) return await (await import('./teamWeekApi.js')).teamWeekView(who.cid, who.ctx.uid, istToday()); break;
       case 'check-in': if (POST) return await punch(who, 'in', r.ip, body); break;
       case 'check-out': if (POST) return await punch(who, 'out', r.ip, body); break;
       case 'attendance': if (GET) return await attendance(who, r.query); break;
