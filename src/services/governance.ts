@@ -1093,6 +1093,8 @@ export class DocumentGovernanceEngine {
       rawContent: string;
       fileName: string;
       changeSummary: string;
+      /** Why the policy is changing. Written by HR, never drafted by AI. */
+      changeReason?: string;
       effectiveFrom?: string;
       reviewDueDate?: string;
       mimeType?: string;
@@ -1283,6 +1285,7 @@ export class DocumentGovernanceEngine {
       previousVersionId: predecessorVersion?.id,
       previousVersionNumber: predecessorVersion?.versionNumber,
       changeSummary: data.changeSummary || `Revision ${nextVersionNumber} created from predecessor ${baselineNumber}.`,
+      changeReason: data.changeReason || '',
       locked: false,
       createdFromVersionId: predecessorVersion?.id,
     };

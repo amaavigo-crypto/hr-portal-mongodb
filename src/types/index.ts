@@ -205,6 +205,8 @@ export interface DocumentVersion {
   previousVersionNumber?: string;
   supersededByVersionId?: string;
   changeSummary?: string;
+  /** Why this version was made. Written by the author. */
+  changeReason?: string;
   locked: boolean;
   createdFromVersionId?: string;
   inlineComments?: InlineRevisionComment[];

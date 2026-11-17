@@ -43,6 +43,7 @@ import { formatIST, formatISTDate } from '../utils/dateFormat';
 import { formatDDMMYYYY, calculateDynamicReReviewDate } from '../utils/documentHeaderFooter';
 import { downloadDocumentWithIntactFormat } from '../utils/documentTools';
 import { extractPointByPointDiffs, PointDiffItem } from '../services/comparison';
+import { PolicyClashPanel } from './PolicyClashPanel';
 
 interface ReviewDocumentModalProps {
   version: DocumentVersion;
@@ -764,10 +765,18 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                         Authored by: <strong className="text-slate-900">{creator.name}</strong>
                       </span>
                     </div>
-                    <p className="text-sm text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed font-medium">
+                    <p className="text-sm text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed font-medium whitespace-pre-wrap">
                       {version.changeSummary || 'No explicit change summary submitted.'}
                     </p>
+                    {version.changeReason && (
+                      <p className="mt-2 text-sm text-slate-800 bg-amber-50/60 p-4 rounded-xl border border-amber-200 leading-relaxed">
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-amber-800 mb-0.5">Why it is changing (written by the author)</span>
+                        {version.changeReason}
+                      </p>
+                    )}
                   </div>
+
+                  <PolicyClashPanel versionId={version.id} />
 
                   {/* EXECUTIVE CONCISE 5-6 LINES CHANGE SUMMARY */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
