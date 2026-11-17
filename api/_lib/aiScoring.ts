@@ -19,6 +19,7 @@
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
 import { adminDb } from './firebaseAdmin.js';
+import { aiEnabled, aiJson, modelFor, s } from './ai/index.js';
 import { fetchPublic } from './safeFetch.js';
 
 type Status = 'MET' | 'PARTIAL' | 'NOT_EVIDENCED';
@@ -70,12 +71,7 @@ const num = (name: string, fallback: number) => {
   return Number.isFinite(v) && v > 0 ? v : fallback;
 };
 
-function apiKey(): string {
-  const k = (process.env.OPENAI_API_KEY || '').trim();
-  return !k || k === 'MY_OPENAI_API_KEY' ? '' : k;
-}
-
-const modelName = () => (process.env.OPENAI_SCORING_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim();
+const modelName = () => modelFor('scoring');
 
 /** Blank lines in a saved JD would count as requirements nothing can match, pushing every candidate to the same score. */
 export function cleanJd(jd: { requiredSkills: string[]; coreResponsibilities: string[] }) {
@@ -84,7 +80,7 @@ export function cleanJd(jd: { requiredSkills: string[]; coreResponsibilities: st
 }
 
 export function isAiScoringEnabled(): boolean {
-  return !!apiKey();
+  return aiEnabled();
 }
 
 // ------------------------------------------------------------------ resume reading (no tokens)
@@ -354,93 +350,65 @@ function cleanStatus(v: unknown): Status {
 }
 
 async function callOpenAi(
+  cid: string,
   jd: { requiredSkills: string[]; coreResponsibilities: string[] },
   resume: string
 ): Promise<{ evidence?: Evidence; error?: string; usage?: { input: number; output: number } }> {
-  const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 40000);
-  try {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey()}` },
-      body: JSON.stringify({
-        model: modelName(),
-        temperature: 0,
-        max_tokens: 700,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `REQUIRED SKILLS:\n${numbered(jd.requiredSkills)}\n\nRESPONSIBILITIES:\n${numbered(jd.coreResponsibilities)}\n\nRESUME:\n${resume}`,
-          },
-        ],
-      }),
-      signal: controller.signal,
-    });
-    const raw = await res.text();
-    let data: any = null;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      /* handled below */
-    }
-    if (!res.ok) return { error: `OpenAI error (HTTP ${res.status}): ${data?.error?.message || raw.slice(0, 150)}` };
+  const item = s.obj({ i: s.num(0, 1000), status: s.optional(s.str(20), ''), evidence: s.optional(s.str(400), '') });
+  const res = await aiJson({
+    cid,
+    feature: 'scoring',
+    system: SYSTEM_PROMPT,
+    user: `REQUIRED SKILLS:\n${numbered(jd.requiredSkills)}\n\nRESPONSIBILITIES:\n${numbered(jd.coreResponsibilities)}\n\nRESUME:\n${resume}`,
+    schema: s.obj({
+      skills: s.arr(item, 200),
+      responsibilities: s.arr(item, 200),
+      strengths: s.optional(s.arr(s.str(160), 20), []),
+      gaps: s.optional(s.arr(s.str(160), 20), []),
+      hasMetrics: s.optional(s.bool(), false),
+      hasPortfolio: s.optional(s.bool(), false),
+    }),
+    maxTokens: 700,
+    temperature: 0,
+    timeoutMs: 40000,
+  });
+  if (res.off) return { error: 'AI scoring is off.' };
+  if (res.error || !res.data) return { error: res.error || 'The model reply was not in the expected shape. Try again.' };
+  const parsed = res.data;
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(String(data?.choices?.[0]?.message?.content || ''));
-    } catch {
-      return { error: 'The model returned invalid JSON.' };
-    }
-
-    // A reply without the two lists is a bad reply, not "nothing evidenced": do not cache it as a result.
-    if (!Array.isArray(parsed?.skills) || !Array.isArray(parsed?.responsibilities)) {
-      return { error: 'The model reply was not in the expected shape. Try again.' };
-    }
-
-    const resumeNorm = norm(resume);
-    const fix = (arr: any, count: number) => {
-      const out: { status: Status; evidence: string }[] = Array.from({ length: count }, () => ({
-        status: 'NOT_EVIDENCED' as Status,
-        evidence: '',
-      }));
-      if (Array.isArray(arr)) {
-        for (const it of arr) {
-          const i = Number(it?.i);
-          if (!Number.isInteger(i) || i < 0 || i >= count) continue;
-          let status = cleanStatus(it?.status);
-          const evidence = String(it?.evidence || '').slice(0, 160);
-          // Anti-hallucination: a MET claim must quote text that really is in the resume.
-          if (status === 'MET') {
-            const q = norm(evidence).slice(0, 30);
-            if (!q || !resumeNorm.includes(q)) status = 'PARTIAL';
-          }
-          out[i] = { status, evidence: status === 'NOT_EVIDENCED' ? '' : evidence };
-        }
+  const resumeNorm = norm(resume);
+  const fix = (arr: any, count: number) => {
+    const out: { status: Status; evidence: string }[] = Array.from({ length: count }, () => ({
+      status: 'NOT_EVIDENCED' as Status,
+      evidence: '',
+    }));
+    for (const it of arr || []) {
+      const i = Number(it?.i);
+      if (!Number.isInteger(i) || i < 0 || i >= count) continue;
+      let status = cleanStatus(it?.status);
+      const evidence = String(it?.evidence || '').slice(0, 160);
+      // Anti-hallucination: a MET claim must quote text that really is in the resume.
+      if (status === 'MET') {
+        const q = norm(evidence).slice(0, 30);
+        if (!q || !resumeNorm.includes(q)) status = 'PARTIAL';
       }
-      return out;
-    };
-    const list = (v: any) =>
-      Array.isArray(v) ? v.map((x) => String(x).trim().slice(0, 160)).filter(Boolean).slice(0, 4) : [];
+      out[i] = { status, evidence: status === 'NOT_EVIDENCED' ? '' : evidence };
+    }
+    return out;
+  };
+  const list = (v: any) => (Array.isArray(v) ? v.map((x) => String(x).trim().slice(0, 160)).filter(Boolean).slice(0, 4) : []);
 
-    return {
-      evidence: {
-        skills: fix(parsed.skills, jd.requiredSkills.length),
-        responsibilities: fix(parsed.responsibilities, jd.coreResponsibilities.length),
-        strengths: list(parsed.strengths),
-        gaps: list(parsed.gaps),
-        hasMetrics: parsed.hasMetrics === true,
-        hasPortfolio: parsed.hasPortfolio === true,
-      },
-      usage: { input: Number(data?.usage?.prompt_tokens) || 0, output: Number(data?.usage?.completion_tokens) || 0 },
-    };
-  } catch (err: any) {
-    return { error: err?.name === 'AbortError' ? 'OpenAI request timed out.' : `OpenAI request failed: ${err?.message || err}` };
-  } finally {
-    clearTimeout(timer);
-  }
+  return {
+    evidence: {
+      skills: fix(parsed.skills, jd.requiredSkills.length),
+      responsibilities: fix(parsed.responsibilities, jd.coreResponsibilities.length),
+      strengths: list(parsed.strengths),
+      gaps: list(parsed.gaps),
+      hasMetrics: parsed.hasMetrics === true,
+      hasPortfolio: parsed.hasPortfolio === true,
+    },
+    usage: res.usage,
+  };
 }
 
 // ------------------------------------------------------------------ cache
@@ -639,7 +607,7 @@ export async function applyAiScoring<C extends ScorableCandidate>(args: {
       continue;
     }
 
-    const out = await callOpenAi(jd, resume.text);
+    const out = await callOpenAi(args.companyId, jd, resume.text);
     if (!out.evidence) {
       // Transient (model/network) problem: not cached, so it can be retried; no further calls this request.
       failures.push(out.error || 'AI call failed.');

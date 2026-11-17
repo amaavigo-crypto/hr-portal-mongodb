@@ -17,7 +17,7 @@
  */
 import { adminDb } from './firebaseAdmin.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
-import { aiEnabled, aiKey, reserveAiCall } from './openaiHelper.js';
+import { aiChat, aiEnabled, modelFor, reserveAiCall } from './ai/index.js';
 import { routeLeave } from './leaveApi.js';
 import { routeLifecycle } from './lifecycleApi.js';
 import { routePayroll } from './payrollApi.js';
@@ -40,7 +40,7 @@ const str = (v: unknown, max = 500) => (v === undefined || v === null ? '' : Str
 const istDay = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
 
 const dailyLimit = () => { const n = Number(process.env.ASSISTANT_DAILY_LIMIT); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 30; };
-const model = () => (process.env.OPENAI_ASSISTANT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim();
+const model = () => modelFor('assistant');
 
 export interface Source { kind: 'data' | 'policy'; label: string }
 
@@ -211,25 +211,13 @@ const systemPrompt = (company: string, today: string) => [
   `Today is ${today} (India).`,
 ].join('\n');
 
-async function chat(messages: any[], withTools: boolean): Promise<any> {
-  const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45_000);
-  try {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiKey()}` },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: model(), temperature: 0.1, max_tokens: 450, messages,
-        ...(withTools ? { tools: TOOLS.map((t) => ({ type: 'function', function: t })), tool_choice: 'auto' } : {}),
-      }),
-    });
-    if (!res.ok) throw new Error(`AI service answered ${res.status}`);
-    return (await res.json())?.choices?.[0]?.message || {};
-  } finally {
-    clearTimeout(timer);
-  }
+async function chat(r: Run, messages: any[], withTools: boolean): Promise<any> {
+  const res = await aiChat({
+    cid: r.cid, uid: r.ctx.uid, feature: 'assistant', messages, tools: withTools ? TOOLS : undefined,
+    temperature: 0.1, maxTokens: 450, timeoutMs: 45_000, budgetMs: 50_000,
+  });
+  if (res.error || !res.message) throw new Error(res.error || 'AI service answered nothing');
+  return res.message;
 }
 
 const UNSURE = /\s*\[\[ASK_HR\]\]\s*/g;
@@ -240,7 +228,7 @@ async function converse(r: Run, company: string, question: string, history: Chat
   const messages: any[] = [{ role: 'system', content: systemPrompt(company, istDay()) }, ...history, { role: 'user', content: question }];
   let rewrote = false;
   for (let round = 0; round < 5; round++) {
-    const msg = await chat(messages, round < 4);
+    const msg = await chat(r, messages, round < 4);
     const calls: any[] = Array.isArray(msg.tool_calls) ? msg.tool_calls.slice(0, 4) : [];
     if (calls.length) {
       messages.push({ role: 'assistant', content: msg.content || null, tool_calls: calls });

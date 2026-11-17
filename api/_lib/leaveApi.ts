@@ -819,7 +819,7 @@ async function assistAsk(who: Who, body: any): Promise<Result> {
   const profiles = await loadProfiles(who.cid);
   const prof = effectiveProfile(c.settings, c.me, profiles.get(c.me.uid));
   const a = answerPolicyQuestion(question, c.settings, prof.policyId);
-  const w = a.answered ? await polishWording(a.answer) : { text: a.answer, ai: false };
+  const w = a.answered ? await polishWording(a.answer, who.cid) : { text: a.answer, ai: false };
   return ok({ answer: w.text, policyReference: a.reference, policyVersion: c.settings.policyVersion || 1, answered: a.answered, aiWording: w.ai, requiresHumanDecision: true });
 }
 

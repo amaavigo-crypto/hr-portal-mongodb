@@ -83,12 +83,12 @@ export async function routeHiring(r: HiringRequest): Promise<HiringResult> {
   if (action === 'generate-jd') {
     if (r.method !== 'POST') return { status: 405, json: { success: false, error: 'Method not allowed' } };
     try {
-      await requirePermission(r.headers, 'req.manage_jd');
+      const jdCtx = await requirePermission(r.headers, 'req.manage_jd');
       const body = r.body && typeof r.body === 'object' ? r.body : {};
       if (!body.positionTitle || !body.departmentName) {
         return { status: 400, json: { success: false, error: 'positionTitle and departmentName are required' } };
       }
-      const result = await generateJobDescription(body);
+      const result = await generateJobDescription(body, jdCtx.companyId || '');
       return { status: 200, json: { success: true, ...result } };
     } catch (err: any) {
       const known = authErrorResponse(err);
