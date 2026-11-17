@@ -5,6 +5,7 @@ import { ContentProvider } from './content';
 import { MarketingShell } from './MarketingShell';
 import { NAVIGATE_EVENT, isMarketingPath, normalizePath } from './routes';
 import { applySeo } from './seoClient';
+import { ThemeSwitch } from './ThemeSwitch';
 
 /** The server puts the saved wording into the page (see api/_lib/landingSeo.ts); read it so the first paint matches what search engines saw. */
 function readInjectedContent(): LandingOverrides | null {
@@ -70,6 +71,7 @@ export const MarketingSite: React.FC = () => {
   return (
     <ContentProvider overrides={overrides}>
       <MarketingShell path={path} />
+      <ThemeSwitch />
     </ContentProvider>
   );
 };
