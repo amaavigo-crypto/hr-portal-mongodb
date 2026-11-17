@@ -12,6 +12,7 @@ import { authErrorResponse, requireActiveTenant } from './authContext.js';
 import { cached } from './serverCache.js';
 import { hasAnyPerm, hasPerm } from '../../shared/permissions.js';
 import { addDays, istToday } from '../../shared/leaveEngine.js';
+import { RULES, approvalOverdue } from '../../shared/reminderRules.js';
 import {
   ADMIN_PERMS, DOC_AUTHOR_PERMS, HIRING_PERMS, buildWidgets,
   type DashboardInput, type DocFacts, type DocRef, type HiringFacts, type LeaveFacts, type LifecycleFacts, type PayrollFacts,
@@ -51,6 +52,18 @@ async function moduleJson(p: Promise<{ status: number; json: any }>): Promise<an
 
 const dayOf = (v: unknown) => String(v || '').slice(0, 10);
 
+/** Leave requests and expense claims that have waited too long for this person (the same rule the reminder email uses). */
+async function overdueApprovals(headers: Record<string, any>, approver: boolean): Promise<number> {
+  if (!approver) return 0;
+  const today = istToday();
+  const [inbox, claims] = await Promise.all([
+    moduleJson(routeLeave({ method: 'GET', action: 'inbox', query: {}, body: undefined, headers })),
+    moduleJson(routePayroll({ method: 'GET', action: 'claims', query: { status: 'SUBMITTED' }, body: undefined, headers })),
+  ]);
+  const late = (iso: unknown) => approvalOverdue(String(iso || ''), today);
+  return (inbox?.leaves || []).filter((l: any) => late(l.createdAt)).length + (claims?.items || []).filter((c: any) => late(c.createdAt)).length;
+}
+
 async function leaveFacts(headers: Record<string, any>): Promise<LeaveFacts | null> {
   const j = await moduleJson(routeLeave({ method: 'GET', action: 'me', query: {}, body: undefined, headers }));
   if (!j) return null;
@@ -62,6 +75,7 @@ async function leaveFacts(headers: Record<string, any>): Promise<LeaveFacts | nu
     isManager: !!j.isManager,
     isDelegate: !!j.isDelegate,
     approvals: Number(j.approvals) || 0,
+    overdue: await overdueApprovals(headers, !!(j.isManager || j.isDelegate || j.canManage)),
     balances: Array.isArray(j.balances) ? j.balances : [],
     attendanceToday: { checkIn: j.attendanceToday?.checkIn ?? null, checkOut: j.attendanceToday?.checkOut ?? null },
   };
@@ -142,7 +156,7 @@ async function docFacts(cid: string, perms: string[], ids: string[], today: stri
   const publishedList = () => (published ||= byStatus('PUBLISHED').then((docs) => docs.map((d: any) => ({ id: d.id, v: d.data() as any }))));
 
   if (canAuthor) {
-    const horizon = addDays(today, 30);
+    const horizon = addDays(today, RULES.reviewLeadDays);
     tasks.push(publishedList().then((list) => {
       facts.reReviewDue = list.map(({ v }) => ({ v, due: dayOf(v.reviewDueDate) })).filter((x) => x.due && x.due <= horizon)
         .sort((a, b) => a.due.localeCompare(b.due))

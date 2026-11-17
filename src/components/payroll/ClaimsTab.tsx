@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Briefcase, CheckCircle2, Coins, Download, Eye, FileText, Fuel, Hourglass, Laptop, MoreHorizontal, Paperclip, Plane, Plus, Receipt, UtensilsCrossed, X, XCircle } from 'lucide-react';
 import { Avatar } from '../home/parts';
+import { InstallAppCard } from './InstallAppCard';
 import { inr, monthLabel, payrollService } from '../../services/payrollService';
 import { Drawer, Field, Notice, Skeleton, btnGhost, input, todayIst, useRunner } from '../leave/ui';
 import { btnOutline, btnViolet, dmy, field, Kpi, Pager, PageHead, Panel, Pill, SearchBox, Select, Tabs, THead } from '../leave/kit';
@@ -201,6 +202,7 @@ export const MyClaims: React.FC = () => {
   return (
     <div className="space-y-5">
       <PageHead title="My Claims" subtitle="Submit, track and manage your reimbursement claims." />
+      <InstallAppCard onSent={() => void load().catch(() => undefined)} />
       {data?.drafts?.length > 0 && (
         <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           <b>You have {data.drafts.length} unfinished claim{data.drafts.length > 1 ? 's' : ''}.</b> The photos were uploaded but the claim was never sent. Use the Quick claim button to start again, or remove it.

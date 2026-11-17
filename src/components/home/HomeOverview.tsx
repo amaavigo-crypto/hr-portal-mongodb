@@ -87,7 +87,7 @@ export const taskRows = (widgets: DashboardWidget[]): TaskRow[] => {
   const rows: TaskRow[] = [];
   const d = (id: string) => widgets.find((w) => w.id === id);
   const num = (n: any) => (typeof n === 'number' ? n : 0);
-  const a = d('approvals'); if (a && num((a.data as any).leave) > 0) rows.push({ key: 'ap', count: num((a.data as any).leave), text: `Review leave requests (${(a.data as any).leave})`, target: a.target, Icon: CalendarCheck });
+  const a = d('approvals'); if (a && num((a.data as any).leave) > 0) rows.push({ key: 'ap', count: num((a.data as any).leave), text: `Review leave requests (${(a.data as any).leave})${num((a.data as any).overdue) > 0 ? `, ${(a.data as any).overdue} waiting too long` : ''}`, target: a.target, Icon: CalendarCheck });
   const rq = d('review-queue'); if (rq && num((rq.data as any).count) > 0) rows.push({ key: 'rq', count: num((rq.data as any).count), text: `Review documents (${(rq.data as any).count})`, target: rq.target, Icon: FileText });
   const mr = d('my-revisions'); if (mr && num((mr.data as any).count) > 0) rows.push({ key: 'mr', count: num((mr.data as any).count), text: `Fix documents sent back (${(mr.data as any).count})`, target: mr.target, Icon: FileText });
   const rr = d('rereview-due'); if (rr && num((rr.data as any).count) > 0) rows.push({ key: 'rr', count: num((rr.data as any).count), text: `Documents due for re-review (${(rr.data as any).count})`, target: rr.target, Icon: FileText });

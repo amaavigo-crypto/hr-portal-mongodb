@@ -1868,7 +1868,9 @@ export async function runLeaveCron(): Promise<Result> {
       out.push({ companyId: cid, error: err?.message || String(err) });
     }
   }
-  return ok({ today, companies: out });
+  // Policy, claim and review reminders go out in the same daily call (one email per person).
+  const reminders = await (await import('./reminderApi.js')).runAllReminders(today).catch((e: any) => ({ error: String(e?.message || e) }));
+  return ok({ today, companies: out, reminders });
 }
 
 // ------------------------------------------------------------------ router
