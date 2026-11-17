@@ -20,6 +20,11 @@ const isTestPage = new URLSearchParams(window.location.search).has('test');
 // A landing page arrives pre-rendered for search engines and stays hidden; React takes over from here.
 document.getElementById('root')!.removeAttribute('data-ssr');
 
+// Installable app: the service worker keeps the app opening when there is no signal. Production only, so development is never stuck on old files.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => undefined); });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {isCandidateUpload ? <CandidateUploadPage /> : isOfferPage ? <OfferResponsePage /> : isScreenPage ? <ScreeningLinkPage /> : isTestPage ? <SkillTestPage /> : <App />}

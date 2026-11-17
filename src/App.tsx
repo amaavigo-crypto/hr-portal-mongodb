@@ -17,6 +17,7 @@ import { ApproverHeader } from './components/ApproverHeader';
 import { HomePage } from './components/home/HomePage';
 import { leaveNav } from './components/leave/leaveNav';
 import { payrollNav } from './components/payroll/payrollNav';
+import { QuickClaimLauncher } from './components/payroll/QuickClaimLauncher';
 import { peopleNav } from './components/lifecycle/peopleNav';
 import type { WidgetTarget } from '../shared/dashboard';
 import { hasAnyPerm } from '../shared/permissions';
@@ -1037,6 +1038,7 @@ export default function App() {
         isOpen={isNotifDrawerOpen}
         onClose={() => setIsNotifDrawerOpen(false)}
       />
+      {session.kind === 'ready' && currentUser && <QuickClaimLauncher />}
     </>
   );
 }
