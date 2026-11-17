@@ -18,7 +18,7 @@ const loadCats = (): string[] => { try { return JSON.parse(localStorage.getItem(
 const bigBtn = 'w-full flex items-center gap-3 rounded-2xl px-4 py-4 text-left font-bold text-base active:scale-[0.99] transition';
 const fieldCls = 'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#6d4cf0]';
 
-export const QuickClaim: React.FC<{ onClose: () => void; onSent?: () => void }> = ({ onClose, onSent }) => {
+export const QuickClaim: React.FC<{ onClose: () => void; onSent?: () => void; inApp?: boolean; onViewClaims?: () => void }> = ({ onClose, onSent, inApp, onViewClaims }) => {
   const [step, setStep] = useState<Step>('photos');
   const [shots, setShots] = useState<Shot[]>([]);
   const [cats, setCats] = useState<string[]>(loadCats());
@@ -194,10 +194,11 @@ export const QuickClaim: React.FC<{ onClose: () => void; onSent?: () => void }> 
           <div className="text-center space-y-4 pt-8">
             {offlineSaved ? <WifiOff className="w-16 h-16 mx-auto text-amber-500" /> : <CheckCircle2 className="w-16 h-16 mx-auto text-emerald-500" />}
             <h2 className="text-2xl font-extrabold text-slate-900">{offlineSaved ? 'Saved on your phone' : 'Sent for approval'}</h2>
-            <p className="text-slate-600">{offlineSaved ? 'You have no signal right now. Your claim and photos are safe on this phone. It will send by itself when you are back online.' : 'Your manager will look at it. You can follow it under Payroll, Claims.'}</p>
+            <p className="text-slate-600">{offlineSaved ? 'You have no signal right now. Your claim and photos are safe on this phone. It will send by itself when you are back online.' : (inApp ? 'Your manager will look at it. You can follow it under My claims.' : 'Your manager will look at it. You can follow it under Payroll, Claims.')}</p>
             {offlineSaved && <button onClick={sendNow} disabled={busy} className={`${bigBtn} justify-center bg-[#6d4cf0] text-white`}>{busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}Send now</button>}
             {error && <p className="text-sm text-amber-800 bg-amber-50 rounded-xl px-3 py-2">{error}</p>}
-            <button onClick={onClose} className="w-full py-3 font-bold text-[#6d4cf0]">Close</button>
+            {inApp && onViewClaims && <button onClick={onViewClaims} className="w-full py-3 font-bold text-[#6d4cf0]">See my claims</button>}
+            <button onClick={onClose} className="w-full py-3 font-bold text-[#6d4cf0]">{inApp ? 'Done' : 'Close'}</button>
           </div>
         )}
       </div>

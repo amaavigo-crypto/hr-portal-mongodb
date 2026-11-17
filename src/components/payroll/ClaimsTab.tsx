@@ -68,7 +68,7 @@ async function openBill(id: string, fileId?: string) {
 }
 
 /** Small picture of a claim photo, fetched when it appears. */
-const Thumb: React.FC<{ claimId: string; fileId: string }> = ({ claimId, fileId }) => {
+export const Thumb: React.FC<{ claimId: string; fileId: string }> = ({ claimId, fileId }) => {
   const [src, setSrc] = useState('');
   useEffect(() => { let on = true; payrollService.claimFile(claimId, fileId).then((b: any) => { if (on) setSrc(`data:${b.type};base64,${b.data}`); }).catch(() => undefined); return () => { on = false; }; }, [claimId, fileId]);
   return src ? <img src={src} alt="" className="h-24 w-full object-cover" /> : <div className="h-24 animate-pulse bg-slate-100" />;
