@@ -1,19 +1,49 @@
 {
+  "id": "/?app=claims",
   "name": "Amaavigo HR",
   "short_name": "Amaavigo",
   "description": "HR, leave, payroll and quick expense claims.",
-  "start_url": "/",
+  "start_url": "/?app=claims",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#141418",
   "theme_color": "#FA7014",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Quick claim", "short_name": "Quick claim", "description": "Photograph a bill and send a claim", "url": "/?quick=claim", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Quick claim",
+      "short_name": "Quick claim",
+      "description": "Photograph a bill and send a claim",
+      "url": "/?app=claims",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "lang": "en",
+  "categories": [
+    "business",
+    "productivity"
   ]
 }

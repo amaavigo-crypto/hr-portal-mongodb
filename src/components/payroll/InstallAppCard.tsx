@@ -36,7 +36,7 @@ export const InstallAppCard: React.FC<{ onSent?: () => void }> = ({ onSent }) =>
           <p className="w-full rounded-lg bg-white px-3 py-2 text-sm text-slate-700">
             {isIos
               ? <>On iPhone: tap <Share className="-mt-1 inline h-4 w-4" /> Share at the bottom of Safari, then choose <b>Add to Home Screen</b>.</>
-              : <>Open your browser menu (the three dots) and choose <b>Install app</b> or <b>Add to Home screen</b>.</>}
+              : <>Open the Chrome menu (the three dots) and choose <b>Install app</b>. If you only see <b>Add to Home screen</b>, first delete any old Amaavigo icon from your home screen, then in Chrome go to the three dots, Settings, Site settings, and clear this site's data, then open this page again.</>}
           </p>
         )}
       </div>
