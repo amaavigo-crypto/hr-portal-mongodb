@@ -241,6 +241,19 @@ All of this is built inside the existing functions (still 9 of 12 on Vercel). Hi
 Environment variables: `OPENAI_API_KEY`, `OPENAI_HIRING_MODEL` (optional, default gpt-4o-mini), `AI_MONTHLY_CALLS` (optional limit per company), `APP_BASE_URL` (the public address used in emailed links), `CRON_SECRET`, and optionally `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `MS_ORGANIZER_UPN`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`.
 Existing roles need the permissions `hrbp.manage`, `hrbp.view` and `hiring.budget.manage` granted where HR and the founder should use these screens.
 
+## Wellbeing games (Phase 1)
+
+Short games for a break (3 to 8 minutes) that also give HR a skill picture for team planning. Sidebar: **Wellbeing**.
+
+- **Games:** Fruit Catch (reaction speed, impulse control), Echo Beats (working memory), Fraud Hunter (attention to detail: find the invoice line that does not add up).
+- **Players see only** points, streaks and personal bests. Skill numbers are never sent to the player. A consent screen explains what is measured, who sees it and what it is for; people can opt out (they can still play, nothing is saved) and delete their game data.
+- **Server scoring:** the server issues a seed, the browser plays, and the server replays the seed against the submitted taps and works out points and skills itself (`shared/wellbeingEngine.ts`). Nothing the browser claims about its score is trusted.
+- **HR views:** team overview by department (shown only for groups of 5 or more players; an average needs 5 people with 5 plays each), role skills (which skills matter per job title, with sensible defaults HR can edit), people (one person at a time, needs `wellbeing.view_individual`, shows only role-relevant skills, only after 5 plays, every open is written to the access log) and settings (games on, daily limit). Nobody is ranked.
+- **Permissions:** `wellbeing.view`, `wellbeing.view_individual`, `wellbeing.manage`. New companies get view and manage on the Head HR template. **Existing companies must grant these** to their HR roles in Administration.
+- **Collections (server only, locked in `firestore.rules`):** `wbConsent`, `wbSessions`, `wbDaily`, `wbRoleProfiles`, `wbSettings`, `wbAudit`.
+- **API:** `/api/leave/wellbeing-<action>` (served by the existing leave function, so no new Vercel function). Code: `api/_lib/wellbeingApi.ts`. Tests: `npx tsx tests/wellbeing.test.ts`.
+- Intended use is development and team planning, not pay, promotion or discipline. A game is a snapshot of one moment, so treat numbers as a conversation starter.
+
 ## Known limits
 
 - Talent Acquisition, onboarding and AI candidate evaluation are per company. Companies other than

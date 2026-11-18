@@ -69,6 +69,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: 'announce.manage', label: 'Post announcements and the leadership message on Home', group: 'Home' },
   { key: 'home.manage', label: 'Set up Home: quick links and which cards show', group: 'Home' },
 
+  // Wellbeing games (everyone can play; these are for the people who read the results)
+  { key: 'wellbeing.view', label: 'View Wellbeing results for groups of 5 or more people (never one person)', group: 'Wellbeing' },
+  { key: 'wellbeing.view_individual', label: 'Open one person\'s Wellbeing skill picture (every open is written to an audit log)', group: 'Wellbeing' },
+  { key: 'wellbeing.manage', label: 'Set up Wellbeing: which games are on, the daily limit and the skills that matter for each role', group: 'Wellbeing' },
+
   // Administration
   { key: 'users.manage', label: 'Add, edit and deactivate users', group: 'Administration' },
   { key: 'departments.manage', label: 'Manage departments', group: 'Administration' },
@@ -130,6 +135,7 @@ export const DEFAULT_ROLE_TEMPLATES: RoleTemplate[] = [
       'users.manage', 'departments.manage', 'doc.acknowledge', 'doc.suggest',
       'leave.manage', 'leave.report', 'lifecycle.manage', 'announce.manage', 'home.manage',
       'hiring.budget.manage', 'hrbp.manage', 'hrbp.view', 'pm.manage', 'pm.approve', 'pm.view', 'task.manage',
+      'wellbeing.view', 'wellbeing.manage',
     ],
   },
   {

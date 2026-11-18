@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Contact,
   Workflow,
+  Gamepad2,
   Search,
   Bell,
 } from 'lucide-react';
@@ -45,6 +46,7 @@ import { ModuleSubNav } from './moduleNav';
 import { payrollNav } from './payroll/payrollNav';
 import { peopleNav } from './lifecycle/peopleNav';
 import { hrbpNav } from './hrbp/hrbpNav';
+import { wellbeingNav } from './wellbeing/wellbeingNav';
 import { pmNav } from './pm/pmNav';
 import { taskNav } from './tasks/taskNav';
 import { flowNav } from './hiringflow/flowNav';
@@ -73,6 +75,7 @@ export type HRAgentModule =
   | 'performance'
   | 'tasks'
   | 'hiring-automation'
+  | 'wellbeing'
   | 'leave-management'
   | 'payroll'
   | 'people'
@@ -135,6 +138,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   const [isPmExpanded, setIsPmExpanded] = useState<boolean>(true);
   const [isTaskExpanded, setIsTaskExpanded] = useState<boolean>(true);
   const [isFlowExpanded, setIsFlowExpanded] = useState<boolean>(true);
+  const [isWellbeingExpanded, setIsWellbeingExpanded] = useState<boolean>(true);
   // Counts of what is waiting for this person, shown on the module titles and their sections.
   const badges = useNavBadges();
 
@@ -144,7 +148,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   // Auto-redirect if currently selected module is not permitted
   useEffect(() => {
     if (activeModule === 'home' || activeModule === 'policies') return;
-    if (activeModule === 'administration' || activeModule === 'leave-management' || activeModule === 'payroll' || activeModule === 'people' || activeModule === 'employee' || activeModule === 'my-hiring' || activeModule === 'hrbp' || activeModule === 'performance' || activeModule === 'tasks' || activeModule === 'hiring-automation') return;
+    if (activeModule === 'administration' || activeModule === 'leave-management' || activeModule === 'payroll' || activeModule === 'people' || activeModule === 'employee' || activeModule === 'my-hiring' || activeModule === 'hrbp' || activeModule === 'performance' || activeModule === 'tasks' || activeModule === 'hiring-automation' || activeModule === 'wellbeing') return;
     if (activeModule === 'document-version-control' && !hasDocGovAccess && hasTalentAccess) {
       onSelectModule('talent-acquisition-overview');
     } else if (
@@ -175,6 +179,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     { id: 'performance', label: 'Performance', show: true },
     { id: 'tasks', label: 'Tasks', show: true },
     { id: 'hiring-automation', label: 'Hiring Automation', show: true },
+    { id: 'wellbeing', label: 'Wellbeing', show: true },
     { id: 'people', label: 'People', show: true },
     { id: 'employee', label: 'Employee', show: true },
     { id: 'administration', label: 'Administration', show: hasAdminAccess },
@@ -190,6 +195,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   const taskState = taskNav.useNav();
   const flowState = flowNav.useNav();
   const hrbpState = hrbpNav.useNav();
+  const wellbeingState = wellbeingNav.useNav();
   const employeeState = employeeNav.useNav();
   const labelOf = (nav: { resolve: (s: string, i: any[]) => string }, st: { section: string; items: { key: string; label: string }[] }) => {
     if (!st.items.length) return '';
@@ -220,6 +226,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     else if (activeModule === 'tasks') page = labelOf(taskNav, taskState);
     else if (activeModule === 'hiring-automation') page = labelOf(flowNav, flowState);
     else if (activeModule === 'hrbp') page = labelOf(hrbpNav, hrbpState);
+    else if (activeModule === 'wellbeing') page = labelOf(wellbeingNav, wellbeingState);
     else if (activeModule === 'employee') page = labelOf(employeeNav, employeeState);
     return { section: pageTitle, page };
   })();
@@ -813,6 +820,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   { key: 'performance' as const, title: 'Performance', sub: 'Targets, reviews, check-ins & growth', Icon: Check, show: true },
                   { key: 'tasks' as const, title: 'Tasks', sub: 'My tasks, boards & dashboards', Icon: ListChecks, show: true },
                   { key: 'hiring-automation' as const, title: 'Hiring Automation', sub: 'Your hiring steps, applicants & tasks', Icon: Workflow, show: true },
+                  { key: 'wellbeing' as const, title: 'Wellbeing', sub: 'Short games for a break', Icon: Gamepad2, show: true },
                 ]).filter((m) => m.show).map((m) => (
                   <React.Fragment key={m.key}>
                   <div className="relative">
@@ -825,9 +833,10 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                       if (m.key === 'performance') setIsPmExpanded(true);
                       if (m.key === 'tasks') setIsTaskExpanded(true);
                       if (m.key === 'hiring-automation') setIsFlowExpanded(true);
+                      if (m.key === 'wellbeing') setIsWellbeingExpanded(true);
                       setIsMobileSidebarOpen(false);
                     }}
-                    className={`w-full ${activeModule === m.key ? (m.key === 'hrbp' || m.key === 'performance' || m.key === 'tasks' || m.key === 'hiring-automation' ? 'pl-3 pr-10' : 'pl-3 pr-3') : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                    className={`w-full ${activeModule === m.key ? (m.key === 'hrbp' || m.key === 'performance' || m.key === 'tasks' || m.key === 'hiring-automation' || m.key === 'wellbeing' ? 'pl-3 pr-10' : 'pl-3 pr-3') : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
                       activeModule === m.key ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30' : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
                     }`}
                   >
@@ -897,6 +906,20 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                       {isFlowExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                   )}
+                  {m.key === 'wellbeing' && activeModule !== 'wellbeing' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  {m.key === 'wellbeing' && activeModule === 'wellbeing' && (
+                    <button
+                      id="nav-module-wellbeing-toggle"
+                      type="button"
+                      onClick={() => setIsWellbeingExpanded((v) => !v)}
+                      aria-expanded={isWellbeingExpanded}
+                      aria-label={isWellbeingExpanded ? 'Hide Wellbeing sections' : 'Show Wellbeing sections'}
+                      title={isWellbeingExpanded ? 'Hide sections' : 'Show sections'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                    >
+                      {isWellbeingExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
                   </div>
                   {m.key === 'performance' && activeModule === 'performance' && isPmExpanded && (
                     <ModuleSubNav nav={pmNav} label="Performance sections" variant="sidebar" idPrefix="nav-submodule-performance" onNavigate={() => setIsMobileSidebarOpen(false)} />
@@ -909,6 +932,9 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   )}
                   {m.key === 'hrbp' && activeModule === 'hrbp' && isHrbpExpanded && (
                     <ModuleSubNav nav={hrbpNav} label="HR Business Partner sections" variant="sidebar" idPrefix="nav-submodule-hrbp" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                  )}
+                  {m.key === 'wellbeing' && activeModule === 'wellbeing' && isWellbeingExpanded && (
+                    <ModuleSubNav nav={wellbeingNav} label="Wellbeing sections" variant="sidebar" idPrefix="nav-submodule-wellbeing" onNavigate={() => setIsMobileSidebarOpen(false)} />
                   )}
                   </React.Fragment>
                 ))}

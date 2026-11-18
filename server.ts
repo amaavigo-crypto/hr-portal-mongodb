@@ -18,6 +18,7 @@ import { routePayroll } from './api/_lib/payrollApi';
 import { routeLifecycle } from './api/_lib/lifecycleApi';
 import { routeDashboard } from './api/_lib/dashboardApi';
 import { routeHome } from './api/_lib/homeApi';
+import { routeWellbeing } from './api/_lib/wellbeingApi';
 import { UserRole } from './src/types';
 import { routeOnboarding } from './api/_lib/onboarding';
 import { routeTenant } from './api/_lib/tenantAdmin';
@@ -197,6 +198,13 @@ async function startServer() {
       if (req.params.action.startsWith('home-')) {
         const out = await routeHome({
           method: req.method, action: req.params.action.slice('home-'.length), query: req.query as Record<string, any>,
+          body: req.body, headers: req.headers as Record<string, any>,
+        });
+        return res.status(out.status).json(out.json);
+      }
+      if (req.params.action.startsWith('wellbeing-')) {
+        const out = await routeWellbeing({
+          method: req.method, action: req.params.action.slice('wellbeing-'.length), query: req.query as Record<string, any>,
           body: req.body, headers: req.headers as Record<string, any>,
         });
         return res.status(out.status).json(out.json);

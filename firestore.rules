@@ -529,6 +529,12 @@ service cloud.firestore {
     match /homeSettings/{id} { allow read, write: if false; }
     match /announcements/{id} { allow read, write: if false; }
     match /moodCheckins/{id} { allow read, write: if false; }
+    match /wbConsent/{id} { allow read, write: if false; }
+    match /wbSessions/{id} { allow read, write: if false; }
+    match /wbDaily/{id} { allow read, write: if false; }
+    match /wbRoleProfiles/{id} { allow read, write: if false; }
+    match /wbSettings/{id} { allow read, write: if false; }
+    match /wbAudit/{id} { allow read, write: if false; }
     match /loginDaily/{id} { allow read, write: if false; }
     match /personalDates/{id} { allow read, write: if false; }
     match /profilePhotos/{id} { allow read, write: if false; }

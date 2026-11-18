@@ -3,6 +3,7 @@ import { routePayroll } from '../_lib/payrollApi.js';
 import { routeLifecycle } from '../_lib/lifecycleApi.js';
 import { routeDashboard } from '../_lib/dashboardApi.js';
 import { routeHome } from '../_lib/homeApi.js';
+import { routeWellbeing } from '../_lib/wellbeingApi.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,6 +32,13 @@ export default async function handler(req: any, res: any) {
     if (action.startsWith('dashboard-')) {
       const { status, json } = await routeDashboard({
         method: req.method, action: action.slice('dashboard-'.length), headers: req.headers, ip,
+      });
+      return res.status(status).json(json);
+    }
+    // Wellbeing games share it as well: /api/leave/wellbeing-<action>
+    if (action.startsWith('wellbeing-')) {
+      const { status, json } = await routeWellbeing({
+        method: req.method, action: action.slice('wellbeing-'.length), query: req.query || {}, body: req.body, headers: req.headers,
       });
       return res.status(status).json(json);
     }
