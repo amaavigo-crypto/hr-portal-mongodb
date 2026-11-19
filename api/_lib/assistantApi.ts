@@ -26,6 +26,7 @@ import { companyLabel, loadSettings, notify, personByUid } from './leaveCore.js'
 import { applyQuotes, cleanHistory, rankPassages, unverifiedNumbers, withoutMarkers, type ChatTurn, type Passage, type PolicyDoc } from '../../shared/assistantEngine.js';
 import { plainText } from '../../shared/policyDiff.js';
 import { routePolicyAi } from './policyAiApi.js';
+import { routeHrAgent } from './hrAgentApi.js';
 
 export interface AssistantRequest {
   method: string;
@@ -345,6 +346,8 @@ export async function routeAssistant(r: AssistantRequest): Promise<Result> {
       case 'ask': return POST ? await ask(ctx, cid, r.headers, body) : fail(405, 'Use POST.');
       case 'feedback': return POST ? await feedback(ctx, cid, body) : fail(405, 'Use POST.');
       case 'ask-hr': return POST ? await askHr(ctx, cid, body) : fail(405, 'Use POST.');
+      // HR Agent (HR roles only; hrAgentApi.ts checks the person's permissions)
+      case 'agent-status': case 'agent-chat': case 'agent-history': return await routeHrAgent({ method: r.method, action: r.action, ctx, cid, headers: r.headers, body });
       default: return fail(404, 'Unknown request.');
     }
   } catch (err) {

@@ -21,6 +21,7 @@ const LEGACY_MODEL_ENV: Record<string, string> = {
   jd: 'OPENAI_JD_MODEL',
   leave: 'OPENAI_LEAVE_MODEL',
   assistant: 'OPENAI_ASSISTANT_MODEL',
+  agent: 'OPENAI_AGENT_MODEL',
 };
 
 /** Which model a feature uses. Feature names look like "scoring" or "hiring.resume"; the group is the part before the dot. */
