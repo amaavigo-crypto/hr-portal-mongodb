@@ -12,9 +12,10 @@ export interface NavCounts {
   payroll: { approvals: number };
   people: { tasks: number };
   employee: { acknowledgement: number };
+  flow: { tasks: number };
 }
 
-const EMPTY: NavCounts = { leave: { today: 0, my: 0, approvals: 0 }, payroll: { approvals: 0 }, people: { tasks: 0 }, employee: { acknowledgement: 0 } };
+const EMPTY: NavCounts = { leave: { today: 0, my: 0, approvals: 0 }, payroll: { approvals: 0 }, people: { tasks: 0 }, employee: { acknowledgement: 0 }, flow: { tasks: 0 } };
 // Background polling is paused (0 = off). Badges still refresh on first load, when the tab comes back into view, and after any save.
 // To turn polling back on, set this to 60_000.
 const POLL_MS = 0;
@@ -38,6 +39,7 @@ export async function refreshNavBadges(fresh = false): Promise<void> {
       payroll: { approvals: n(b.payroll?.approvals) },
       people: { tasks: n(b.people?.tasks) },
       employee: { acknowledgement: n(b.employee?.acknowledgement) },
+      flow: { tasks: n(b.flow?.tasks) },
     };
     if (JSON.stringify(next) !== JSON.stringify(state)) { state = next; emit(); }
   } catch {

@@ -606,7 +606,7 @@ export default function App() {
         >
           {hrAgentModule === 'home' && (
             <div className="flex-1 min-w-0 overflow-y-auto">
-              <HomePage fallbackName={currentUser.name} onOpen={openDashboardTarget} />
+              <HomePage fallbackName={currentUser.name} perms={currentUser.perms || []} isAdmin={!!currentUser.isCompanyAdmin} onOpen={openDashboardTarget} />
             </div>
           )}
 

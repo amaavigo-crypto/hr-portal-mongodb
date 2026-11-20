@@ -163,6 +163,23 @@ export const DEFAULT_ROLE_TEMPLATES: RoleTemplate[] = [
     ],
   },
   {
+    slug: 'recruiter',
+    name: 'Recruiter',
+    description: 'Runs hiring day to day: job descriptions, applications, candidate evaluation and joining. HR still decides requisitions.',
+    portal: 'EMPLOYEE',
+    permissions: [
+      'req.create', 'req.view_all', 'req.manage_jd', 'talent.view', 'candidate.evaluate', 'onboarding.manage', 'app.manage',
+      'doc.acknowledge', 'doc.suggest',
+    ],
+  },
+  {
+    slug: 'payroll-officer',
+    name: 'Payroll / Finance',
+    description: 'Runs payroll and sees everyone\'s salary. Give this to the person who processes pay, not to everyone in HR.',
+    portal: 'EMPLOYEE',
+    permissions: ['payroll.manage', 'payroll.view', 'leave.report', 'doc.acknowledge', 'doc.suggest'],
+  },
+  {
     slug: 'department-head',
     name: 'Department Head',
     description: 'Can raise hiring requisitions for their team.',

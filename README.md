@@ -91,6 +91,16 @@ Platform administrators control every text on the public landing site from **Pla
 - **Sign-in and offer links:** `/?offer=`, `/?screen=` and `/?test=` are never pre-rendered.
 - Tests: `npx tsx tests/landing.content.test.ts`.
 
+## Role-based Home, menu and roles
+
+- **Punch bar**: everyone with attendance set up gets a bar pinned to the top of Home showing where they stand today, with one button to punch in or out (`src/components/home/PunchBar.tsx`). The Online attendance card further down keeps remarks and the punch history.
+- **Five kinds of Home** (Employee, Manager, HR, Founder, Admin): `shared/homeRole.ts` decides the card order and the Quick Actions from the person's permissions and whether they manage people. It only orders and shortcuts; every card still asks the server what the person may see. Strongest wins: Admin, then HR (any of `leave.manage`, `lifecycle.manage`, `req.hr_decide`, `app.manage`, `onboarding.manage`), then Founder (`req.founder_decide`, `pm.approve`), then Manager (has an approvals widget), then Employee.
+- **Menu**: the sidebar has a "My work" group for everyone and a "Manage" group (hiring, policies, hiring flows, administration) that only appears when the person can open something in it. Hiring Automation shows for people who run hiring or who own an open step in a hiring flow (`flow.tasks` in `/api/leave/badges`).
+- **Leave & Attendance**: Regularization, Attendance application and Attendance reports are tabs inside Attendance. Their old section keys still work and open the right tab.
+- **People** opens on My tasks the first time in a session when the person has open joining or exit tasks.
+- **Roles**: new templates Recruiter and Payroll / Finance. Administration > Roles & permissions shows "Suggestions for your roles" (`shared/roleHealth.ts`): recommended roles the company lacks and permissions added to a default role's template after the company was set up. Nothing changes until someone presses a button.
+- Tests: `npx tsx tests/home.role.test.ts`, `tests/role.health.test.ts`, `tests/leave.nav.test.ts`.
+
 ## Home page
 
 Everyone lands on Home after signing in. It shows a profile card (reporting and approving manager, or the manager covering today), a mood check-in, a leave calendar, online attendance (punch in/out with remarks), quick links and reports, employees on leave, birthdays and anniversaries, important files, CEO speak, announcements, acknowledgements and (for people who manage users) a web/mobile login chart. The old "needs your attention" widgets stay on top.

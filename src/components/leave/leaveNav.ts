@@ -40,9 +40,19 @@ export const leaveNav = {
 
 export const useLeaveNav = () => useSyncExternalStore(leaveNav.subscribe, leaveNav.getState, leaveNav.getState);
 
+/**
+ * Regularization, Attendance application and Attendance reports used to be menu items of their own. They are tabs inside
+ * "Attendance" now; these old keys still work (saved in the browser, links from Home, "New Regularization") and open that tab.
+ */
+export type AttendanceSubTab = 'month' | 'regularization' | 'application' | 'reports';
+const TAB_ALIASES: Partial<Record<LeaveSection, AttendanceSubTab>> = { regularization: 'regularization', application: 'application', reports: 'reports' };
+export const attendanceTabFor = (section: LeaveSection): AttendanceSubTab | null => TAB_ALIASES[section] ?? null;
+
 /** The section to show: the chosen one if this person may see it, otherwise the first they may see. */
-export const resolveSection = (section: LeaveSection, items: LeaveNavItem[]): LeaveSection =>
-  items.some((i) => i.key === section) ? section : (items[0]?.key ?? 'manage');
+export const resolveSection = (section: LeaveSection, items: LeaveNavItem[]): LeaveSection => {
+  const key: LeaveSection = TAB_ALIASES[section] ? 'attendance' : section;
+  return items.some((i) => i.key === key) ? key : (items[0]?.key ?? 'manage');
+};
 
 /** Which sections this person gets. `me` is the response of GET /api/leave/me. */
 export function leaveNavItems(me: any | null): LeaveNavItem[] {
@@ -54,9 +64,6 @@ export function leaveNavItems(me: any | null): LeaveNavItem[] {
     { key: 'today', label: 'Today', show: ok },
     { key: 'my', label: 'My leave', show: ok },
     { key: 'attendance', label: 'Attendance', show: ok },
-    { key: 'regularization', label: 'Regularization', show: ok },
-    { key: 'application', label: 'Attendance application', show: ok },
-    { key: 'reports', label: 'Attendance reports', show: ok },
     { key: 'team', label: 'Team calendar', show: ok },
     { key: 'approvals', label: 'Approvals', badge: me.approvals || undefined, show: canApprove },
     { key: 'manage', label: 'Manage', show: canAdmin },

@@ -3,6 +3,7 @@ import {
   AlertCircle, Building2, CalendarDays, CheckCircle2, Copy, Loader2, Mail, Pencil, Plus, ShieldCheck, Trash2, Upload, UserPlus, Users, X,
 } from 'lucide-react';
 import type { Company, Department, User } from '../types';
+import { roleHealth, type RoleFinding } from '../../shared/roleHealth';
 import { adminApi, parseCsv, subscribeToDepartments, subscribeToRoles } from '../services/adminService';
 import { pipelineService } from '../services/pipelineService';
 import { firestoreService } from '../services/firestoreService';
@@ -668,6 +669,7 @@ const RolesTab: React.FC<{ roles: RoleDef[]; users: User[]; company: Company; cu
         <button className={primaryBtn} onClick={() => setEditing('new')}><Plus className="h-3.5 w-3.5" /> New role</button>
       </div>
       {flash && <Banner kind={flash.kind}>{flash.text}</Banner>}
+      <RoleHealthPanel roles={roles} company={company} currentUser={currentUser} onDone={(kind, text) => setFlash({ kind, text })} />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {roles.map((r) => (
           <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -702,6 +704,63 @@ const RolesTab: React.FC<{ roles: RoleDef[]; users: User[]; company: Company; cu
         />
       )}
     </div>
+  );
+};
+
+/** Suggestions for tidying roles (see shared/roleHealth.ts). Nothing changes until the person presses a button. */
+const RoleHealthPanel: React.FC<{ roles: RoleDef[]; company: Company; currentUser: User; onDone: (kind: 'error' | 'success', text: string) => void }> = ({ roles, company, currentUser, onDone }) => {
+  const findings = useMemo(() => roleHealth(roles, company.modules || []), [roles, company.modules]);
+  const [busy, setBusy] = useState('');
+  if (findings.length === 0) return null;
+  const label = (key: string) => PERMISSIONS.find((p) => p.key === key)?.label || key;
+  // A person can only give permissions they hold themselves (the server checks this too), so hide buttons they could not use.
+  const canGive = (perms: string[]) => !!currentUser.isCompanyAdmin || perms.every((p) => (currentUser.perms || []).includes(p));
+
+  const apply = async (f: RoleFinding) => {
+    const id = f.kind === 'MISSING_ROLE' ? f.template.slug : f.role.id;
+    setBusy(id);
+    try {
+      if (f.kind === 'MISSING_ROLE') {
+        await adminApi.saveRole({ name: f.template.name, description: f.template.description, permissions: f.template.permissions, portal: f.template.portal });
+        onDone('success', `${f.template.name} role added. Give it to people under Users.`);
+      } else {
+        await adminApi.saveRole({ roleId: f.role.id, name: f.role.name, description: f.role.description, permissions: Array.from(new Set([...f.role.permissions, ...f.missing])), portal: f.role.portal });
+        onDone('success', `${f.role.name} updated. People with this role get the change next time they sign in or refresh.`);
+      }
+    } catch (e) {
+      onDone('error', message(e));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  return (
+    <section aria-label="Role suggestions" className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <h3 className="text-sm font-black text-slate-900">Suggestions for your roles</h3>
+      <p className="mt-0.5 text-xs text-slate-600">Recommended roles and permissions added to the product after your company was set up. Nothing changes until you press a button; skip anything you left out on purpose.</p>
+      <ul className="mt-3 space-y-2">
+        {findings.map((f) => {
+          const id = f.kind === 'MISSING_ROLE' ? f.template.slug : f.role.id;
+          const perms = f.kind === 'MISSING_ROLE' ? f.template.permissions : f.missing;
+          return (
+            <li key={`${f.kind}-${id}`} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2.5">
+              <div className="min-w-0 flex-1 text-xs text-slate-700">
+                {f.kind === 'MISSING_ROLE' ? (
+                  <><b className="text-slate-900">Add the {f.template.name} role.</b> {f.template.description}</>
+                ) : (
+                  <><b className="text-slate-900">{f.role.name}</b> does not have {f.missing.length} recommended permission{f.missing.length === 1 ? '' : 's'}: <span className="text-slate-500">{f.missing.map(label).join('; ')}.</span></>
+                )}
+              </div>
+              {canGive(perms) && (
+                <button type="button" className={ghostBtn} disabled={busy === id} onClick={() => void apply(f)}>
+                  {busy === id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : f.kind === 'MISSING_ROLE' ? 'Add role' : 'Add these'}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 };
 
