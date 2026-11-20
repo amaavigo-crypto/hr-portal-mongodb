@@ -41,7 +41,7 @@ If `HR_EMBEDDING_DIMENSIONS` changes, the Atlas index dimensions must match and 
 ## Behaviour and safeguards
 
 - Existing upload, storage and document-publishing flows are not replaced.
-- The ingestion path reads the published version's existing `rawContent`; it does not re-upload files or require GridFS.
+- The ingestion path uses existing published-version content and file data URLs. It extracts text from PDF and DOCX uploads and indexes existing TXT/Markdown/plain-text content; it does not re-upload files or require GridFS.
 - Chunks are keyed by company, version, content hash and chunk number, making repeated indexing idempotent.
 - Only published versions returned by the employee's existing Home `files` permission check are indexed for retrieval.
 - Vector queries filter by `companyId` and `active`, then the assistant applies a second allow-list of version IDs the signed-in employee is allowed to open.
@@ -59,4 +59,4 @@ If `HR_EMBEDDING_DIMENSIONS` changes, the Atlas index dimensions must match and 
 6. Confirm `hrDocumentChunks` contains records with the correct `companyId`, `versionId`, `active: true`, and a 768-number `embedding` array.
 7. Sign in as a user from another company or without access to that policy and confirm the passage is not returned.
 
-Scanned PDFs with no extractable text still require OCR before ingestion; this implementation indexes the text already saved on the published version.
+Scanned PDFs with no extractable text still require OCR before ingestion. PDF/DOCX extraction requires the stored file data URL to be available on the published version; TXT/Markdown uses its saved text content.
