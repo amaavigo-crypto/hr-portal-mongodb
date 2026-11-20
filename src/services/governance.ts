@@ -1645,9 +1645,13 @@ export class DocumentGovernanceEngine {
     // 3a. Index the newly published version immediately for Ask HR.
     // Indexing failure must not roll back publication; Ask HR retries lazily on the next policy question.
     try {
+      const publishTraceId = `publish-${version.id}`;
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: publishTraceId, event: 'document.publish.indexing.start', status: 'START', documentId: master.documentId, versionId: version.id, versionNumber: version.versionNumber }));
       const indexing = await apiJson<{ indexed: number; skipped: boolean }>('/api/assistant/index-published', { versionId: version.id });
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: publishTraceId, event: 'document.publish.indexing.complete', status: 'SUCCESS', indexedChunks: indexing.indexed || 0, skipped: indexing.skipped }));
       console.info(`[Governance] Ask HR indexed ${indexing.indexed || 0} chunks for ${master.documentId} v${version.versionNumber}.`);
     } catch (indexError: any) {
+      console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: `publish-${version.id}`, event: 'document.publish.indexing', status: 'ERROR', error: indexError instanceof Error ? indexError.message : String(indexError) }));
       console.warn('[Governance] Immediate Ask HR indexing failed; Ask HR will retry on the next policy question:', indexError?.message || indexError);
     }
 
