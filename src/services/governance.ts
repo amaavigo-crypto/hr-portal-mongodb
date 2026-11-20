@@ -27,6 +27,7 @@ import { uploadMediaToServer } from './mediaStorage';
 import { normalizeAuthorizedModules, getAuthorizationLabel, ModuleAuthorizationCode } from '../utils/authorization';
 import { appendApprovedHeaderAndFooter, formatDDMMYYYY, calculateDynamicReReviewDate, parseAnyDate, stripPolicyMetadataHeader, extractCleanBody } from '../utils/documentHeaderFooter';
 import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter, cleanDocxDataUrl, HeaderFooterMetadata } from '../utils/documentStamper';
+import { apiJson } from './apiClient';
 
 // Helper to verify if an employee belongs to a specific department or audience
 export function isEmployeeInDepartment(
@@ -1618,6 +1619,15 @@ export class DocumentGovernanceEngine {
       }
     } catch (e) {
       console.warn('Firestore cloud sync error:', e);
+    }
+
+    // 3a. Index the newly published version immediately for Ask HR.
+    // Indexing failure must not roll back publication; Ask HR retries lazily on the next policy question.
+    try {
+      const indexing = await apiJson<{ indexed: number; skipped: boolean }>('/api/assistant/index-published', { versionId: version.id });
+      console.info(`[Governance] Ask HR indexed ${indexing.indexed || 0} chunks for ${master.documentId} v${version.versionNumber}.`);
+    } catch (indexError: any) {
+      console.warn('[Governance] Immediate Ask HR indexing failed; Ask HR will retry on the next policy question:', indexError?.message || indexError);
     }
 
     // 4. Create Publication Record
