@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { __useFakeAdmin } from '../api/_lib/firebaseAdmin.ts';
+import { FakeFirestore } from './fakeFirestore.ts';
+import { handleStorage, MAX_UPLOAD_BYTES } from '../api/_lib/storageApi.ts';
+const fdb = new FakeFirestore();
+__useFakeAdmin({ db: fdb, auth: { verifyIdToken: async (t: string) => JSON.parse(Buffer.from(t, 'base64').toString()) } });
+fdb.seed('companies', 'c1', { status: 'ACTIVE' });
+const auth = { authorization: `Bearer ${Buffer.from(JSON.stringify({ uid: 'u', email: 'u@a.com', cid: 'c1', cs: 'ACTIVE', perms: [] })).toString('base64')}` };
+const mk = () => { const r: any = { code: 0, h: {}, body: null }; r.status = (c: number) => { r.code = c; return r; }; r.json = (b: any) => { r.body = b; return r; }; r.setHeader = (k: string, v: string) => { r.h[k] = v; }; r.end = (b?: any) => { r.sent = b; return r; }; return r; };
+(async () => {
+  let r = mk(); await handleStorage({ method: 'POST', headers: {}, body: { dataUrl: 'data:text/plain;base64,aGk=' }, url: '/api/storage/upload' }, r, '/api/storage/upload');
+  assert.equal(r.code, 401, 'no sign-in, no upload');
+  r = mk(); await handleStorage({ method: 'POST', headers: auth, body: { fileName: 'a b.pdf', mimeType: 'application/pdf', dataUrl: 'data:application/pdf;base64,' + Buffer.from('hello world').toString('base64') }, url: '/api/storage/upload' }, r, '/api/storage/upload');
+  assert.equal(r.code, 201, JSON.stringify(r.body)); assert.equal(r.body.sizeBytes, 11);
+  const link = new URL(r.body.fileUrl, 'http://x');
+  let g = mk(); await handleStorage({ method: 'GET', headers: {}, url: link.pathname }, g, link.pathname); assert.equal(g.code, 403, 'a link without its token is refused');
+  g = mk(); await handleStorage({ method: 'GET', headers: {}, url: r.body.fileUrl }, g, link.pathname);
+  assert.equal(g.code, 200); assert.equal(g.sent.toString(), 'hello world'); assert.equal(g.h['Content-Type'], 'application/pdf');
+  g = mk(); await handleStorage({ method: 'GET', headers: { range: 'bytes=0-4' }, url: r.body.fileUrl }, g, link.pathname);
+  assert.equal(g.code, 206); assert.equal(g.sent.toString(), 'hello');
+  const big = mk(); await handleStorage({ method: 'POST', headers: auth, body: { dataUrl: 'data:video/mp4;base64,' + Buffer.alloc(MAX_UPLOAD_BYTES + 1).toString('base64') }, url: '/api/storage/upload' }, big, '/api/storage/upload');
+  assert.equal(big.code, 413);
+  console.log('upload ok');
+})().catch((e) => { console.error(e); process.exit(1); });
