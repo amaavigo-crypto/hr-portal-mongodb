@@ -1007,7 +1007,7 @@ export class DocumentGovernanceEngine {
       active: true,
     };
 
-    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.storage_write.complete', status: 'SUCCESS', storageKey: storageMeta.storageKey, bytes: storageMeta.sizeBytes }));
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.create.version_ready', status: 'SUCCESS', storageKey: storageMeta.storageKey, bytes: storageMeta.sizeBytes }));
     const newVersion: DocumentVersion = {
       id: versionId,
       documentMasterId: masterId,
