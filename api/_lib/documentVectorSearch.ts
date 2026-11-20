@@ -139,7 +139,12 @@ export async function indexPublishedVersion(version: PublishedVersion): Promise<
   // Activate the complete new version first; then retire the previous version. If retirement fails,
   // the assistant's permission-filtered version allow-list still prevents old chunks from being returned.
   await col.updateMany({ companyId: version.companyId, versionId: version.id, contentHash }, { $set: { active: true, activatedAt: new Date() } });
-  await col.updateMany({ companyId: version.companyId, documentMasterId: masterId, versionId: { $ne: version.id }, active: true }, { $set: { active: false, supersededAt: new Date() } });
+  await col.updateMany({
+    companyId: version.companyId,
+    documentMasterId: masterId,
+    active: true,
+    $or: [{ versionId: { $ne: version.id } }, { contentHash: { $ne: contentHash } }],
+  }, { $set: { active: false, supersededAt: new Date() } });
   return { indexed: rows.length, skipped: false };
 }
 
