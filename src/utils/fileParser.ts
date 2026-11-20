@@ -46,9 +46,9 @@ export async function getBrowserPdfjs() {
 /**
  * Extract clean text and structure from a Word .docx file using JSZip & XML DOM Parser
  */
-export async function extractTextFromDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+export async function extractTextFromDocx(arrayBuffer: ArrayBuffer, traceId = fileTraceId()): Promise<string> {
   const startedAt = Date.now();
-  console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), event: 'docx.xml_extraction.start', status: 'START', bytes: arrayBuffer.byteLength }));
+  fileLog(traceId, 'docx.xml_extraction.start', 'START', { bytes: arrayBuffer.byteLength });
   const zip = new JSZip();
   const loadedZip = await zip.loadAsync(arrayBuffer);
 
@@ -259,7 +259,7 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
       fileLog(traceId, 'docx.array_buffer.read', 'START', { fileName: file.name });
       const arrayBuffer = await file.arrayBuffer();
       fileLog(traceId, 'docx.array_buffer.read', 'SUCCESS', { bytes: arrayBuffer.byteLength });
-      const extractedText = await extractTextFromDocx(arrayBuffer);
+      const extractedText = await extractTextFromDocx(arrayBuffer, traceId);
 
       // Ensure dataUrl has proper docx MIME prefix while keeping original bytes 100% intact
       let docxDataUrl = fileDataUrl;
