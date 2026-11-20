@@ -274,22 +274,32 @@ export function extractResumeFacts(text: string, requiredSkills: string[]): Resu
   return { years: yearsMatches.length ? Math.max(...yearsMatches) : null, email, phone, skillsFound: found, skillsMissing: requiredSkills.filter((s) => !found.includes(s)) };
 }
 
-async function resumeExtract(ctx: AuthContext, b: any): Promise<Result> {
-  const cid = ctx.companyId!;
-  const a = await getApplication(cid, str(b.applicationId, 100));
-  if (!a) return fail(404, 'Candidate not found.');
-  if (!a.resumeUrl) return fail(400, 'This candidate has no resume link.');
+/**
+ * Reads the resume file and keeps its text and facts for scoring. Used by the "read resume" button and by the hiring flow's
+ * scoring step, so both do exactly the same thing. `kept` says an earlier reading is still stored when this one fails.
+ */
+export async function storeResumeRead(cid: string, a: ApplicationDoc): Promise<{ ok: boolean; facts?: ReturnType<typeof extractResumeFacts>; characters?: number; status?: number; error?: string; kept?: boolean }> {
+  if (!a.resumeUrl) return { ok: false, status: 400, error: 'This candidate has no resume link.' };
   const read = await readResume(a.resumeUrl);
   const prior = (await listItems(cid, 'resume')).find((r) => r.applicationId === a.id);
   if (!read.text) {
     // Scanned images / unreadable files: say so plainly instead of scoring on nothing. OCR is a later addition.
-    return fail(422, read.error || 'The resume text could not be read (a scanned image needs OCR, which is not set up yet).', { kept: !!prior });
+    return { ok: false, status: 422, error: read.error || 'The resume text could not be read (a scanned image needs OCR, which is not set up yet).', kept: !!prior };
   }
   const req = await requisitionForApplication(cid, a);
   const facts = extractResumeFacts(read.text, skillList(req?.keySkills));
   const it: Item = { id: prior?.id || newId(), companyId: cid, kind: 'resume', applicationId: a.id, text: read.text.slice(0, 20000), facts, extractedAt: nowIso() };
   await putItem(it);
-  return ok({ facts, characters: read.text.length });
+  return { ok: true, facts, characters: read.text.length };
+}
+
+async function resumeExtract(ctx: AuthContext, b: any): Promise<Result> {
+  const cid = ctx.companyId!;
+  const a = await getApplication(cid, str(b.applicationId, 100));
+  if (!a) return fail(404, 'Candidate not found.');
+  const r = await storeResumeRead(cid, a);
+  if (!r.ok) return r.status === 422 ? fail(422, r.error || '', { kept: !!r.kept }) : fail(r.status || 400, r.error || '');
+  return ok({ facts: r.facts, characters: r.characters });
 }
 
 // ------------------------------------------------------------------ weighted score
