@@ -6,6 +6,7 @@
  */
 import { createHash } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
+import JSZip from 'jszip';
 import { isMongoConfigured, nativeMongoDb } from './mongoFirestore.js';
 
 const COLLECTION = 'hrDocumentChunks';
@@ -26,6 +27,10 @@ type PublishedVersion = {
   documentTitle?: string;
   rawContent?: string;
   content?: string;
+  fileUrl?: string;
+  originalFileUrl?: string;
+  fileName?: string;
+  mimeType?: string;
 };
 
 export type RetrievedPolicyPassage = {
@@ -38,6 +43,59 @@ export type RetrievedPolicyPassage = {
 
 const cleanText = (s: string) => String(s || '').replace(/\r/g, '').replace(/[\t ]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 const hashText = (s: string) => createHash('sha256').update(s).digest('hex');
+
+function decodeDataUrl(value: string): Uint8Array {
+  const comma = value.indexOf(',');
+  if (comma < 0) throw new Error('Uploaded document data URL is malformed.');
+  const metadata = value.slice(0, comma);
+  const payload = value.slice(comma + 1);
+  return metadata.includes(';base64')
+    ? new Uint8Array(Buffer.from(payload, 'base64'))
+    : new Uint8Array(Buffer.from(decodeURIComponent(payload), 'utf8'));
+}
+
+async function extractDocx(bytes: Uint8Array): Promise<string> {
+  const zip = await JSZip.loadAsync(bytes);
+  const xml = await zip.file('word/document.xml')?.async('string');
+  if (!xml) throw new Error('DOCX document.xml was not found.');
+  return xml
+    .replace(/<w:tab\\b[^>]*\\/>/g, ' ')
+    .replace(/<w:br\\b[^>]*\\/>/g, '\\n')
+    .replace(/<\\/w:p>/g, '\\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+}
+
+async function extractPdf(bytes: Uint8Array): Promise<string> {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+  const pages: string[] = [];
+  for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
+    const page = await pdf.getPage(pageNo);
+    const content = await page.getTextContent();
+    const text = content.items.map((item: any) => typeof item.str === 'string' ? item.str : '').filter(Boolean).join(' ');
+    if (text.trim()) pages.push(text.trim());
+  }
+  const text = pages.join('\\n\\n');
+  if (!text.trim()) throw new Error('This PDF has no extractable text. Scanned PDFs need OCR before indexing.');
+  return text;
+}
+
+/** Prefer the already extracted text saved by the existing upload flow; extract data URLs when rawContent is binary. */
+async function publishedText(version: PublishedVersion): Promise<string> {
+  const raw = String(version.rawContent || version.content || '').trim();
+  const file = [version.originalFileUrl, version.fileUrl].find((v) => typeof v === 'string' && v.startsWith('data:')) || '';
+  const source = raw.startsWith('data:') ? raw : raw.startsWith('%PDF') ? raw : (!raw ? file : '');
+  if (!source) return cleanText(raw);
+  const dataUrl = source.startsWith('data:') ? source : '';
+  const mime = (dataUrl ? dataUrl.slice(5, dataUrl.indexOf(';') > -1 ? dataUrl.indexOf(';') : dataUrl.indexOf(',')) : version.mimeType || 'application/pdf').toLowerCase();
+  const bytes = dataUrl ? decodeDataUrl(dataUrl) : new Uint8Array(Buffer.from(source, 'binary'));
+  if (mime.includes('pdf') || source.startsWith('%PDF') || version.fileName?.toLowerCase().endsWith('.pdf')) return cleanText(await extractPdf(bytes));
+  if (mime.includes('wordprocessingml') || version.fileName?.toLowerCase().endsWith('.docx')) return cleanText(await extractDocx(bytes));
+  if (mime.startsWith('text/')) return cleanText(Buffer.from(bytes).toString('utf8'));
+  throw new Error(`Unsupported uploaded document type for extraction: ${mime || version.fileName || 'unknown'}`);
+}
 
 function splitText(input: string): string[] {
   const text = cleanText(input);
@@ -103,7 +161,7 @@ function mongoCollection() {
  */
 export async function indexPublishedVersion(version: PublishedVersion): Promise<{ indexed: number; skipped: boolean }> {
   if (!version || version.status !== 'PUBLISHED' || !version.companyId || !version.id) return { indexed: 0, skipped: true };
-  const body = cleanText(version.rawContent || version.content || '');
+  const body = await publishedText(version);
   if (!body) return { indexed: 0, skipped: true };
   const contentHash = hashText(body);
   const col = await mongoCollection();
