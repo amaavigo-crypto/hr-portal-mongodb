@@ -24,6 +24,7 @@
  * Records live in hiringItems: kind flow, flowRun (one per applicant, id flowrun_<applicationId>), flowTask.
  * Every move is written once and re-checked inside a transaction, so running the engine twice never does a step twice.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { adminDb } from './firebaseAdmin.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
 import { designationKey, getApplication, listApplications, updateApplication, type ApplicationDoc } from './recruitmentData.js';
@@ -570,7 +571,7 @@ async function observe(cid: string, run: RunDoc, flow: FlowDoc, step: FlowStep, 
       const o = latestOffer(await listFor(cid, 'offer', a.id), a.id);
       if (o && isAutoMode(step) && o.onboardingId && o.status !== 'JOINED') {
         const auto = await import('./joinerAuto.js');
-        const notes = await auto.runJoinerSetup(cid, o.id, step.settings, step.ownerUid || '', process.env.APP_BASE_URL || undefined);
+        const notes = await auto.runJoinerSetup(cid, o.id, step.settings, step.ownerUid || '', configuredSiteUrl() || undefined);
         notes.forEach((n) => log(run, step.id, n, 'Automation'));
         if (notes.length) return { kind: 'wait', why: 'The joiner was set up. Waiting for the joining checklist to finish or for the first day at work.' };
         const fresh = latestOffer(await listFor(cid, 'offer', a.id), a.id) || o;

@@ -8,6 +8,7 @@
  * The browser then replaces the pre-rendered markup with the live page. If anything here fails the caller serves the
  * plain shell, so the site always loads.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import {
   LANDING_PATHS,
   MODULE_KEYS,
@@ -25,7 +26,7 @@ const jsonForScript = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c')
 
 /** Public address of the site: APP_URL if set, otherwise the address the request came in on. */
 export function siteOrigin(headers: Record<string, any>, fallbackProto = 'https'): string {
-  const fromEnv = (process.env.APP_URL || '').trim().replace(/\/+$/, '');
+  const fromEnv = configuredSiteUrl();
   if (/^https?:\/\//i.test(fromEnv)) return fromEnv;
   const proto = String(headers['x-forwarded-proto'] || fallbackProto).split(',')[0].trim();
   const host = String(headers['x-forwarded-host'] || headers.host || '').split(',')[0].trim();

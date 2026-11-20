@@ -20,6 +20,7 @@
  * treated as belonging to the home company (HOME_COMPANY_ID), see scripts/backfill-onboarding-company.ts.
  * Candidate documents are stored in Firestore (chunked) instead of Firebase Storage.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { randomBytes } from 'node:crypto';
 import { FieldValue } from './fieldValue.js';
 import { adminDb } from './firebaseAdmin.js';
@@ -154,7 +155,7 @@ async function mailHr(rec: any, subject: string, body: string) {
 }
 
 function appBase(origin?: string): string {
-  return (process.env.APP_URL || origin || 'http://localhost:3000').replace(/\/+$/, '');
+  return (configuredSiteUrl() || origin || 'http://localhost:3000').replace(/\/+$/, '');
 }
 
 function uploadLink(rec: any, origin?: string): string {

@@ -11,6 +11,7 @@
  * a secret token, a snapshot of the questions with answers, and the timings. The answers never leave the server.
  * The flow engine calls observeAiTest(): it sends the invite, waits, marks the result and reports pass/fail.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { adminDb } from './firebaseAdmin.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
@@ -50,7 +51,7 @@ const fail = (status: number, error: string): Result => ({ status, json: { succe
 const clean = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GRACE_MS = 2 * 60_000;   // a little room for a slow connection when the candidate presses Submit at the last second
-const baseUrl = (origin?: string) => (process.env.APP_BASE_URL || origin || '').replace(/\/$/, '');
+const baseUrl = (origin?: string) => (configuredSiteUrl() || origin || '').replace(/\/$/, '');
 const isHr = (ctx: AuthContext) => ctx.isCompanyAdmin || MANAGE_PERMS.some((p) => ctx.perms.includes(p));
 
 export interface Question { id: string; q: string; options: string[]; answer: number; topic?: string }
