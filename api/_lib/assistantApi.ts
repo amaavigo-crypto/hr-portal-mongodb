@@ -123,7 +123,10 @@ async function allowedPolicies(r: Run): Promise<PolicyDoc[]> {
           companyId: r.cid,
           title: str(it.title, 180) || 'Policy',
           versionNumber: str(it.versionNumber, 30),
-        }).catch((err) => console.warn('[assistant] policy vector indexing skipped:', err?.message || err));
+        }, r.traceId).catch((err) => {
+          pipelineLog(r.traceId, 'policy.lazy_index', 'ERROR', { versionId: id, ...pipelineErrorDetails(err) });
+          console.warn('[assistant] policy vector indexing skipped:', err?.message || err);
+        });
       }
     } else if (hit.text) {
       // Retry a previous failed indexing attempt on later questions (e.g. after Gemini/Atlas is configured).
@@ -136,7 +139,10 @@ async function allowedPolicies(r: Run): Promise<PolicyDoc[]> {
           companyId: r.cid,
           title: str(it.title, 180) || 'Policy',
           versionNumber: str(it.versionNumber, 30),
-        }).catch((err) => console.warn('[assistant] policy vector indexing retry skipped:', err?.message || err));
+        }, r.traceId).catch((err) => {
+          pipelineLog(r.traceId, 'policy.lazy_index_retry', 'ERROR', { versionId: id, ...pipelineErrorDetails(err) });
+          console.warn('[assistant] policy vector indexing retry skipped:', err?.message || err);
+        });
       }
     }
     if (hit.text) docs.push({ id, title: str(it.title, 120) || 'Policy', version: str(it.versionNumber, 20), text: hit.text });
@@ -214,6 +220,7 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
         // Atlas search is company-filtered, then narrowed again to the exact versions this employee may open.
         if (allowedVersionIds.size) found = (await searchPublishedPolicies(r.cid, policyQuery, 8, r.traceId)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
       } catch (err: any) {
+        pipelineLog(r.traceId, 'atlas.vector_search', 'ERROR', { ...pipelineErrorDetails(err) });
         console.warn('[assistant] vector retrieval unavailable; using keyword search:', err?.message || err);
       }
       if (!found.length) {
