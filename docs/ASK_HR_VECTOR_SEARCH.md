@@ -60,3 +60,31 @@ If `HR_EMBEDDING_DIMENSIONS` changes, the Atlas index dimensions must match and 
 7. Sign in as a user from another company or without access to that policy and confirm the passage is not returned.
 
 Scanned PDFs with no extractable text still require OCR before ingestion. The frontend extracts PDF/DOCX text during upload and saves that text with the version; the indexer uses the saved text, with file extraction as a fallback when a data URL is available. TXT/Markdown uses its saved text content.
+
+
+## Pipeline logs and troubleshooting
+
+The ingestion and Ask HR flows emit structured JSON logs. Search server/runtime logs for
+`[HR_AI_PIPELINE]` and browser DevTools Console for `[HR_DOCUMENT_UPLOAD]` or
+`[HR_DOCUMENT_GOVERNANCE]`. Every event includes a timestamp, event name, status and trace ID.
+Use the trace ID to follow one operation across its log entries.
+
+Expected document indexing stages:
+- `document.index.start`
+- `document.text_extraction.start / complete` (DOCX, PDF or text)
+- `document.chunking.complete`
+- `openai.embedding.request` for each chunk (model, dimensions, duration and token usage; never the key or text)
+- `mongodb.chunk_write.start / complete`
+- `document.index.complete`
+
+Expected Ask HR stages:
+- `assistant.ask.start / complete`
+- `openai.chat_completion.request / response` for each model round
+- `assistant.tool.execute` for each tool
+- `policy.search.start`, `atlas.vector_search.complete` or `policy.search.keyword_fallback`
+
+The logs intentionally exclude raw document contents, prompts, answers, employee personal data,
+and API keys. Browser upload logs appear in the browser console; server-side OpenAI, MongoDB,
+indexing and chat logs appear in the deployed API/server runtime logs. These are diagnostic
+application logs, not a durable audit-log database. Configure the hosting provider's log
+retention/export if long-term retention is required.
