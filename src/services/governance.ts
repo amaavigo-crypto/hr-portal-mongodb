@@ -1007,6 +1007,7 @@ export class DocumentGovernanceEngine {
       active: true,
     };
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.storage_write.complete', status: 'SUCCESS', storageKey: storageMeta.storageKey, bytes: storageMeta.sizeBytes }));
     const newVersion: DocumentVersion = {
       id: versionId,
       documentMasterId: masterId,
@@ -1113,6 +1114,9 @@ export class DocumentGovernanceEngine {
       previousVersionId?: string;
     }
   ): Promise<DocumentVersion> {
+    const revisionTraceId = `governance-revision-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const revisionStartedAt = Date.now();
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.start', status: 'START', documentMasterId: data.documentMasterId, fileName: data.fileName, mimeType: data.mimeType || 'unknown', contentCharacters: data.rawContent?.length || 0 }));
     if (creator.role !== UserRole.CREATOR && creator.role !== UserRole.REVIEWER) {
       throw new Error('Unauthorized: User must have HR Creator or Reviewer role to author revisions.');
     }
@@ -1213,11 +1217,14 @@ export class DocumentGovernanceEngine {
     // 3. Update document header and footer when it is being revised
     let sanitizedFileUrl = data.fileDataUrl;
     if (isDocx && sanitizedFileUrl) {
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.docx_stamping.start', status: 'START' }));
       try {
         sanitizedFileUrl = await cleanDocxDataUrl(sanitizedFileUrl);
         const stampedDocx = await stampDocxWithHeaderFooter(sanitizedFileUrl, revisionHeaderFooterData);
         sanitizedFileUrl = stampedDocx.dataUrl;
+        console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.docx_stamping.complete', status: 'SUCCESS' }));
       } catch (cleanErr) {
+        console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.docx_stamping', status: 'ERROR', error: cleanErr instanceof Error ? cleanErr.message : String(cleanErr) }));
         console.warn('Could not clean or stamp DOCX data URL on createNewVersion:', cleanErr);
       }
     } else if (isPdf && sanitizedFileUrl) {
@@ -1255,6 +1262,7 @@ export class DocumentGovernanceEngine {
     }
 
     // Store revised file in Storage Provider with updated header & footer
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.storage_write.start', status: 'START', documentId: master.documentId, versionId }));
     const storageMeta = await defaultStorageProvider.uploadFile(
       master.documentId,
       master.category,
@@ -1377,6 +1385,7 @@ export class DocumentGovernanceEngine {
       console.warn('[Governance] Could not trigger reviewer notification email for revised version:', e);
     }
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.complete', status: 'SUCCESS', documentId: master.documentId, versionId, durationMs: Date.now() - revisionStartedAt, initialStatus: 'IN_REVIEW' }));
     return newVersion;
   }
 
