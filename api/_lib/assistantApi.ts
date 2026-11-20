@@ -25,6 +25,7 @@ import { routeHome } from './homeApi.js';
 import { companyLabel, loadSettings, notify, personByUid } from './leaveCore.js';
 import { cleanHistory, rankPassages, unverifiedNumbers, type ChatTurn, type PolicyDoc } from '../../shared/assistantEngine.js';
 import { indexPublishedVersion, searchPublishedPolicies } from './documentVectorSearch.js';
+import { createPipelineTraceId, pipelineLog, pipelineErrorDetails } from './pipelineLogger.js';
 
 export interface AssistantRequest {
   method: string;
@@ -68,6 +69,7 @@ interface Run {
   sources: Map<string, Source>;
   facts: string[];
   tools: string[];
+  traceId: string;
 }
 
 const POLICY_TTL_MS = 15 * 60_000;
@@ -210,11 +212,15 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
       let found: Array<{ docId: string; title: string; version: string; text: string; score: number }> = [];
       try {
         // Atlas search is company-filtered, then narrowed again to the exact versions this employee may open.
-        if (allowedVersionIds.size) found = (await searchPublishedPolicies(r.cid, policyQuery, 8)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
+        if (allowedVersionIds.size) found = (await searchPublishedPolicies(r.cid, policyQuery, 8, r.traceId)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
       } catch (err: any) {
         console.warn('[assistant] vector retrieval unavailable; using keyword search:', err?.message || err);
       }
-      if (!found.length) found = rankPassages(policyQuery, docs, 4);
+      if (!found.length) {
+        pipelineLog(r.traceId, 'policy.search.keyword_fallback', 'START', { permittedDocuments: docs.length });
+        found = rankPassages(policyQuery, docs, 4);
+        pipelineLog(r.traceId, 'policy.search.keyword_fallback', 'SUCCESS', { passages: found.length });
+      } else pipelineLog(r.traceId, 'policy.search.vector_results', 'SUCCESS', { passages: found.length, permittedDocuments: docs.length });
       for (const p of found) r.sources.set(`policy:${p.title}|${p.version}`, { kind: 'policy', label: p.version ? `${p.title} v${p.version}` : p.title });
       r.tools.push(name);
       const data = { searched: docs.length, passages: found.map((p) => ({ document: p.title, version: p.version, text: p.text })) };
@@ -245,7 +251,9 @@ const systemPrompt = (company: string, today: string) => [
   `Today is ${today} (India).`,
 ].join('\n');
 
-async function chat(messages: any[], withTools: boolean): Promise<any> {
+async function chat(messages: any[], withTools: boolean, traceId: string, round: number): Promise<any> {
+  const startedAt = Date.now();
+  pipelineLog(traceId, 'openai.chat_completion.request', 'START', { model: model(), round: round + 1, withTools, messageCount: messages.length });
   const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45_000);
@@ -259,8 +267,17 @@ async function chat(messages: any[], withTools: boolean): Promise<any> {
         ...(withTools ? { tools: TOOLS.map((t) => ({ type: 'function', function: t })), tool_choice: 'auto' } : {}),
       }),
     });
-    if (!res.ok) throw new Error(`AI service answered ${res.status}`);
-    return (await res.json())?.choices?.[0]?.message || {};
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => '');
+      throw new Error(`AI service answered ${res.status}: ${errorBody.slice(0, 300)}`);
+    }
+    const payload = await res.json();
+    const message = payload?.choices?.[0]?.message || {};
+    pipelineLog(traceId, 'openai.chat_completion.response', 'SUCCESS', { model: model(), round: round + 1, durationMs: Date.now() - startedAt, finishReason: payload?.choices?.[0]?.finish_reason || null, promptTokens: payload?.usage?.prompt_tokens ?? null, completionTokens: payload?.usage?.completion_tokens ?? null, toolCalls: Array.isArray(message.tool_calls) ? message.tool_calls.length : 0 });
+    return message;
+  } catch (error) {
+    pipelineLog(traceId, 'openai.chat_completion.request', 'ERROR', { model: model(), round: round + 1, durationMs: Date.now() - startedAt, ...pipelineErrorDetails(error) });
+    throw error;
   } finally {
     clearTimeout(timer);
   }
@@ -274,14 +291,25 @@ async function converse(r: Run, company: string, question: string, history: Chat
   const messages: any[] = [{ role: 'system', content: systemPrompt(company, istDay()) }, ...history, { role: 'user', content: question }];
   let rewrote = false;
   for (let round = 0; round < 5; round++) {
-    const msg = await chat(messages, round < 4);
+    pipelineLog(r.traceId, 'assistant.reasoning.round', 'START', { round: round + 1, messageCount: messages.length });
+    const msg = await chat(messages, round < 4, r.traceId, round);
     const calls: any[] = Array.isArray(msg.tool_calls) ? msg.tool_calls.slice(0, 4) : [];
     if (calls.length) {
       messages.push({ role: 'assistant', content: msg.content || null, tool_calls: calls });
       for (const c of calls) {
         let args: any = {};
         try { args = JSON.parse(c.function?.arguments || '{}'); } catch { /* bad arguments: run with none */ }
-        messages.push({ role: 'tool', tool_call_id: c.id, content: await runTool(r, String(c.function?.name || ''), args) });
+        const toolName = String(c.function?.name || 'unknown');
+        const toolStartedAt = Date.now();
+        pipelineLog(r.traceId, 'assistant.tool.execute', 'START', { tool: toolName });
+        try {
+          const toolResult = await runTool(r, toolName, args);
+          pipelineLog(r.traceId, 'assistant.tool.execute', 'SUCCESS', { tool: toolName, durationMs: Date.now() - toolStartedAt, resultCharacters: toolResult.length });
+          messages.push({ role: 'tool', tool_call_id: c.id, content: toolResult });
+        } catch (error) {
+          pipelineLog(r.traceId, 'assistant.tool.execute', 'ERROR', { tool: toolName, durationMs: Date.now() - toolStartedAt, ...pipelineErrorDetails(error) });
+          throw error;
+        }
       }
       continue;
     }
@@ -305,9 +333,13 @@ async function ask(ctx: AuthContext, cid: string, headers: Record<string, any>, 
   const question = str(body?.question, 500);
   if (question.length < 2) return fail(400, 'Type your question first.');
   const history = cleanHistory(body?.history);
-  const run: Run = { headers, ctx, cid, cache: new Map(), sources: new Map(), facts: [], tools: [] };
+  const traceId = createPipelineTraceId('ask-hr');
+  const run: Run = { headers, ctx, cid, cache: new Map(), sources: new Map(), facts: [], tools: [], traceId };
+  const askStartedAt = Date.now();
+  pipelineLog(traceId, 'assistant.ask.start', 'START', { companyId: cid, userId: ctx.uid, historyTurns: history.length, questionCharacters: question.length, model: model() });
 
   if (!aiEnabled()) {
+    pipelineLog(traceId, 'assistant.ai_disabled', 'WARN', { companyId: cid });
     // No AI key: the rule-based leave answer is still useful for leave questions.
     const j = await route(run, 'leave', 'POST', 'assist-ask', { question });
     if (j && !j.error && j.answered) return ok({ id: '', answer: j.answer, sources: [{ kind: 'policy', label: str(j.policyReference, 120) || 'Leave policy' }], unsure: false, off: true });
@@ -315,13 +347,14 @@ async function ask(ctx: AuthContext, cid: string, headers: Record<string, any>, 
   }
 
   const reason = (await reserveForPerson(cid, ctx.uid)) || (await reserveAiCall(cid));
-  if (reason) return ok({ id: '', answer: reason, sources: [], unsure: true, limited: true });
+  if (reason) { pipelineLog(traceId, 'assistant.rate_limit', 'SKIP', { companyId: cid }); return ok({ id: '', answer: reason, sources: [], unsure: true, limited: true }); }
 
   const company = await companyLabel(cid).catch(() => 'your company');
   let out: { answer: string; unsure: boolean };
   try {
     out = await converse(run, company, question, history);
   } catch (e: any) {
+    pipelineLog(traceId, 'assistant.conversation', 'ERROR', { ...pipelineErrorDetails(e) });
     console.warn('[assistant] failed:', e?.message || e);
     out = { answer: SORRY, unsure: true };
   }
@@ -331,6 +364,7 @@ async function ask(ctx: AuthContext, cid: string, headers: Record<string, any>, 
     id: ref.id, companyId: cid, uid: ctx.uid, question, answer: str(out.answer, 1500), tools: run.tools.slice(0, 12), unsure: out.unsure,
     helpful: null, escalated: false, model: model(), createdAt: new Date().toISOString(),
   }).catch(() => undefined);
+  pipelineLog(traceId, 'assistant.ask.complete', 'SUCCESS', { durationMs: Date.now() - askStartedAt, toolsUsed: run.tools.length, sources: sources.length, unsure: out.unsure, answerCharacters: out.answer.length, logId: ref.id });
   return ok({ id: ref.id, answer: out.answer, sources, unsure: out.unsure });
 }
 
@@ -387,12 +421,15 @@ export async function routeAssistant(r: AssistantRequest): Promise<Result> {
         const version: any = snap.exists ? snap.data() : null;
         if (!version || version.companyId !== cid) return fail(404, 'Published document version not found.');
         if (version.status !== 'PUBLISHED') return fail(409, 'Only published document versions can be indexed.');
+        const traceId = createPipelineTraceId('publish-index');
+        pipelineLog(traceId, 'document.publish_index.request', 'START', { companyId: cid, versionId });
         const indexed = await indexPublishedVersion({
           ...version,
           id: versionId,
           companyId: cid,
           title: str(version.documentTitle || version.title, 180) || 'HR document',
-        });
+        }, traceId);
+        pipelineLog(traceId, 'document.publish_index.request', 'SUCCESS', { companyId: cid, versionId, indexedChunks: indexed.indexed, skipped: indexed.skipped });
         return ok({ indexed: indexed.indexed, skipped: indexed.skipped, versionId });
       }
       default: return fail(404, 'Unknown request.');
