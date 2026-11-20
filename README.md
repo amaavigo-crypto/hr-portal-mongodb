@@ -294,3 +294,15 @@ One list for HR to review, in Leave & Attendance > Flags (the old Exceptions scr
 - Stored in `leaveExceptions` (categories `FLAG_PAYROLL`, `FLAG_LATE`, `FLAG_LEAVE`); thresholds in `flagSettings/{companyId}` (server only). A reviewed flag stays quiet unless it gets worse or 90 days pass; a flag is closed automatically when a recalculation no longer finds it.
 - Who sees what: payroll flags need `payroll.view` (read) or `payroll.manage` (review); late and leave flags need `leave.report` (read) or `leave.manage` (review and thresholds). Employees and managers see nothing. No new Vercel function.
 - Tests: `npx tsx tests/anomaly.engine.test.ts`, `npx tsx tests/flags.api.test.ts`.
+
+## Performance 2 (calibration, increments, goals, 360)
+
+Sits on top of the existing Performance reviews. Sidebar: **Performance 2**. Server: `api/_lib/pm2Api.ts` (actions `p2-*` under `/api/pm/`, no new serverless function). Rules: `shared/pm2Engine.ts`. Tests: `npx tsx tests/pm2.test.ts`.
+
+- **Settings per company** (HR): band names and thresholds, increment range per band, approval chain, 360 rules. Versioned. A calibration cycle freezes a copy when opened; later edits apply to the next cycle, and a mid-cycle change is an audited amendment.
+- **Calibration**: change a score only with a written reason; the original is kept; before/after spread shown, never forced; "Make final" locks scores.
+- **Increments**: after calibration is final, the manager recommends a percentage inside the band's range; HR approves, then (by default) a different approver; HR with payroll permission sends it to Payroll as a *scheduled salary revision*. Payroll applies it through its own screen. Nothing changes pay automatically.
+- **Goals as evidence**: OKR progress gives a *suggested* rating; the manager or HR must confirm it (a reason is needed if they differ). It does not write into the review score by itself.
+- **360**: reviewers are chosen (minimum 3), HR approves, raters answer once. No averages or comments until the minimum has answered; comments are shuffled and unnamed; the employee sees the summary only after HR releases it; peers can only *suggest* up to a set share of the behaviour score. HR can view who said what only with a written reason, which is logged.
+
+Not in Performance 2: recognition/rewards, skills matrix/career paths, aggregate cycles, AI-written ratings.

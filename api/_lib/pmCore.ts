@@ -20,6 +20,8 @@ import { DEFAULT_COMPETENCIES, DEFAULT_WEIGHTS, istToday, type Competency, type 
 export const COLL = {
   settings: 'pmSettings', templates: 'pmTemplates', plans: 'pmPlans', evidence: 'pmEvidence', checkins: 'pmCheckins',
   cycles: 'pmCycles', reviews: 'pmReviews', growth: 'pmDevPlans', log: 'pmLog',
+  // Performance 2 (api/_lib/pm2Api.ts)
+  p2Config: 'pm2Config', p2Cal: 'pm2Calibrations', p2Inc: 'pm2Increments', p2Panel: 'pm2Panels', p2Fb: 'pm2Feedback', p2Goal: 'pm2GoalChecks',
 } as const;
 export type Coll = keyof typeof COLL;
 

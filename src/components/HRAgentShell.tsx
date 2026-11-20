@@ -73,6 +73,7 @@ export type HRAgentModule =
   | 'my-hiring'
   | 'hrbp'
   | 'performance'
+  | 'performance2'
   | 'tasks'
   | 'hiring-automation'
   | 'wellbeing'
@@ -148,7 +149,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   // Auto-redirect if currently selected module is not permitted
   useEffect(() => {
     if (activeModule === 'home' || activeModule === 'policies') return;
-    if (activeModule === 'administration' || activeModule === 'leave-management' || activeModule === 'payroll' || activeModule === 'people' || activeModule === 'employee' || activeModule === 'my-hiring' || activeModule === 'hrbp' || activeModule === 'performance' || activeModule === 'tasks' || activeModule === 'hiring-automation' || activeModule === 'wellbeing') return;
+    if (activeModule === 'administration' || activeModule === 'leave-management' || activeModule === 'payroll' || activeModule === 'people' || activeModule === 'employee' || activeModule === 'my-hiring' || activeModule === 'hrbp' || activeModule === 'performance' || activeModule === 'performance2' || activeModule === 'tasks' || activeModule === 'hiring-automation' || activeModule === 'wellbeing') return;
     if (activeModule === 'document-version-control' && !hasDocGovAccess && hasTalentAccess) {
       onSelectModule('talent-acquisition-overview');
     } else if (
@@ -181,6 +182,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     { id: 'my-hiring', label: 'Referrals & interviews', show: true },
     { id: 'hrbp', label: 'HR Business Partner', show: true },
     { id: 'performance', label: 'Performance', show: true },
+    { id: 'performance2', label: 'Performance 2', show: true },
     { id: 'tasks', label: 'Tasks', show: true },
     { id: 'hiring-automation', label: 'Hiring Automation', show: showHiringAutomation },
     { id: 'wellbeing', label: 'Wellbeing', show: true },
@@ -309,6 +311,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   { key: 'my-hiring' as const, title: 'Referrals & interviews', sub: 'Refer people, give interview feedback', Icon: Users, show: true },
                   { key: 'hrbp' as const, title: 'HR Business Partner', sub: (hasAnyPerm(currentUser.perms, ['hrbp.manage', 'hrbp.view']) || !!currentUser.isCompanyAdmin) ? 'Org, talent, engagement & succession' : 'Surveys, recognition, learning & wellness', Icon: Layers, show: true },
                   { key: 'performance' as const, title: 'Performance', sub: 'Targets, reviews, check-ins & growth', Icon: Check, show: true },
+                  { key: 'performance2' as const, title: 'Performance 2', sub: 'Calibration, increments, goals & 360', Icon: Check, show: true },
                   { key: 'tasks' as const, title: 'Tasks', sub: 'My tasks, boards & dashboards', Icon: ListChecks, show: true },
                   { key: 'hiring-automation' as const, title: 'Hiring Automation', sub: 'Your hiring steps, applicants & tasks', Icon: Workflow, show: showHiringAutomation },
                   { key: 'wellbeing' as const, title: 'Wellbeing', sub: 'Short games for a break', Icon: Gamepad2, show: true },
@@ -700,7 +703,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   <ModuleSubNav nav={payrollNav} counts={badges.payroll} label="Payroll sections" variant="sidebar" idPrefix="nav-submodule-payroll" onNavigate={() => setIsMobileSidebarOpen(false)} />
                 )}
 
-                {renderModules(['tasks', 'performance', 'wellbeing', 'hrbp', 'my-hiring'])}
+                {renderModules(['tasks', 'performance', 'performance2', 'wellbeing', 'hrbp', 'my-hiring'])}
                 {/* ---------------------------------------------------- */}
                 {/* PEOPLE (directory, joining tasks, exits, letters) */}
                 {/* ---------------------------------------------------- */}

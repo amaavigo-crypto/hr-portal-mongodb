@@ -483,6 +483,12 @@ service cloud.firestore {
     match /pmCycles/{id} { allow read, write: if false; }
     match /pmReviews/{id} { allow read, write: if false; }
     match /pmDevPlans/{id} { allow read, write: if false; }
+    match /pm2Config/{id} { allow read, write: if false; }
+    match /pm2Calibrations/{id} { allow read, write: if false; }
+    match /pm2Increments/{id} { allow read, write: if false; }
+    match /pm2Panels/{id} { allow read, write: if false; }
+    match /pm2Feedback/{id} { allow read, write: if false; }
+    match /pm2GoalChecks/{id} { allow read, write: if false; }
     match /pmLog/{id} { allow read, write: if false; }
     // Task Management (boards, tasks, comments and activity): server only (api/_lib/taskApi.ts)
     match /taskProjects/{id} { allow read, write: if false; }
