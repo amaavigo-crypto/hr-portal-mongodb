@@ -210,7 +210,7 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
       let found: Array<{ docId: string; title: string; version: string; text: string; score: number }> = [];
       try {
         // Atlas search is company-filtered, then narrowed again to the exact versions this employee may open.
-        found = (await searchPublishedPolicies(r.cid, policyQuery, 8)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
+        if (allowedVersionIds.size) found = (await searchPublishedPolicies(r.cid, policyQuery, 8)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
       } catch (err: any) {
         console.warn('[assistant] vector retrieval unavailable; using keyword search:', err?.message || err);
       }
