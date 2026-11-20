@@ -378,6 +378,23 @@ export async function routeAssistant(r: AssistantRequest): Promise<Result> {
       case 'ask': return POST ? await ask(ctx, cid, r.headers, body) : fail(405, 'Use POST.');
       case 'feedback': return POST ? await feedback(ctx, cid, body) : fail(405, 'Use POST.');
       case 'ask-hr': return POST ? await askHr(ctx, cid, body) : fail(405, 'Use POST.');
+      case 'index-published': {
+        if (!POST) return fail(405, 'Use POST.');
+        if (!ctx.isCompanyAdmin && !ctx.perms.includes('doc.publish')) return fail(403, 'You do not have permission to publish documents.');
+        const versionId = str(body?.versionId, 200);
+        if (!versionId) return fail(400, 'A published version ID is required.');
+        const snap = await db().collection('versions').doc(versionId).get();
+        const version: any = snap.exists ? snap.data() : null;
+        if (!version || version.companyId !== cid) return fail(404, 'Published document version not found.');
+        if (version.status !== 'PUBLISHED') return fail(409, 'Only published document versions can be indexed.');
+        const indexed = await indexPublishedVersion({
+          ...version,
+          id: versionId,
+          companyId: cid,
+          title: str(version.documentTitle || version.title, 180) || 'HR document',
+        });
+        return ok({ indexed: indexed.indexed, skipped: indexed.skipped, versionId });
+      }
       default: return fail(404, 'Unknown request.');
     }
   } catch (err) {
