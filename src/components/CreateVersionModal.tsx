@@ -217,9 +217,14 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     setError("");
     setFileName(file.name);
     const docTitle = selectedMaster?.title || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    const revisionUploadTraceId = `browser-upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.selected', status: 'START', fileName: file.name, mimeType: file.type || 'unknown', bytes: file.size }));
+
 
     try {
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.parse.start', status: 'START', fileName: file.name }));
       const parsed = await parseUploadedFile(file);
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.parse.complete', status: 'SUCCESS', fileName: file.name, extractedCharacters: parsed.extractedText?.length || 0, mimeType: parsed.mimeType }));
       setRawContent(parsed.extractedText || '');
       let effectiveUrl = parsed.fileDataUrl || '';
       const effectiveMime =
@@ -279,9 +284,11 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
         setUploadStatus(`Document loaded (${(file.size / 1024).toFixed(1)} KB)`);
       }
 
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.preview.ready', status: 'SUCCESS', fileName: file.name, stamped: effectiveUrl !== parsed.fileDataUrl }));
       setFileDataUrl(effectiveUrl);
       setContentTab('preview');
     } catch (err: any) {
+      console.error('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.parse', status: 'ERROR', fileName: file.name, error: err instanceof Error ? err.message : String(err) }));
       console.error('File parse error in revision:', err);
       setError('Could not parse file format. You can manually edit the content below.');
     } finally {
