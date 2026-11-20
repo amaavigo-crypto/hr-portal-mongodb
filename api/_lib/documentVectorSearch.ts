@@ -5,13 +5,12 @@
  * only after every embedding for a published version has been generated and stored.
  */
 import { createHash } from 'node:crypto';
-import { GoogleGenAI } from '@google/genai';
 import JSZip from 'jszip';
 import { isMongoConfigured, nativeMongoDb } from './mongoFirestore.js';
 
 const COLLECTION = 'hrDocumentChunks';
 const INDEX_NAME = process.env.HR_VECTOR_INDEX_NAME || 'hr_document_vector_index';
-const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 const DIMENSIONS = Number(process.env.HR_EMBEDDING_DIMENSIONS || 768);
 const CHUNK_CHARS = 3000;
 const OVERLAP_CHARS = 400;
@@ -125,29 +124,42 @@ function splitText(input: string): string[] {
   return chunks;
 }
 
-let genai: GoogleGenAI | null = null;
-function gemini(): GoogleGenAI {
-  const key = (process.env.GEMINI_API_KEY || '').trim();
-  if (!key) throw new Error('GEMINI_API_KEY is not configured.');
-  return (genai ||= new GoogleGenAI({ apiKey: key }));
-}
+async function embed(text: string): Promise<number[]> {
+  const key = (process.env.OPENAI_API_KEY || '').trim();
+  if (!key || key === 'MY_OPENAI_API_KEY') throw new Error('OPENAI_API_KEY is not configured.');
 
-async function embed(text: string, taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY'): Promise<number[]> {
-  const response = await gemini().models.embedContent({
-    model: EMBEDDING_MODEL,
-    contents: text,
-    config: { taskType, outputDimensionality: DIMENSIONS },
-  });
-  const values = response.embeddings?.[0]?.values;
-  if (!values?.length || values.length !== DIMENSIONS || values.some((n) => !Number.isFinite(n))) {
-    throw new Error('Gemini returned an invalid embedding vector.');
+  const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45_000);
+  try {
+    const response = await fetch(`${base}/embeddings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: EMBEDDING_MODEL,
+        input: text,
+        dimensions: DIMENSIONS,
+        encoding_format: 'float',
+      }),
+    });
+    const raw = await response.text();
+    let body: any = null;
+    try { body = JSON.parse(raw); } catch { /* handled below */ }
+    if (!response.ok) {
+      throw new Error(`OpenAI embeddings error (HTTP ${response.status}): ${body?.error?.message || raw.slice(0, 180)}`);
+    }
+    const values = body?.data?.[0]?.embedding;
+    if (!Array.isArray(values) || values.length !== DIMENSIONS || values.some((n: unknown) => typeof n !== 'number' || !Number.isFinite(n))) {
+      throw new Error('OpenAI returned an invalid embedding vector.');
+    }
+    return values as number[];
+  } catch (error: any) {
+    if (error?.name === 'AbortError') throw new Error('OpenAI embedding request timed out.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  // gemini-embedding-001 vectors are normalized here for consistent cosine similarity at reduced dimensions.
-  if (EMBEDDING_MODEL === 'gemini-embedding-001') {
-    const norm = Math.sqrt(values.reduce((sum, n) => sum + n * n, 0)) || 1;
-    return values.map((n) => n / norm);
-  }
-  return values;
 }
 
 function mongoCollection() {
@@ -174,7 +186,7 @@ export async function indexPublishedVersion(version: PublishedVersion): Promise<
   const title = String(version.title || version.documentTitle || version.documentId || 'HR document').slice(0, 180);
   const rows: any[] = [];
   for (let i = 0; i < chunks.length; i++) {
-    const vector = await embed(chunks[i], 'RETRIEVAL_DOCUMENT');
+    const vector = await embed(chunks[i]);
     rows.push({
       _id: hashText([version.companyId, version.id, contentHash, String(i)].join('|')),
       companyId: version.companyId,
@@ -211,7 +223,7 @@ export async function searchPublishedPolicies(companyId: string, query: string, 
   const q = cleanText(query).slice(0, 1500);
   if (!companyId || !q) return [];
   const col = await mongoCollection();
-  const vector = await embed(q, 'RETRIEVAL_QUERY');
+  const vector = await embed(q);
   const rows = await col.aggregate([
     {
       $vectorSearch: {
