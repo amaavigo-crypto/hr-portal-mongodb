@@ -1,19 +1,19 @@
 # Ask HR vector search setup
 
-Ask HR keeps its existing permission-filtered published-policy list and adds semantic retrieval on top. When a reviewer publishes a version, the frontend calls an authenticated server endpoint that immediately indexes that published version. If immediate indexing fails (for example, Gemini or Atlas is temporarily unavailable), the existing keyword search remains the fallback and Ask HR retries indexing on a later policy question.
+Ask HR keeps its existing permission-filtered published-policy list and adds semantic retrieval on top. When a reviewer publishes a version, the frontend calls an authenticated server endpoint that immediately indexes that published version. If immediate indexing fails (for example, OpenAI or Atlas is temporarily unavailable), the existing keyword search remains the fallback and Ask HR retries indexing on a later policy question.
 
 ## Environment
 
-Add these server-side environment variables to the Cloud Run service (never expose the Gemini key to Vite/client code):
+Add these server-side environment variables to the Cloud Run service (never expose the OpenAI key to Vite/client code):
 
 ```env
-GEMINI_API_KEY=your_google_ai_studio_api_key
-GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+OPENAI_API_KEY=your_existing_openai_api_key
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 HR_EMBEDDING_DIMENSIONS=768
 HR_VECTOR_INDEX_NAME=hr_document_vector_index
 ```
 
-The repository already includes `@google/genai`. MongoDB mode must be enabled with the existing `MONGODB_URI` and optional `MONGODB_DB` settings. The vector feature uses the same cached MongoDB connection as the Firestore adapter.
+The embedding endpoint uses the existing server-side OpenAI API key; no additional SDK dependency is required. MongoDB mode must be enabled with the existing `MONGODB_URI` and optional `MONGODB_DB` settings. The vector feature uses the same cached MongoDB connection as the Firestore adapter.
 
 ## Atlas Vector Search index
 
