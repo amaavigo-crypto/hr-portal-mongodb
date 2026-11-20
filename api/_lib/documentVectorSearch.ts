@@ -59,9 +59,9 @@ async function extractDocx(bytes: Uint8Array): Promise<string> {
   const xml = await zip.file('word/document.xml')?.async('string');
   if (!xml) throw new Error('DOCX document.xml was not found.');
   return xml
-    .replace(/<w:tab\\b[^>]*\\/>/g, ' ')
-    .replace(/<w:br\\b[^>]*\\/>/g, '\\n')
-    .replace(/<\\/w:p>/g, '\\n')
+    .replace(/<w:tab\b[^>]*\/>/g, ' ')
+    .replace(/<w:br\b[^>]*\/>/g, '\n')
+    .replace(/<\/w:p>/g, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
@@ -77,7 +77,7 @@ async function extractPdf(bytes: Uint8Array): Promise<string> {
     const text = content.items.map((item: any) => typeof item.str === 'string' ? item.str : '').filter(Boolean).join(' ');
     if (text.trim()) pages.push(text.trim());
   }
-  const text = pages.join('\\n\\n');
+  const text = pages.join('\n\n');
   if (!text.trim()) throw new Error('This PDF has no extractable text. Scanned PDFs need OCR before indexing.');
   return text;
 }
