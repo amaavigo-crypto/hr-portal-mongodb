@@ -878,6 +878,9 @@ export class DocumentGovernanceEngine {
     if (!data.effectiveFrom?.trim()) throw new Error('Validation error: Effective from Date is required.');
     if (!data.rawContent?.trim()) throw new Error('Validation error: Document content or file upload is required.');
 
+    const uploadTraceId = `governance-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const uploadStartedAt = Date.now();
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.create.start', status: 'START', fileName: data.fileName, mimeType: data.mimeType || 'unknown', contentCharacters: data.rawContent?.length || 0 }));
     const documentId = this.generateNextDocumentId(data.category);
     const masterId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const versionId = `ver-${Date.now()}-v10`;
@@ -926,10 +929,13 @@ export class DocumentGovernanceEngine {
     };
 
     if (isDocxUpload && sanitizedFileUrl) {
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.docx.stamping.start', status: 'START' }));
       try {
         const stampedDocx = await stampDocxWithHeaderFooter(sanitizedFileUrl, initialHeaderFooter);
         sanitizedFileUrl = stampedDocx.dataUrl;
+        console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.docx.stamping.complete', status: 'SUCCESS' }));
       } catch (cleanErr) {
+        console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.docx.stamping', status: 'ERROR', error: cleanErr instanceof Error ? cleanErr.message : String(cleanErr) }));
         console.warn('Could not stamp initial DOCX data URL on createDocument:', cleanErr);
       }
     } else if (isPdfUpload && sanitizedFileUrl) {
@@ -947,6 +953,7 @@ export class DocumentGovernanceEngine {
 
     // Persist large binary media (e.g. video/pdf/docx) to persistent server storage and IndexedDB
     if (sanitizedFileUrl && (isVideoUpload || sanitizedFileUrl.startsWith('data:'))) {
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.media_upload.start', status: 'START', fileName: data.fileName, mimeType: data.mimeType }));
       try {
         const uploadRes = await uploadMediaToServer({
           fileName: data.fileName || `${documentId}_v1.0.${isVideoUpload ? 'mp4' : isDocxUpload ? 'docx' : 'bin'}`,
@@ -956,12 +963,15 @@ export class DocumentGovernanceEngine {
           versionId,
         });
         sanitizedFileUrl = uploadRes.fileUrl;
+        console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.media_upload.complete', status: 'SUCCESS', fileUrlReturned: Boolean(uploadRes.fileUrl) }));
       } catch (uploadErr) {
+        console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.media_upload', status: 'ERROR', error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr) }));
         console.warn('[Governance] Media upload to server storage error:', uploadErr);
       }
     }
 
     // Store file in Storage Provider
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.storage_write.start', status: 'START', documentId }));
     const storageMeta = await defaultStorageProvider.uploadFile(
       documentId,
       data.category,
@@ -971,6 +981,7 @@ export class DocumentGovernanceEngine {
       data.mimeType || (isVideoUpload ? 'video/mp4' : 'text/markdown')
     );
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.storage_write.complete', status: 'SUCCESS', storageKey: storageMeta.storageKey, bytes: storageMeta.sizeBytes }));
     const newMaster: DocumentMaster = {
       id: masterId,
       documentId,
@@ -1082,6 +1093,7 @@ export class DocumentGovernanceEngine {
       console.warn('[Governance] Could not trigger reviewer notification email:', e);
     }
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.create.complete', status: 'SUCCESS', documentId, versionId, durationMs: Date.now() - uploadStartedAt, initialStatus: 'IN_REVIEW' }));
     return { master: newMaster, version: newVersion };
   }
 
