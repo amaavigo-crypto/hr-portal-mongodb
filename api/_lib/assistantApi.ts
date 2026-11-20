@@ -24,6 +24,7 @@ import { routePayroll } from './payrollApi.js';
 import { routeHome } from './homeApi.js';
 import { companyLabel, loadSettings, notify, personByUid } from './leaveCore.js';
 import { cleanHistory, rankPassages, unverifiedNumbers, type ChatTurn, type PolicyDoc } from '../../shared/assistantEngine.js';
+import { indexPublishedVersion, searchPublishedPolicies } from './documentVectorSearch.js';
 
 export interface AssistantRequest {
   method: string;
@@ -111,6 +112,17 @@ async function allowedPolicies(r: Run): Promise<PolicyDoc[]> {
       if (!d || d.companyId !== r.cid || d.status !== 'PUBLISHED') return;
       hit = { at: now, companyId: r.cid, text: str(d.rawContent, 60_000) };
       policyText.set(id, hit);
+      // Index only documents already returned by this employee's permission-filtered Home files route.
+      // Index failures must not block the existing keyword-based Ask HR fallback.
+      if (hit.text) {
+        await indexPublishedVersion({
+          ...d,
+          id,
+          companyId: r.cid,
+          title: str(it.title, 180) || 'Policy',
+          versionNumber: str(it.versionNumber, 30),
+        }).catch((err) => console.warn('[assistant] policy vector indexing skipped:', err?.message || err));
+      }
     }
     if (hit.text) docs.push({ id, title: str(it.title, 120) || 'Policy', version: str(it.versionNumber, 20), text: hit.text });
   }));
@@ -180,7 +192,16 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
     }
     case 'search_policies': {
       const docs = await allowedPolicies(r);
-      const found = rankPassages(str(args?.query, 300), docs, 4);
+      const policyQuery = str(args?.query, 300);
+      const allowedVersionIds = new Set(docs.map((d) => d.id));
+      let found: Array<{ docId: string; title: string; version: string; text: string; score: number }> = [];
+      try {
+        // Atlas search is company-filtered, then narrowed again to the exact versions this employee may open.
+        found = (await searchPublishedPolicies(r.cid, policyQuery, 8)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
+      } catch (err: any) {
+        console.warn('[assistant] vector retrieval unavailable; using keyword search:', err?.message || err);
+      }
+      if (!found.length) found = rankPassages(policyQuery, docs, 4);
       for (const p of found) r.sources.set(`policy:${p.title}|${p.version}`, { kind: 'policy', label: p.version ? `${p.title} v${p.version}` : p.title });
       r.tools.push(name);
       const data = { searched: docs.length, passages: found.map((p) => ({ document: p.title, version: p.version, text: p.text })) };
