@@ -128,7 +128,7 @@ async function embed(text: string): Promise<number[]> {
   const key = (process.env.OPENAI_API_KEY || '').trim();
   if (!key || key === 'MY_OPENAI_API_KEY') throw new Error('OPENAI_API_KEY is not configured.');
 
-  const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');
+  const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45_000);
   try {
