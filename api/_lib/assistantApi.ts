@@ -123,6 +123,19 @@ async function allowedPolicies(r: Run): Promise<PolicyDoc[]> {
           versionNumber: str(it.versionNumber, 30),
         }).catch((err) => console.warn('[assistant] policy vector indexing skipped:', err?.message || err));
       }
+    } else if (hit.text) {
+      // Retry a previous failed indexing attempt on later questions (e.g. after Gemini/Atlas is configured).
+      const snap = await db().collection('versions').doc(id).get();
+      const d: any = snap.exists ? snap.data() : null;
+      if (d && d.companyId === r.cid && d.status === 'PUBLISHED') {
+        await indexPublishedVersion({
+          ...d,
+          id,
+          companyId: r.cid,
+          title: str(it.title, 180) || 'Policy',
+          versionNumber: str(it.versionNumber, 30),
+        }).catch((err) => console.warn('[assistant] policy vector indexing retry skipped:', err?.message || err));
+      }
     }
     if (hit.text) docs.push({ id, title: str(it.title, 120) || 'Policy', version: str(it.versionNumber, 20), text: hit.text });
   }));
