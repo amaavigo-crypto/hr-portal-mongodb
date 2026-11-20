@@ -199,12 +199,17 @@ Employees should notify their immediate manager via the HR self-service portal a
     setError("");
     setFileName(file.name);
     const docTitle = title.trim() || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    const documentUploadTraceId = `browser-upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: documentUploadTraceId, event: 'upload.selected', status: 'START', fileName: file.name, mimeType: file.type || 'unknown', bytes: file.size }));
+
     if (!title) {
       setTitle(docTitle);
     }
 
     try {
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: documentUploadTraceId, event: 'upload.parse.start', status: 'START', fileName: file.name }));
       const parsed = await parseUploadedFile(file);
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: documentUploadTraceId, event: 'upload.parse.complete', status: 'SUCCESS', fileName: file.name, extractedCharacters: parsed.extractedText?.length || 0, mimeType: parsed.mimeType }));
       setRawContent(parsed.extractedText || '');
       let effectiveUrl = parsed.fileDataUrl || '';
       const effectiveMime =
@@ -264,9 +269,11 @@ Employees should notify their immediate manager via the HR self-service portal a
         setUploadStatus(`Document loaded (${(file.size / 1024).toFixed(1)} KB)`);
       }
 
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: documentUploadTraceId, event: 'upload.preview.ready', status: 'SUCCESS', fileName: file.name, stamped: effectiveUrl !== parsed.fileDataUrl }));
       setFileDataUrl(effectiveUrl);
       setContentTab('preview');
     } catch (err: any) {
+      console.error('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: documentUploadTraceId, event: 'upload.parse', status: 'ERROR', fileName: file.name, error: err instanceof Error ? err.message : String(err) }));
       console.error('File parse error:', err);
       setError('Could not process file format. You can manually paste document text below.');
     } finally {
