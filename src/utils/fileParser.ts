@@ -15,6 +15,13 @@ export interface ParsedFileResult {
 
 let pdfjsPromise: Promise<any> | null = null;
 
+const fileTraceId = () => `upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const fileLog = (traceId: string, event: string, status: 'START' | 'SUCCESS' | 'WARN' | 'ERROR', details: Record<string, unknown> = {}) => {
+  const entry = { timestamp: new Date().toISOString(), traceId, event, status, ...details };
+  const line = `[HR_DOCUMENT_UPLOAD] ${JSON.stringify(entry)}`;
+  if (status === 'ERROR') console.error(line); else if (status === 'WARN') console.warn(line); else console.info(line);
+};
+
 export async function getBrowserPdfjs() {
   if (typeof window === 'undefined') return null;
   if (!pdfjsPromise) {
@@ -40,6 +47,8 @@ export async function getBrowserPdfjs() {
  * Extract clean text and structure from a Word .docx file using JSZip & XML DOM Parser
  */
 export async function extractTextFromDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const startedAt = Date.now();
+  console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), event: 'docx.xml_extraction.start', status: 'START', bytes: arrayBuffer.byteLength }));
   const zip = new JSZip();
   const loadedZip = await zip.loadAsync(arrayBuffer);
 
@@ -197,6 +206,10 @@ export function extractTextFromRawPdfStream(rawPdf: string): string {
  * Automatically unpacks .docx XML containers, extracts text, or wraps video assets for governance workflows.
  */
 export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
+  const traceId = fileTraceId();
+  const startedAt = Date.now();
+  fileLog(traceId, 'file.parse.start', 'START', { fileName: file.name, mimeType: file.type || 'unknown', bytes: file.size });
+  try {
   const fileNameLower = file.name.toLowerCase();
   const isPdf = file.type === 'application/pdf' || fileNameLower.endsWith('.pdf');
   const isDocx =
@@ -243,7 +256,9 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
   // Handle .docx files with JSZip XML parser
   if (isDocx) {
     try {
+      fileLog(traceId, 'docx.array_buffer.read', 'START', { fileName: file.name });
       const arrayBuffer = await file.arrayBuffer();
+      fileLog(traceId, 'docx.array_buffer.read', 'SUCCESS', { bytes: arrayBuffer.byteLength });
       const extractedText = await extractTextFromDocx(arrayBuffer);
 
       // Ensure dataUrl has proper docx MIME prefix while keeping original bytes 100% intact
@@ -253,6 +268,7 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
         docxDataUrl = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${base64}`;
       }
 
+      fileLog(traceId, 'file.parse.complete', 'SUCCESS', { format: 'DOCX', extractedCharacters: extractedText.length, bytes: file.size, durationMs: Date.now() - startedAt });
       return {
         fileName: file.name,
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -262,6 +278,7 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
         isPdf: false,
       };
     } catch (docxErr) {
+      fileLog(traceId, 'docx.parse', 'ERROR', { fileName: file.name, error: docxErr instanceof Error ? docxErr.message : String(docxErr) });
       console.error('Failed to parse .docx file:', docxErr);
       throw new Error('Could not parse Word (.docx) document. Please ensure it is a valid .docx file.');
     }
@@ -293,6 +310,7 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
         }
 
         if (fullText.trim().length > 10) {
+          fileLog(traceId, 'file.parse.complete', 'SUCCESS', { format: 'PDF', pages: numPages, extractedCharacters: fullText.length, durationMs: Date.now() - startedAt });
           return {
             fileName: file.name,
             mimeType: 'application/pdf',
@@ -312,6 +330,7 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
     const rawText = await file.text();
     const streamExtracted = extractTextFromRawPdfStream(rawText);
 
+    fileLog(traceId, 'file.parse.complete', 'WARN', { format: 'PDF', fallback: 'raw-stream', extractedCharacters: streamExtracted.length, durationMs: Date.now() - startedAt });
     return {
       fileName: file.name,
       mimeType: 'application/pdf',
@@ -328,6 +347,7 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
 
   // Standard plain text fallback
   const text = await file.text();
+  fileLog(traceId, 'file.parse.complete', 'SUCCESS', { format: 'TEXT', extractedCharacters: text.length, durationMs: Date.now() - startedAt });
   return {
     fileName: file.name,
     mimeType,
@@ -336,6 +356,10 @@ export async function parseUploadedFile(file: File): Promise<ParsedFileResult> {
     fileDataUrl,
     isPdf: false,
   };
+  } catch (error) {
+    fileLog(traceId, 'file.parse', 'ERROR', { fileName: file.name, durationMs: Date.now() - startedAt, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 /**
