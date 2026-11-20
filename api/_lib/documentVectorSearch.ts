@@ -136,8 +136,10 @@ export async function indexPublishedVersion(version: PublishedVersion): Promise<
 
   // Store inactive first. A failed embedding/write never disables the currently published version.
   await col.bulkWrite(rows.map((row) => ({ replaceOne: { filter: { _id: row._id }, replacement: row, upsert: true } })), { ordered: true });
-  await col.updateMany({ companyId: version.companyId, documentMasterId: masterId, active: true }, { $set: { active: false, supersededAt: new Date() } });
+  // Activate the complete new version first; then retire the previous version. If retirement fails,
+  // the assistant's permission-filtered version allow-list still prevents old chunks from being returned.
   await col.updateMany({ companyId: version.companyId, versionId: version.id, contentHash }, { $set: { active: true, activatedAt: new Date() } });
+  await col.updateMany({ companyId: version.companyId, documentMasterId: masterId, versionId: { $ne: version.id }, active: true }, { $set: { active: false, supersededAt: new Date() } });
   return { indexed: rows.length, skipped: false };
 }
 
