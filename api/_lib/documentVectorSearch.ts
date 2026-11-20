@@ -186,8 +186,14 @@ export async function indexPublishedVersion(version: PublishedVersion, traceId =
   }
   const extractionStartedAt = Date.now();
   pipelineLog(traceId, 'document.text_extraction.start', 'START', { fileName, mimeType: version.mimeType || null });
-  const body = await publishedText(version);
-  pipelineLog(traceId, 'document.text_extraction.complete', body ? 'SUCCESS' : 'SKIP', { extractedCharacters: body.length, durationMs: Date.now() - extractionStartedAt, format: fileName.toLowerCase().endsWith('.docx') ? 'DOCX' : fileName.toLowerCase().endsWith('.pdf') ? 'PDF' : 'TEXT' });
+  let body: string;
+  try {
+    body = await publishedText(version);
+    pipelineLog(traceId, 'document.text_extraction.complete', body ? 'SUCCESS' : 'SKIP', { extractedCharacters: body.length, durationMs: Date.now() - extractionStartedAt, format: fileName.toLowerCase().endsWith('.docx') ? 'DOCX' : fileName.toLowerCase().endsWith('.pdf') ? 'PDF' : 'TEXT' });
+  } catch (error) {
+    pipelineLog(traceId, 'document.text_extraction', 'ERROR', { fileName, durationMs: Date.now() - extractionStartedAt, ...pipelineErrorDetails(error) });
+    throw error;
+  }
   if (!body) { pipelineLog(traceId, 'document.index.empty_text', 'SKIP'); return { indexed: 0, skipped: true }; }
   const contentHash = hashText(body);
   const col = await mongoCollection();
@@ -224,7 +230,12 @@ export async function indexPublishedVersion(version: PublishedVersion, traceId =
   pipelineLog(traceId, 'document.embedding.batch.complete', 'SUCCESS', { chunks: rows.length, dimensions: DIMENSIONS, durationMs: Date.now() - startedAt });
   // Store inactive first. A failed embedding/write never disables the currently published version.
   pipelineLog(traceId, 'mongodb.chunk_write.start', 'START', { collection: COLLECTION, chunks: rows.length, versionId: version.id });
-  await col.bulkWrite(rows.map((row) => ({ replaceOne: { filter: { _id: row._id }, replacement: row, upsert: true } })), { ordered: true });
+  try {
+    await col.bulkWrite(rows.map((row) => ({ replaceOne: { filter: { _id: row._id }, replacement: row, upsert: true } })), { ordered: true });
+  } catch (error) {
+    pipelineLog(traceId, 'mongodb.chunk_write', 'ERROR', { collection: COLLECTION, chunks: rows.length, ...pipelineErrorDetails(error) });
+    throw error;
+  }
   pipelineLog(traceId, 'mongodb.chunk_write.complete', 'SUCCESS', { collection: COLLECTION, chunks: rows.length });
   // Activate the complete new version first; then retire the previous version. If retirement fails,
   // the assistant's permission-filtered version allow-list still prevents old chunks from being returned.
