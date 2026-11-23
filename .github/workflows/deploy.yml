@@ -1,11 +1,12 @@
 name: CI and deploy
 
-# Every push to main is tested and, if everything passes, deployed to the server.
+# main        = test branch (Vercel). Tested on every push, never deployed to the server.
+# production  = live branch. Tested on every push and, if everything passes, deployed to the server.
 # Pull requests are tested but never deployed.
-# You can also deploy manually from the Actions tab ("Run workflow").
+# You can also deploy manually: Actions tab > "CI and deploy" > Run workflow, choosing the production branch.
 on:
   push:
-    branches: [main]
+    branches: [main, production]
   pull_request:
   workflow_dispatch:
 
@@ -45,7 +46,7 @@ jobs:
   deploy:
     name: Deploy to server
     needs: test
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/production'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
@@ -71,7 +72,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin main; git reset --hard '$COMMIT_SHA'; PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
+            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin production; git checkout -q -f -B production '$COMMIT_SHA'; PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
 
       - name: Clean up SSH key
         if: always()
