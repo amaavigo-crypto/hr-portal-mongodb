@@ -11,7 +11,7 @@
  *  - Nothing runs unless HR clicks "Evaluate with AI" (evaluate=true), and each request processes at
  *    most AI_SCORING_BATCH new candidates (default 4) so serverless time limits are never hit.
  *  - Emails and phone numbers are removed from the resume text before it is sent.
- *
+ *hosting
  * Env: OPENAI_API_KEY, OPENAI_SCORING_MODEL (or OPENAI_MODEL, default gpt-4o-mini), OPENAI_BASE_URL,
  *      AI_SCORING_BATCH, AI_SCORING_MAX_CANDIDATES (default 30), AI_SCORING_RESUME_CHARS (default 6000),
  *      RESUME_ALLOWED_HOSTS (comma list, default "amaavigo.com").
