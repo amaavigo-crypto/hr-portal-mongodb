@@ -18,6 +18,7 @@ import { adminApp, adminAuth, adminDb, isAdminConfigured } from './firebaseAdmin
 import { authenticate, requirePermission, requirePlatformAdmin, authErrorResponse, AuthError, type AuthContext } from './authContext.js';
 import { dispatchLiveEmail } from './serverEmail.js';
 import { syncDepartmentManagers, syncDepartmentManagersQuietly } from './deptManager.js';
+import { nextFreeEmployeeCode } from '../../shared/employeeCode.js';
 import {
   ALL_MODULE_KEYS,
   DEFAULT_ROLE_TEMPLATES,
@@ -206,11 +207,13 @@ async function syncCompanyUsers(companyId: string): Promise<number> {
 
 async function nextEmployeeId(companyId: string): Promise<string> {
   const ref = db().collection('companies').doc(companyId);
+  // Codes can be edited by hand (People > Directory), so skip any code someone already holds instead of repeating it.
+  const taken = (await db().collection('employees').where('companyId', '==', companyId).get()).docs.map((d: any) => String((d.data() as any).empId || ''));
   return db().runTransaction(async (tx) => {
     const c = (await tx.get(ref)).data() as CompanyDoc;
-    const n = c.nextEmployeeNumber || 1;
-    tx.update(ref, { nextEmployeeNumber: n + 1 });
-    return `${c.employeeIdPrefix}${String(n).padStart(3, '0')}`;
+    const next = nextFreeEmployeeCode(c.employeeIdPrefix, c.nextEmployeeNumber || 1, taken);
+    tx.update(ref, { nextEmployeeNumber: next.number + 1 });
+    return next.code;
   });
 }
 

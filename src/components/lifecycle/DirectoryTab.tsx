@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { lifecycleService } from '../../services/lifecycleService';
 import { buildOrgTree, flattenOrg, type OrgNode } from '../../../shared/lifecycleEngine';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { employeeCodeProblem, normalizeEmployeeCode } from '../../../shared/employeeCode';
+import { Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { Card, Notice, btnGhost, input, useRunner } from '../leave/ui';
 import { Avatar as ColorAvatar } from '../home/parts';
 
@@ -48,6 +49,7 @@ export const DirectoryTab: React.FC<{ canManage: boolean }> = ({ canManage }) =>
   const [showAll, setShowAll] = useState(false);
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [codeEdit, setCodeEdit] = useState<{ uid: string; value: string } | null>(null);
   const { busy, note, run } = useRunner();
 
   const load = useCallback(() => lifecycleService.directory(canManage && showAll).then(setData).catch(() => undefined), [canManage, showAll]);
@@ -106,7 +108,27 @@ export const DirectoryTab: React.FC<{ canManage: boolean }> = ({ canManage }) =>
                 {pageRows.map((p) => (
                   <tr key={p.uid} className="border-b border-slate-100 align-middle">
                     <td className="p-2"><div className="flex items-center gap-3"><ColorAvatar name={p.name} /><div><div className="font-bold text-slate-900">{p.name}</div><a className="text-slate-500 hover:underline" href={`mailto:${p.email}`}>{p.email}</a></div></div></td>
-                    <td className="p-2">{p.title || '–'}{p.empId && <div className="text-slate-400">{p.empId}</div>}</td>
+                    <td className="p-2">
+                      {p.title || '–'}
+                      {codeEdit?.uid === p.uid ? (
+                        <form className="mt-1 flex items-center gap-1" onSubmit={(e) => {
+                          e.preventDefault();
+                          const value = normalizeEmployeeCode(codeEdit.value);
+                          if (value === p.empId) { setCodeEdit(null); return; }
+                          run(async () => { await lifecycleService.setEmpId(p.uid, value); setCodeEdit(null); await load(); }, `Employee code for ${p.name} is now ${value}.`);
+                        }}>
+                          <input autoFocus className={`${input} !py-1 !w-28 text-xs uppercase`} aria-label={`Employee code for ${p.name}`} maxLength={20} value={codeEdit.value}
+                            onChange={(e) => setCodeEdit({ uid: p.uid, value: e.target.value })} onKeyDown={(e) => { if (e.key === 'Escape') setCodeEdit(null); }} />
+                          <button type="submit" disabled={busy || !!employeeCodeProblem(codeEdit.value)} className="rounded-md bg-[#FA7014] px-2 py-1 text-[11px] font-bold text-white disabled:opacity-40">Save</button>
+                          <button type="button" onClick={() => setCodeEdit(null)} className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">Cancel</button>
+                        </form>
+                      ) : (
+                        <div className="flex items-center gap-1 text-slate-400">
+                          {p.empId || (data.canEdit ? 'No code' : '')}
+                          {data.canEdit && <button type="button" aria-label={`Change employee code for ${p.name}`} title="Change employee code" disabled={busy} onClick={() => setCodeEdit({ uid: p.uid, value: p.empId })} className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-[#FA7014]"><Pencil className="h-3 w-3" /></button>}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-2">{p.department || '–'}</td>
                     <td className="p-2">
                       {data.canEdit ? (

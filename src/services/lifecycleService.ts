@@ -75,4 +75,5 @@ export const lifecycleService = {
   setManager: (uid: string, managerUid: string) => post('set-manager', { uid, managerUid }),
   /** Drop a hand-picked manager: the person reports to their department's head again. */
   useDepartmentHead: (uid: string) => post('set-manager', { uid, auto: true }),
+  setEmpId: (uid: string, empId: string) => post('set-emp-id', { uid, empId }),
 };

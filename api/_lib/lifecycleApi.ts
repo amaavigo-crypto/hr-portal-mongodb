@@ -12,13 +12,14 @@
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
 import { hasPerm } from '../../shared/permissions.js';
 import {
-  db, loadPeople, loadProfiles, notify, nowIso, personByUid, profileId, profileOf, str, companyLabel, type Person, type Profile,
+  audit, db, loadPeople, loadProfiles, notify, nowIso, personByUid, profileId, profileOf, str, companyLabel, type Person, type Profile,
 } from './leaveCore.js';
 import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, checkIdentityImage, identityProblem, identityTypeKeys, normalizeIdentity } from '../../shared/employeeIdentity.js';
 import { PERSONAL_FIELDS, checkPersonalField } from '../../shared/employeePersonal.js';
 import { MAX_QUALIFICATIONS, cleanQualification } from '../../shared/employeeQualification.js';
 import { MAX_FAMILY_MEMBERS, cleanFamilyMember } from '../../shared/employeeFamily.js';
 import { istToday } from '../../shared/leaveEngine.js';
+import { employeeCodeProblem, normalizeEmployeeCode, sameEmployeeCode } from '../../shared/employeeCode.js';
 import { isManualManager, syncDepartmentManagers } from './deptManager.js';
 import { ensureDraftMapping, setMappingStatus } from './hrbpOrg.js';
 import {
@@ -745,6 +746,37 @@ async function setManager(w: Who, body: any): Promise<Result> {
   return ok({});
 }
 
+/**
+ * Change a person's employee code (the label under their role, e.g. AMAA006).
+ * Same people as for reporting lines. The code must be unique in the company (inactive people keep theirs, so an old code
+ * is never handed to someone else). The previous code is kept in the Employee Master's "old code" field when that is empty,
+ * and every change goes into the audit trail. People are keyed by uid, so nothing else needs to change.
+ */
+async function setEmpId(w: Who, body: any): Promise<Result> {
+  if (!(w.canManage || hasPerm(w.ctx.perms, 'leave.manage'))) return fail(403, 'You cannot change employee codes.');
+  const uid = str(body?.uid, 128);
+  const problem = employeeCodeProblem(body?.empId);
+  if (problem) return fail(400, problem);
+  const code = normalizeEmployeeCode(body?.empId);
+  const people = await loadPeople(w.cid);
+  const person = people.find((p) => p.uid === uid);
+  if (!person) return fail(404, 'Employee not found.');
+  if (person.empId === code) return ok({ empId: code, unchanged: true });
+  const clash = people.find((p) => p.uid !== uid && sameEmployeeCode(p.empId, code));
+  if (clash) return fail(409, `${code} already belongs to ${clash.name}${clash.active ? '' : ' (inactive)'}. Pick a different code.`);
+
+  await db().collection('employees').doc(person.docId).update({ empId: code, updatedAt: nowIso() });
+
+  if (person.empId) {
+    const ref = db().collection('employeeProfiles').doc(profileDocId(w.cid, uid));
+    const cur = await ref.get();
+    const data: any = cur.exists ? cur.data() : {};
+    if (!str(data.oldCode, 80)) await ref.set(clean({ ...data, uid, companyId: w.cid, oldCode: person.empId, updatedAt: nowIso(), updatedBy: w.uid }));
+  }
+  await audit(w.cid, 'employee', uid, 'EMP_CODE_CHANGED', { name: await actorOf(w), uid: w.uid }, person.empId, code);
+  return ok({ empId: code });
+}
+
 // ------------------------------------------------------------------ employee profile (Employee > Employee Master)
 //
 // One page per person. Core facts come from the employee record, leave profile and exit case; the extra fields HR fills in
@@ -1320,6 +1352,7 @@ export async function routeLifecycle(r: LifecycleRequestIn): Promise<Result> {
       case 'profile-save': return POST ? await profileSave(w, body) : wrong;
       case 'directory': return GET ? await directory(w, r.query) : wrong;
       case 'set-manager': return POST ? await setManager(w, body) : wrong;
+      case 'set-emp-id': return POST ? await setEmpId(w, body) : wrong;
       default: return wrong;
     }
   } catch (err: any) {
