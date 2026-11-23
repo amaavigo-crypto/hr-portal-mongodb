@@ -15,15 +15,21 @@ import { Employee360Page } from './Employee360Page';
 import { EmployeePicker } from './EmployeePicker';
 import type { HRAgentModule } from '../HRAgentShell';
 
+type ProfileTab = 'basic' | 'identity' | 'personal' | 'family' | 'qualification';
+const PROFILE_TABS: { key: ProfileTab; label: string }[] = [
+  { key: 'basic', label: 'Basic' }, { key: 'identity', label: 'Identity' }, { key: 'personal', label: 'Personal' },
+  { key: 'family', label: 'Family' }, { key: 'qualification', label: 'Qualification' },
+];
+
 /** Screens that already exist elsewhere in the app. The rest show a "not set up yet" page until they are built. */
 const EXISTING: Record<string, { label: string; open: (go: (m: HRAgentModule) => void) => void }> = {
-  acknowledgement: { label: 'Open my policies', open: (go) => go('policies') },
 };
 
 export const EmployeeModule: React.FC<{ currentUser: User; canPick?: boolean; onOpenModule: (m: HRAgentModule) => void }> = ({ canPick = false, onOpenModule }) => {
   const { section } = employeeNav.useNav();
   const [pickedUid, setPickedUid] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<'Transaction' | 'Reports'>('Transaction');
+  const [profileTab, setProfileTab] = useState<ProfileTab>('basic');
   useEffect(() => { employeeNav.publish(employeeNavItems(canPick)); }, [canPick]);
   useEffect(() => () => employeeNav.publish([]), []);
 
@@ -56,18 +62,30 @@ export const EmployeeModule: React.FC<{ currentUser: User; canPick?: boolean; on
           </div>
         )}
 
-        {canPick && (entry?.key === 'master' || entry?.key === 'identity' || entry?.key === 'personal' || entry?.key === 'family' || entry?.key === 'qualification' || entry?.key === 'separation') && <EmployeePicker current={pickedUid} onPick={setPickedUid} />}
-        {entry?.key === 'master' && <EmployeeProfilePage uid={pickedUid} />}
-        {entry?.key === 'identity' && <EmployeeIdentityPage uid={pickedUid} />}
-        {entry?.key === 'personal' && <PersonalInfoPage uid={pickedUid} />}
-        {entry?.key === 'family' && <FamilyDetailsPage uid={pickedUid} />}
-        {entry?.key === 'qualification' && <QualificationPage uid={pickedUid} />}
+        {canPick && (entry?.key === 'master' || entry?.key === 'separation') && <EmployeePicker current={pickedUid} onPick={setPickedUid} />}
+        {entry?.key === 'master' && (
+          <div>
+            <div role="tablist" aria-label="Employee profile sections" className="flex flex-wrap gap-1 border-b border-slate-200 mb-4">
+              {PROFILE_TABS.map((t) => (
+                <button key={t.key} type="button" role="tab" id={`profile-tab-${t.key}`} aria-selected={profileTab === t.key} aria-controls="profile-panel" onClick={() => setProfileTab(t.key)}
+                  className={`min-h-[44px] px-4 text-sm font-bold border-b-[3px] -mb-px ${profileTab === t.key ? 'border-[#6d4aff] text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{t.label}</button>
+              ))}
+            </div>
+            <div id="profile-panel" role="tabpanel" aria-labelledby={`profile-tab-${profileTab}`}>
+              {profileTab === 'basic' && <EmployeeProfilePage uid={pickedUid} />}
+              {profileTab === 'identity' && <EmployeeIdentityPage uid={pickedUid} />}
+              {profileTab === 'personal' && <PersonalInfoPage uid={pickedUid} />}
+              {profileTab === 'family' && <FamilyDetailsPage uid={pickedUid} />}
+              {profileTab === 'qualification' && <QualificationPage uid={pickedUid} />}
+            </div>
+          </div>
+        )}
         {entry?.key === 'all360' && canPick && <Employee360Page />}
         {entry?.key === 'weekoff' && <WeekoffReportPage />}
         {entry?.key === 'exitclearance' && <ExitClearanceReportPage />}
         {entry?.key === 'separation' && <SeparationPage uid={pickedUid} onOpenModule={onOpenModule} />}
 
-        {entry && !['master', 'identity', 'personal', 'family', 'qualification', 'separation', 'weekoff', 'exitclearance', 'all360'].includes(entry.key) && (
+        {entry && !['master', 'separation', 'weekoff', 'exitclearance', 'all360'].includes(entry.key) && (
           <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
             <h2 className="text-base font-black text-slate-800">{entry.label}</h2>
             <p className="text-xs text-slate-500 mt-1">{entry.hint}</p>
