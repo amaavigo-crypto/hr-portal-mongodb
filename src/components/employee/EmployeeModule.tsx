@@ -15,10 +15,10 @@ import { Employee360Page } from './Employee360Page';
 import { EmployeePicker } from './EmployeePicker';
 import type { HRAgentModule } from '../HRAgentShell';
 
-type ProfileTab = 'basic' | 'identity' | 'personal' | 'family' | 'qualification';
+type ProfileTab = 'basic' | 'identity' | 'personal' | 'family' | 'qualification' | 'separation';
 const PROFILE_TABS: { key: ProfileTab; label: string }[] = [
   { key: 'basic', label: 'Basic' }, { key: 'identity', label: 'Identity' }, { key: 'personal', label: 'Personal' },
-  { key: 'family', label: 'Family' }, { key: 'qualification', label: 'Qualification' },
+  { key: 'family', label: 'Family' }, { key: 'qualification', label: 'Qualification' }, { key: 'separation', label: 'Separation' },
 ];
 
 /** Screens that already exist elsewhere in the app. The rest show a "not set up yet" page until they are built. */
@@ -62,7 +62,7 @@ export const EmployeeModule: React.FC<{ currentUser: User; canPick?: boolean; on
           </div>
         )}
 
-        {canPick && (entry?.key === 'master' || entry?.key === 'separation') && <EmployeePicker current={pickedUid} onPick={setPickedUid} />}
+        {canPick && entry?.key === 'master' && <EmployeePicker current={pickedUid} onPick={setPickedUid} />}
         {entry?.key === 'master' && (
           <div>
             <div role="tablist" aria-label="Employee profile sections" className="flex flex-wrap gap-1 border-b border-slate-200 mb-4">
@@ -77,15 +77,15 @@ export const EmployeeModule: React.FC<{ currentUser: User; canPick?: boolean; on
               {profileTab === 'personal' && <PersonalInfoPage uid={pickedUid} />}
               {profileTab === 'family' && <FamilyDetailsPage uid={pickedUid} />}
               {profileTab === 'qualification' && <QualificationPage uid={pickedUid} />}
+              {profileTab === 'separation' && <SeparationPage uid={pickedUid} onOpenModule={onOpenModule} />}
             </div>
           </div>
         )}
         {entry?.key === 'all360' && canPick && <Employee360Page />}
         {entry?.key === 'weekoff' && <WeekoffReportPage />}
         {entry?.key === 'exitclearance' && <ExitClearanceReportPage />}
-        {entry?.key === 'separation' && <SeparationPage uid={pickedUid} onOpenModule={onOpenModule} />}
 
-        {entry && !['master', 'separation', 'weekoff', 'exitclearance', 'all360'].includes(entry.key) && (
+        {entry && !['master', 'weekoff', 'exitclearance', 'all360'].includes(entry.key) && (
           <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
             <h2 className="text-base font-black text-slate-800">{entry.label}</h2>
             <p className="text-xs text-slate-500 mt-1">{entry.hint}</p>
