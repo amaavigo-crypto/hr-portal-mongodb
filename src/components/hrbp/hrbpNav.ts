@@ -2,17 +2,18 @@ import { createModuleNav, NavItem } from '../moduleNav';
 
 export type Section =
   | 'dash' | 'org' | 'map' | 'talent' | 'kpi' | 'pip' | 'retention' | 'succ' | 'needs' | 'paths' | 'certs' | 'surveysAdmin' | 'wellAdmin'
-  | 'pos' | 'transfer' | 'bunits' | 'probation' | 'okr' | 'promo' | 'quarterly' | 'me' | 'learning' | 'pulse' | 'recog' | 'well';
+  | 'pos' | 'transfer' | 'bunits' | 'probation' | 'okr' | 'promo' | 'quarterly' | 'me' | 'learning' | 'pulse' | 'recog' | 'well'
+  | 'planner' | 'skills' | 'teamSkills';
 
 type Entry = { key: Section; label: string };
 
 const CYCLE: Entry[] = [{ key: 'okr', label: 'OKRs' }, { key: 'probation', label: 'Probation' }, { key: 'promo', label: 'Promotions' }];
 const SELF: Entry[] = [
-  { key: 'me', label: 'My HRBP' }, { key: 'learning', label: 'My learning' }, { key: 'pulse', label: 'Pulse surveys' }, { key: 'recog', label: 'Recognition' }, { key: 'well', label: 'Wellness' },
+  { key: 'me', label: 'My HRBP' }, { key: 'skills', label: 'My skills' }, { key: 'teamSkills', label: 'Team skills' }, { key: 'learning', label: 'My learning' }, { key: 'pulse', label: 'Pulse surveys' }, { key: 'recog', label: 'Recognition' }, { key: 'well', label: 'Wellness' },
 ];
 const VIEW: Entry[] = [{ key: 'dash', label: 'Leadership dashboard' }, { key: 'org', label: 'Org & resources' }];
 const MANAGE: Entry[] = [
-  { key: 'map', label: 'People mapping' }, { key: 'bunits', label: 'Business units' }, { key: 'pos', label: 'Positions' }, { key: 'transfer', label: 'Transfers' }, { key: 'talent', label: 'Talent review' }, { key: 'kpi', label: 'KPIs' }, { key: 'pip', label: 'Improvement plans' },
+  { key: 'planner', label: 'AI project planner' }, { key: 'map', label: 'People mapping' }, { key: 'bunits', label: 'Business units' }, { key: 'pos', label: 'Positions' }, { key: 'transfer', label: 'Transfers' }, { key: 'talent', label: 'Talent review' }, { key: 'kpi', label: 'KPIs' }, { key: 'pip', label: 'Improvement plans' },
   { key: 'retention', label: 'Retention' }, { key: 'succ', label: 'Succession' }, { key: 'needs', label: 'Training needs' }, { key: 'paths', label: 'Learning paths' },
   { key: 'certs', label: 'Certificates' }, { key: 'surveysAdmin', label: 'Survey admin' }, { key: 'wellAdmin', label: 'Wellness admin' },
 ];

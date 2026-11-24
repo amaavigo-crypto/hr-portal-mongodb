@@ -101,7 +101,7 @@ function hostAllowed(u: URL): boolean {
   return (u.protocol === 'https:' || u.protocol === 'http:') && allowedHosts().some((a) => h === a || h.endsWith(`.${a}`));
 }
 
-async function pdfText(buf: Buffer): Promise<string> {
+export async function pdfText(buf: Buffer, maxPages = 6): Promise<string> {
   // @ts-ignore - legacy build has no bundled types
   const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
   // pdf.js loads its worker by a computed path, which serverless bundlers do not include ("Setting up fake worker
@@ -123,7 +123,7 @@ async function pdfText(buf: Buffer): Promise<string> {
     verbosity: 0,
   });
   const pdf = await task.promise;
-  const pages = Math.min(pdf.numPages, 6);
+  const pages = Math.min(pdf.numPages, maxPages);
   const out: string[] = [];
   for (let i = 1; i <= pages; i++) {
     const page = await pdf.getPage(i);
@@ -148,7 +148,7 @@ function legacyDocText(buf: Buffer): string {
   return best.join('\n');
 }
 
-async function docxText(buf: Buffer): Promise<string> {
+export async function docxText(buf: Buffer): Promise<string> {
   const zip = await JSZip.loadAsync(buf);
   const file = zip.file('word/document.xml');
   if (!file) throw new Error('Not a Word document');

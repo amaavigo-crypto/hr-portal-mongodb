@@ -196,7 +196,8 @@ async function saveTask(c: TC, b: any): Promise<Result> {
 
   if (!existing) {
     await logTask(c, saved.id, 'CREATED', `Created and given to ${who.name}.`);
-    if (assigneeUid !== c.ctx.uid) await tell(c, [assigneeUid], `New task: ${saved.title}`, `${c.who} gave you a task: "${saved.title}" (due ${nice(saved.dueDate)}).`);
+    // notify: false lets a caller that creates many tasks at once (the HRBP planner) send one summary email instead.
+    if (assigneeUid !== c.ctx.uid && b.notify !== false) await tell(c, [assigneeUid], `New task: ${saved.title}`, `${c.who} gave you a task: "${saved.title}" (due ${nice(saved.dueDate)}).`);
   } else {
     const changes: string[] = [];
     if (existing.title !== saved.title) changes.push('title');

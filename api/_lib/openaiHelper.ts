@@ -42,7 +42,8 @@ export type Part = { type: 'text'; text: string } | { type: 'image_url'; image_u
 
 export interface AiResult { data?: any; error?: string; off?: boolean; cached?: boolean }
 
-export async function aiJson(o: { cid: string; feature: string; system: string; user: string | Part[]; cacheKey?: string; maxTokens?: number }): Promise<AiResult> {
+/** `model` overrides the default model for one feature; `timeoutMs` for slow, long answers (default 50 s). */
+export async function aiJson(o: { cid: string; feature: string; system: string; user: string | Part[]; cacheKey?: string; maxTokens?: number; model?: string; timeoutMs?: number }): Promise<AiResult> {
   if (!aiEnabled()) return { off: true };
   const hash = o.cacheKey ? createHash('sha256').update(`${o.cid}|${o.feature}|${o.cacheKey}`).digest('hex').slice(0, 40) : '';
   const cacheRef = hash ? db().collection('hiringItems').doc(`aic_${hash}`) : null;
@@ -54,12 +55,12 @@ export async function aiJson(o: { cid: string; feature: string; system: string; 
   if (limited) return { error: limited };
   const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 50_000);
+  const timer = setTimeout(() => controller.abort(), o.timeoutMs ?? 50_000);
   try {
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiKey()}` }, signal: controller.signal,
       body: JSON.stringify({
-        model: (process.env.OPENAI_HIRING_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim(), temperature: 0.2, max_tokens: o.maxTokens ?? 1200, response_format: { type: 'json_object' },
+        model: (o.model || process.env.OPENAI_HIRING_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim(), temperature: 0.2, max_tokens: o.maxTokens ?? 1200, response_format: { type: 'json_object' },
         messages: [{ role: 'system', content: o.system }, { role: 'user', content: o.user }],
       }),
     });

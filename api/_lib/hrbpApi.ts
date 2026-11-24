@@ -28,6 +28,7 @@ import { loadPeople, loadProfiles, notify, profileId, type Person } from './leav
 import { syncDepartmentManagers } from './deptManager.js';
 import { wouldCycle } from '../../shared/lifecycleEngine.js';
 import { routeCycle } from './talentCycleApi.js';
+import { routePlanner } from './projectPlannerApi.js';
 import {
   allocationSummary, certStatus, cleanAllocations, kpiAttainment, kpiStatus, nineBox, pipTransition, successionGap, surveyAggregate, validatePipPlan,
   PIP_FINAL, type PipAction, type PipStatus, type Readiness, type SurveyQuestion,
@@ -730,6 +731,9 @@ export async function routeHrbp(r: HrbpRequest): Promise<Result> {
   // Probation, OKRs, promotions and the quarterly review round live in talentCycleApi.ts.
   const cycle = await routeCycle(r);
   if (cycle) return cycle;
+  // The AI project planner and skill profiles live in projectPlannerApi.ts.
+  const planner = await routePlanner(r);
+  if (planner) return planner;
   const route = ROUTES[r.action];
   if (!route) return fail(404, 'Unknown HR Business Partner action.');
   try {

@@ -8,6 +8,8 @@ import { Transfers } from './hrbp/Transfers';
 import { Surveys } from './hrbp/Surveys';
 import { Okrs, Probation, Promotions, Quarterly } from './hrbp/TalentCycle';
 import { MyHrbp, MyLearning, Recognition, WellnessList } from './hrbp/SelfService';
+import { ProjectPlanner } from './hrbp/ProjectPlanner';
+import { MySkills, TeamSkills } from './hrbp/Skills';
 import { hrbpService } from '../services/hrbpService';
 import { hrbpNav, hrbpNavItems, type Section } from './hrbp/hrbpNav';
 import { useLoad } from './common/loadUi';
@@ -147,6 +149,9 @@ export const HrbpModule: React.FC<{ currentUser: User; users: User[] }> = ({ cur
           blank={{ type: 'EVENT', active: true }}
           row={(w) => ({ title: w.title, sub: `${w.type.toLowerCase()}${w.date ? ` - ${w.date}` : ''} - ${w.participantCount} joined`, pill: { text: w.active ? 'open' : 'closed', tone: w.active ? 'green' : 'slate' } })} />
       );
+      case 'planner': return <ProjectPlanner />;
+      case 'skills': return <MySkills />;
+      case 'teamSkills': return <TeamSkills />;
       case 'me': return <MyHrbp />;
       case 'learning': return <MyLearning />;
       case 'pulse': return <Surveys manage={false} />;

@@ -168,6 +168,18 @@ KPI governance (HRBP-006), performance improvement plans (HRBP-007), anonymous p
 training needs (HRBP-011), learning paths (HRBP-012), certificate tracker (HRBP-013), retention planning, succession planning and the leadership dashboard.
 Existing companies need `hrbp.manage` / `hrbp.view` / `hiring.budget.manage` granted to the right roles (new companies get them from the role templates).
 
+### AI project planner (HR Business Partner > AI project planner)
+
+Upload a project document (PDF, Word, text, up to 3 MB) or type the details. The planner turns it into a staffed, costed plan, and nothing is assigned until it is approved. Code: `shared/projectPlanner.ts` (rules, matching, money; pure and tested), `api/_lib/projectPlannerApi.ts` (routes, inside the existing `/api/hrbp/<action>` function), screens in `src/components/hrbp/ProjectPlanner.tsx` and `Skills.tsx`.
+
+1. **Brief.** gpt-4o-mini (`OPENAI_PLANNER_READ_MODEL`) reads the document into goals, deliverables, dates, budget, client price, other costs and roles with skills. A money figure is kept only if it is written in the document ("18 lakh", "18,00,000" and so on); what HR types always wins. HR checks and edits the brief.
+2. **Team (code only).** Everyone active is scored on skill fit (60%), free time (30%: approved leave in the window, time already booked on approved plans) and cost (10%). People whose last working day falls before the end are never picked. Nobody is booked over 100%. A role nobody fits is shown as a gap.
+3. **Plan.** gpt-4o (`OPENAI_PLANNER_MODEL`) drafts phases, milestones, tasks per role and risks. It never receives a salary, budget, price or cost. Its output is checked: phases are clamped to the dates, tasks get real owners and due dates, and sentences about money are removed.
+4. **Money (code only).** People cost = annual CTC ÷ 260 working days × working days in the project × allocation. Then other costs, budget headroom, profit and margin (when a client price is given), a split by phase and by role, and health checks (over budget, thin margin, skill gaps, overloaded people, leave clashes, missing salary structures).
+5. **Approve.** Needs `task.manage` or a company admin. One click creates a company board in Tasks with every task assigned, books each person's time (`allocation` records, so the next plan sees them as busy) and sends one email per person, not one per task. It runs once: a second click does nothing, and a partial failure can be retried without duplicates. Archiving a plan frees the people it booked.
+
+Access: the planner is for `hrbp.manage`. Per-person cost is shown only to people with `payroll.view`, `payroll.manage` or company admin; others see totals. **Skills:** everyone has **My skills** (pre-filled from job title, certificates and training needs). Their manager confirms under **Team skills**, and HRBP managers can confirm anyone's. Confirmed skills count fully in matching, submitted ones slightly less, guessed ones about half. Data lives in `hrbpItems` (kinds `projectPlan`, `skillProfile`, `allocation`). AI use counts against `AI_MONTHLY_CALLS`, with two calls per plan (read and build) and one per re-plan. Test: `npx tsx tests/projectPlanner.test.ts`.
+
 ## Performance Management (HR-PM-001 to HR-PM-009, simplified)
 
 Built from the "HR Performance Management Automation" specification, simplified so nobody needs training. No n8n: the app's own API and a daily job do the automation. Open **Performance** in the sidebar.
