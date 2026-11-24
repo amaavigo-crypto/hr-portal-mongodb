@@ -14,6 +14,7 @@ import { routeTasks } from './api/_lib/taskApi.js';
 import { routeAssistant } from './api/_lib/assistantApi.js';
 import { routePm } from './api/_lib/pmApi.js';
 import { routeLeave } from './api/_lib/leaveApi';
+import { routePrefixed } from './api/_lib/prefixRouter';
 import { routePayroll } from './api/_lib/payrollApi';
 import { routeLifecycle } from './api/_lib/lifecycleApi';
 import { routeDashboard } from './api/_lib/dashboardApi';
@@ -216,6 +217,8 @@ async function startServer() {
         });
         return res.status(out.status).json(out.json);
       }
+      const prefixed = await routePrefixed(req.params.action, { method: req.method, query: req.query as Record<string, any>, body: req.body, headers: req.headers as Record<string, any>, ip });
+      if (prefixed) return res.status(prefixed.status).json(prefixed.json);
       const { status, json } = await routeLeave({
         method: req.method,
         action: req.params.action,

@@ -52,7 +52,7 @@ All data lives in MongoDB. Firebase is used only for **Authentication** (logins 
 
 ### Database schema (Mongoose)
 
-The data model is written down in code: one schema per collection in `api/_lib/schemas/` (107 collections), and a readable copy in
+The data model is written down in code: one schema per collection in `api/_lib/schemas/` (113 collections), and a readable copy in
 [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) (generated, never edit by hand: `npm run schema:doc`; `tests/schema.doc.test.ts` fails if it is stale).
 
 - **What the schemas do:** document each collection, check writes inside the adapter, and define the non-unique indexes (`companyId` first) created the first time a collection is used.

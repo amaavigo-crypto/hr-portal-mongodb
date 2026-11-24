@@ -51,6 +51,7 @@ const HiringAutomationModule = lazyPage(() => import('./components/HiringAutomat
 const PerformanceModule = lazyPage(() => import('./components/PerformanceModule').then((m) => m.PerformanceModule));
 const Performance2Module = lazyPage(() => import('./components/Performance2Module').then((m) => m.Performance2Module));
 const TasksModule = lazyPage(() => import('./components/TasksModule').then((m) => m.TasksModule));
+const WorkplaceModule = lazyPage(() => import('./components/WorkplaceModule').then((m) => m.WorkplaceModule));
 const WellbeingModule = lazyPage(() => import('./components/WellbeingModule').then((m) => m.WellbeingModule));
 const HrbpModule = lazyPage(() => import('./components/HrbpModule').then((m) => m.HrbpModule));
 const ApplicationsModule = lazyPage(() => import('./components/ApplicationsModule').then((m) => m.ApplicationsModule));
@@ -881,6 +882,12 @@ export default function App() {
           {hrAgentModule === 'wellbeing' && currentUser && (
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <WellbeingModule currentUser={currentUser} />
+            </div>
+          )}
+
+          {hrAgentModule === 'workplace' && currentUser && (
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <WorkplaceModule currentUser={currentUser} />
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import { routeLeave } from '../_lib/leaveApi.js';
+import { routePrefixed } from '../_lib/prefixRouter.js';
 import { routePayroll } from '../_lib/payrollApi.js';
 import { routeLifecycle } from '../_lib/lifecycleApi.js';
 import { routeDashboard } from '../_lib/dashboardApi.js';
@@ -49,6 +50,8 @@ export default async function handler(req: any, res: any) {
       });
       return res.status(status).json(json);
     }
+    const prefixed = await routePrefixed(action, { method: req.method, query: req.query || {}, body: req.body, headers: req.headers, ip });
+    if (prefixed) return res.status(prefixed.status).json(prefixed.json);
     const { status, json } = await routeLeave({
       method: req.method,
       action,

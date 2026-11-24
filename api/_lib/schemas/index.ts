@@ -19,10 +19,11 @@ import { leave } from './leave.js';
 import { payroll } from './payroll.js';
 import { hiring } from './hiring.js';
 import { people } from './people.js';
+import { workplace } from './workplace.js';
 
 export { HIRING_KINDS, HRBP_KINDS } from './hiring.js';
 
-export const SCHEMAS: Record<string, Def> = { ...core, ...accounts, ...documents, ...employee, ...leave, ...payroll, ...hiring, ...people };
+export const SCHEMAS: Record<string, Def> = { ...core, ...accounts, ...documents, ...employee, ...leave, ...payroll, ...hiring, ...people, ...workplace };
 
 export type ValidationMode = 'off' | 'warn' | 'enforce';
 export function validationMode(): ValidationMode {

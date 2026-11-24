@@ -74,6 +74,20 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: 'wellbeing.view_individual', label: 'Open one person\'s Wellbeing skill picture (every open is written to an audit log)', group: 'Wellbeing' },
   { key: 'wellbeing.manage', label: 'Set up Wellbeing: which games are on, the daily limit and the skills that matter for each role', group: 'Wellbeing' },
 
+  // Workplace tools (everyone can sign what is sent to them, answer surveys, post on the wall and see their own assets)
+  { key: 'esign.manage', label: 'Send documents for e-signature and see every signature request', group: 'Workplace' },
+  { key: 'engage.manage', label: 'Run surveys and moderate the social wall', group: 'Workplace' },
+  { key: 'asset.manage', label: 'Manage company assets: stock, assignment, repairs and retirement', group: 'Workplace' },
+
+  // Configuration builders
+  { key: 'custom.manage', label: 'Define custom fields on employee profiles', group: 'Configuration' },
+  { key: 'workflow.manage', label: 'Build approval chains for requests', group: 'Configuration' },
+  { key: 'report.manage', label: 'Build, save and share custom reports', group: 'Configuration' },
+
+  // Projects and timesheets (everyone logs their own time on projects they are on)
+  { key: 'psa.manage', label: 'Manage clients, projects, allocation, timesheet approval and billing', group: 'Projects' },
+  { key: 'psa.view', label: 'View projects, utilisation and billing (read-only)', group: 'Projects' },
+
   // Administration
   { key: 'users.manage', label: 'Add, edit and deactivate users', group: 'Administration' },
   { key: 'departments.manage', label: 'Manage departments', group: 'Administration' },

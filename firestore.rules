@@ -536,6 +536,15 @@ service cloud.firestore {
     match /homeSettings/{id} { allow read, write: if false; }
     match /announcements/{id} { allow read, write: if false; }
     match /moodCheckins/{id} { allow read, write: if false; }
+    match /payrollChallans/{id} { allow read, write: if false; }
+    match /attendanceApiKeys/{id} { allow read, write: if false; }
+    match /accountingMappings/{id} { allow read, write: if false; }
+    match /esignRequests/{id} { allow read, write: if false; }
+    match /surveys/{id} { allow read, write: if false; }
+    match /surveyResponses/{id} { allow read, write: if false; }
+    match /wallPosts/{id} { allow read, write: if false; }
+    match /wallComments/{id} { allow read, write: if false; }
+    match /assets/{id} { allow read, write: if false; }
     match /wbConsent/{id} { allow read, write: if false; }
     match /wbSessions/{id} { allow read, write: if false; }
     match /wbDaily/{id} { allow read, write: if false; }

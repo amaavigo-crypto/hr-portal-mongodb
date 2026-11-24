@@ -33,6 +33,7 @@ import {
   Contact,
   Workflow,
   Gamepad2,
+  Megaphone,
   Search,
   Bell,
 } from 'lucide-react';
@@ -80,6 +81,7 @@ export type HRAgentModule =
   | 'tasks'
   | 'hiring-automation'
   | 'wellbeing'
+  | 'workplace'
   | 'leave-management'
   | 'payroll'
   | 'people'
@@ -189,6 +191,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     { id: 'tasks', label: 'Tasks', show: true },
     { id: 'hiring-automation', label: 'Hiring Automation', show: showHiringAutomation },
     { id: 'wellbeing', label: 'Wellbeing', show: true },
+    { id: 'workplace', label: 'Workplace', show: true },
     { id: 'people', label: 'People', show: true },
     { id: 'employee', label: 'Employee', show: true },
     { id: 'administration', label: 'Administration', show: hasAdminAccess },
@@ -318,6 +321,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   { key: 'tasks' as const, title: 'Tasks', sub: 'My tasks, boards & dashboards', Icon: ListChecks, show: true },
                   { key: 'hiring-automation' as const, title: 'Hiring Automation', sub: 'Your hiring steps, applicants & tasks', Icon: Workflow, show: showHiringAutomation },
                   { key: 'wellbeing' as const, title: 'Wellbeing', sub: 'Short games for a break', Icon: Gamepad2, show: true },
+                  { key: 'workplace' as const, title: 'Workplace', sub: 'Wall, surveys, e-sign & assets', Icon: Megaphone, show: true },
                 ]).filter((m) => m.show && keys.includes(m.key)).map((m) => (
                   <React.Fragment key={m.key}>
                   <div className="relative">
@@ -707,7 +711,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   <ModuleSubNav nav={payrollNav} counts={badges.payroll} label="Payroll sections" variant="sidebar" idPrefix="nav-submodule-payroll" onNavigate={() => setIsMobileSidebarOpen(false)} />
                 )}
 
-                {renderModules(['tasks', 'performance', 'performance2', 'wellbeing', 'hrbp', 'my-hiring'])}
+                {renderModules(['tasks', 'performance', 'performance2', 'wellbeing', 'workplace', 'hrbp', 'my-hiring'])}
                 {/* ---------------------------------------------------- */}
                 {/* PEOPLE (directory, joining tasks, exits, letters) */}
                 {/* ---------------------------------------------------- */}
