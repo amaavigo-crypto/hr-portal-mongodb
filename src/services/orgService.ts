@@ -4,7 +4,10 @@ import { auth } from './firebase';
 import { clearLocalCaches } from './authService';
 
 export interface OrganisationRow { id: string; name: string; status: 'PENDING' | 'ACTIVE' | 'SUSPENDED'; current: boolean; home: boolean }
-export interface MyOrganisations { account: { id: string; name: string; orgLimit: number }; organisations: OrganisationRow[] }
+export interface GroupAdminRow { uid: string; name: string; email: string }
+export interface MyOrganisations { account: { id: string; name: string; orgLimit: number; plan?: string | null; modules?: string[] | null }; organisations: OrganisationRow[]; groupAdmins?: GroupAdminRow[] }
+export interface CreateOrgBody { name: string; cloneFromCompanyId?: string; clone?: { departments?: boolean; roles?: boolean; leaveSettings?: boolean } }
+export interface AccountRow { id: string; name: string; ownerEmail: string; orgLimit: number; plan?: string; modules?: string[]; organisations: number; groupAdminUids?: string[] }
 
 export interface TransferBody {
   toCompanyId: string; uids: string[]; effectiveDate?: string; carry?: 'none' | 'all' | 'choose'; carryTypes?: string[];
@@ -45,5 +48,8 @@ export const orgService = {
   decide: (id: string, approve: boolean, note?: string) => apiJson<TransferResponse & { status: string }>('/api/tenant/transfer-decide', { id, approve, note }),
   previousEmployment: (uid: string) => apiJson<{ uid: string; name: string; employments: PreviousEmployment[] }>('/api/tenant/previous-employment', { uid }),
 
-  setGroupAdmin: (email: string, enabled: boolean) => apiJson('/api/tenant/set-group-admin', { email, enabled }),
+  createOrganisation: (b: CreateOrgBody) => apiJson<{ company: { id: string; name: string }; copied: string[] }>('/api/tenant/create-organisation', b),
+  accounts: () => apiJson<{ accounts: AccountRow[] }>('/api/tenant/accounts'),
+  updateAccount: (b: { accountId: string; orgLimit?: number; modules?: string[]; plan?: string }) => apiJson('/api/tenant/update-account', b),
+  setGroupAdmin: (email: string, enabled: boolean, accountId?: string) => apiJson('/api/tenant/set-group-admin', { email, enabled, ...(accountId ? { accountId } : {}) }),
 };

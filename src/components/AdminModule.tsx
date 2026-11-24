@@ -9,7 +9,9 @@ import { firestoreService } from '../services/firestoreService';
 import { PERMISSIONS, hasPerm, type RoleDef } from '../../shared/permissions';
 import { ToastProvider, useToast } from './leave/ui';
 
-type Tab = 'users' | 'departments' | 'roles' | 'integrations';
+import { OrganisationsTab } from './OrganisationsTab';
+
+type Tab = 'users' | 'departments' | 'roles' | 'integrations' | 'organisations';
 
 /** Set by App.tsx when Google sends the browser back to /?google=... after the connect screen. */
 const readGoogleFlash = (): { result: string; reason: string } | null => {
@@ -70,6 +72,7 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
   const canDepts = hasPerm(perms, 'departments.manage');
   const canRoles = hasPerm(perms, 'roles.manage');
   const canIntegrations = !!currentUser.isCompanyAdmin;
+  const canOrgs = !!currentUser.isGroupAdmin;
 
   const tabs = useMemo(
     () => [
@@ -77,8 +80,9 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
       canDepts && { key: 'departments' as Tab, label: 'Departments', icon: <Building2 className="h-3.5 w-3.5" /> },
       canRoles && { key: 'roles' as Tab, label: 'Roles & permissions', icon: <ShieldCheck className="h-3.5 w-3.5" /> },
       canIntegrations && { key: 'integrations' as Tab, label: 'Integrations', icon: <CalendarDays className="h-3.5 w-3.5" /> },
+      canOrgs && { key: 'organisations' as Tab, label: 'Organisations', icon: <Building2 className="h-3.5 w-3.5" /> },
     ].filter(Boolean) as { key: Tab; label: string; icon: React.ReactNode }[],
-    [canUsers, canDepts, canRoles, canIntegrations]
+    [canUsers, canDepts, canRoles, canIntegrations, canOrgs]
   );
   const [tab, setTab] = useState<Tab>(() => (readGoogleFlash() && canIntegrations ? 'integrations' : tabs[0]?.key || 'users'));
 
@@ -125,6 +129,7 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
       {tab === 'departments' && canDepts && <DepartmentsTab users={users} departments={departments} />}
       {tab === 'roles' && canRoles && <RolesTab roles={roles} users={users} company={company} currentUser={currentUser} />}
       {tab === 'integrations' && canIntegrations && <IntegrationsTab />}
+      {tab === 'organisations' && canOrgs && <OrganisationsTab />}
     </div>
     </ToastProvider>
   );

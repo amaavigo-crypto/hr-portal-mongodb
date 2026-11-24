@@ -20,7 +20,7 @@ import { dispatchLiveEmail } from './serverEmail.js';
 import { syncDepartmentManagers, syncDepartmentManagersQuietly } from './deptManager.js';
 import { nextFreeEmployeeCode } from '../../shared/employeeCode.js';
 import { accountIdFor, backfillAccounts, newAccountDoc, releaseAccountIfEmpty, type AccountDoc } from './accounts.js';
-import { routeOrgAction } from './orgAdmin.js';
+import { routeOrgAction, requireGroupAdmin } from './orgAdmin.js';
 import { routeTransferAction } from './orgTransfer.js';
 import {
   ALL_MODULE_KEYS,
@@ -506,6 +506,105 @@ async function updateCompanyModules(headers: Record<string, any>, body: any): Pr
   await db().collection('companies').doc(companyId).update({ modules, updatedAt: nowIso(), ...(body.plan ? { plan: str(body.plan, 40) } : {}) });
   const updated = await syncCompanyUsers(companyId);
   return ok({ companyId, modules, usersUpdated: updated });
+}
+
+/** Group administrator: add an organisation to their account, optionally copying departments, custom roles and leave/people settings. */
+async function createOrganisation(headers: Record<string, any>, body: any): Promise<TenantResult> {
+  const { ctx, account } = await requireGroupAdmin(headers);
+  const name = str(body.name, 120);
+  if (name.length < 2) return fail(400, 'Organisation name is required.');
+  const existing = (await db().collection('companies').where('accountId', '==', account.id).get()).docs.map((d: any) => d.data() as CompanyDoc);
+  const limit = account.orgLimit || 1;
+  if (existing.length >= limit) return fail(403, `Your plan allows ${limit} organisation${limit === 1 ? '' : 's'}. Ask us to raise the limit.`);
+  if (existing.some((c) => c.name.toLowerCase() === name.toLowerCase())) return fail(409, 'An organisation with this name already exists in your account.');
+
+  const sourceId = str(body.cloneFromCompanyId, 128) || ctx.companyId || '';
+  const source = existing.find((c) => c.id === sourceId);
+  if (!source) return fail(400, 'Choose one of your own organisations to copy from.');
+
+  const id = newId('cmp');
+  const ts = nowIso();
+  const company: CompanyDoc = {
+    id, name, slug: slugify(name) || id, status: 'ACTIVE',
+    modules: account.modules?.length ? account.modules : source.modules,
+    plan: account.plan || source.plan,
+    accountId: account.id, adminEmail: ctx.email, employeeIdPrefix: prefixFromName(name), nextEmployeeNumber: 1,
+    createdAt: ts, updatedAt: ts, approvedAt: ts, approvedBy: ctx.email,
+  };
+  await db().collection('companies').doc(id).set(company);
+  await seedDefaultRoles(id);
+
+  const clone = (body.clone && typeof body.clone === 'object' ? body.clone : {}) as Record<string, unknown>;
+  const copied: string[] = [];
+  if (clone.departments) {
+    const deps = await db().collection('departments').where('companyId', '==', source.id).get();
+    for (const d of deps.docs) {
+      const x = d.data() as any;
+      const did = newId('dep');
+      await db().collection('departments').doc(did).set({ id: did, companyId: id, name: x.name, createdAt: ts, updatedAt: ts }); // no department head: people are not copied
+    }
+    copied.push(`${deps.size} department${deps.size === 1 ? '' : 's'}`);
+  }
+  if (clone.roles) {
+    const roles = (await loadRoles(source.id)).filter((r) => !r.isDefault);
+    for (const r of roles) {
+      const rid = `${id}_${newId('r')}`;
+      await db().collection('roles').doc(rid).set({ ...r, id: rid, companyId: id, createdAt: ts, updatedAt: ts });
+    }
+    copied.push(`${roles.length} custom role${roles.length === 1 ? '' : 's'}`);
+  }
+  if (clone.leaveSettings) {
+    for (const col of ['leaveSettings', 'lifecycleSettings']) {
+      const snap = await db().collection(col).doc(source.id).get();
+      if (snap.exists) { await db().collection(col).doc(id).set({ ...(snap.data() as any), companyId: id, updatedAt: ts }); copied.push(col === 'leaveSettings' ? 'leave settings' : 'people settings'); }
+    }
+  }
+  await db().collection('accountAudit').doc(newId('aa')).set({ accountId: account.id, action: 'ORG_CREATED', by: ctx.uid, at: ts, companyId: id, name, copiedFrom: source.id, copied });
+  return ok({ company: { id, name, status: 'ACTIVE' }, copied });
+}
+
+/** Platform admin: plan, modules and organisation limit for a whole account. Modules and plan are applied to each of its organisations. */
+async function updateAccount(headers: Record<string, any>, body: any): Promise<TenantResult> {
+  await requirePlatformAdmin(headers);
+  const accountId = str(body.accountId, 128);
+  const accSnap = await db().collection('accounts').doc(accountId).get();
+  if (!accSnap.exists) return fail(404, 'Account not found.');
+  const update: Record<string, unknown> = { updatedAt: nowIso() };
+  if (body.orgLimit !== undefined) {
+    const n = Number(body.orgLimit);
+    if (!Number.isInteger(n) || n < 1 || n > 1000) return fail(400, 'The organisation limit must be a whole number from 1 to 1000.');
+    const inUse = (await db().collection('companies').where('accountId', '==', accountId).get()).size;
+    if (n < inUse) return fail(400, `This account already has ${inUse} organisations. Remove one first or choose a higher limit.`);
+    update.orgLimit = n;
+  }
+  let modules: string[] | undefined;
+  if (body.modules !== undefined) {
+    modules = (Array.isArray(body.modules) ? body.modules.map(String) : []).filter((m: string) => (ALL_MODULE_KEYS as string[]).includes(m));
+    if (!modules.length) return fail(400, 'Enable at least one module.');
+    update.modules = modules;
+  }
+  const plan = body.plan ? str(body.plan, 40) : undefined;
+  if (plan) update.plan = plan;
+  await db().collection('accounts').doc(accountId).update(update);
+
+  let usersUpdated = 0;
+  if (modules || plan) {
+    const orgs = await db().collection('companies').where('accountId', '==', accountId).get();
+    for (const o of orgs.docs) {
+      await db().collection('companies').doc(o.id).update({ ...(modules ? { modules } : {}), ...(plan ? { plan } : {}), updatedAt: nowIso() });
+      usersUpdated += await syncCompanyUsers(o.id);
+    }
+  }
+  return ok({ accountId, ...update, usersUpdated });
+}
+
+/** Platform admin: every account with how many organisations it holds. */
+async function listAccounts(headers: Record<string, any>): Promise<TenantResult> {
+  await requirePlatformAdmin(headers);
+  const [accs, cos] = await Promise.all([db().collection('accounts').get(), db().collection('companies').get()]);
+  const counts = new Map<string, number>();
+  cos.docs.forEach((c: any) => { const a = (c.data() as any).accountId; if (a) counts.set(a, (counts.get(a) || 0) + 1); });
+  return ok({ accounts: accs.docs.map((d: any) => ({ ...(d.data() as any), organisations: counts.get(d.id) || 0 })).sort((a: any, b: any) => String(a.name).localeCompare(String(b.name))) });
 }
 
 /** Platform admin: gives every existing company an account. Safe to run again. */
@@ -1008,6 +1107,7 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
     if (r.method === 'POST' && action === 'signup') return await signup(b, origin);
     if (r.method === 'GET' && action === 'me') return await me(headers);
     if (r.method === 'GET' && action === 'companies') return await listCompanies(headers);
+    if (r.method === 'GET' && action === 'accounts') return await listAccounts(headers);
     const orgDeps = { syncUser: (uid: string) => syncUser(uid), nextEmployeeId };
     const orgResult = (await routeOrgAction(r.method, action, headers, b, orgDeps)) ?? (await routeTransferAction(r.method, action, headers, b, orgDeps));
     if (orgResult) return orgResult as TenantResult;
@@ -1019,6 +1119,8 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
       case 'update-company-modules': return await updateCompanyModules(headers, b);
       case 'delete-company': return await deleteCompany(headers, b);
       case 'backfill-accounts': return await backfillAccountsRoute(headers);
+      case 'create-organisation': return await createOrganisation(headers, b);
+      case 'update-account': return await updateAccount(headers, b);
       case 'landing-content-save': return await saveLandingContentRoute(headers, b);
       case 'landing-content-undo': return await undoLandingContentRoute(headers);
       case 'create-user': return await createUser(headers, b, origin);

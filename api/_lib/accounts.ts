@@ -13,6 +13,9 @@ export interface AccountDoc {
   ownerEmail: string;
   /** How many organisations this account may hold. */
   orgLimit: number;
+  /** Plan and modules for every organisation of the account (changing them updates each organisation). */
+  plan?: string;
+  modules?: string[];
   /** Users who may switch between this account's organisations and act as administrator in each. */
   groupAdminUids?: string[];
   createdAt: string;

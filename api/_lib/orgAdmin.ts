@@ -55,7 +55,13 @@ async function myOrganisations(headers: Record<string, any>): Promise<OrgResult>
     .map((d: any) => d.data() as any)
     .map((c: any) => ({ id: c.id, name: c.name, status: c.status, current: c.id === ctx.companyId, home: c.id === ctx.homeCompanyId }))
     .sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
-  return ok({ account: { id: account.id, name: account.name, orgLimit: account.orgLimit }, organisations });
+  const groupAdmins = [];
+  for (const uid of account.groupAdminUids || []) {
+    const e = await db().collection('employees').doc(uid).get();
+    const x = (e.data() || {}) as any;
+    groupAdmins.push({ uid, name: String(x.name || x.email || uid), email: String(x.email || '') });
+  }
+  return ok({ account: { id: account.id, name: account.name, orgLimit: account.orgLimit, plan: account.plan || null, modules: account.modules || null }, organisations, groupAdmins });
 }
 
 async function switchOrganisation(headers: Record<string, any>, body: any, deps: OrgDeps): Promise<OrgResult> {
