@@ -12,7 +12,7 @@ import type { TenantClaims } from '../../shared/permissions.js';
 import type { AccountDoc } from './accounts.js';
 
 export interface OrgResult { status: number; json: any }
-export interface OrgDeps { syncUser: (uid: string, preloaded?: any) => Promise<void> }
+export interface OrgDeps { syncUser: (uid: string, preloaded?: any) => Promise<void>; nextEmployeeId?: (companyId: string) => Promise<string> }
 
 const db = () => adminDb();
 const nowIso = () => new Date().toISOString();

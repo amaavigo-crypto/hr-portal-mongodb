@@ -21,6 +21,7 @@ import { syncDepartmentManagers, syncDepartmentManagersQuietly } from './deptMan
 import { nextFreeEmployeeCode } from '../../shared/employeeCode.js';
 import { accountIdFor, backfillAccounts, newAccountDoc, releaseAccountIfEmpty, type AccountDoc } from './accounts.js';
 import { routeOrgAction } from './orgAdmin.js';
+import { routeTransferAction } from './orgTransfer.js';
 import {
   ALL_MODULE_KEYS,
   DEFAULT_ROLE_TEMPLATES,
@@ -217,7 +218,7 @@ async function syncCompanyUsers(companyId: string): Promise<number> {
   return n;
 }
 
-async function nextEmployeeId(companyId: string): Promise<string> {
+export async function nextEmployeeId(companyId: string): Promise<string> {
   const ref = db().collection('companies').doc(companyId);
   // Codes can be edited by hand (People > Directory), so skip any code someone already holds instead of repeating it.
   const taken = (await db().collection('employees').where('companyId', '==', companyId).get()).docs.map((d: any) => String((d.data() as any).empId || ''));
@@ -1007,7 +1008,8 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
     if (r.method === 'POST' && action === 'signup') return await signup(b, origin);
     if (r.method === 'GET' && action === 'me') return await me(headers);
     if (r.method === 'GET' && action === 'companies') return await listCompanies(headers);
-    const orgResult = await routeOrgAction(r.method, action, headers, b, { syncUser: (uid) => syncUser(uid) });
+    const orgDeps = { syncUser: (uid: string) => syncUser(uid), nextEmployeeId };
+    const orgResult = (await routeOrgAction(r.method, action, headers, b, orgDeps)) ?? (await routeTransferAction(r.method, action, headers, b, orgDeps));
     if (orgResult) return orgResult as TenantResult;
 
     if (r.method !== 'POST') return fail(405, 'Method not allowed.');
