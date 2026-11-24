@@ -27,6 +27,8 @@ import { applyQuotes, cleanHistory, rankPassages, unverifiedNumbers, withoutMark
 import { plainText } from '../../shared/policyDiff.js';
 import { routePolicyAi } from './policyAiApi.js';
 import { routeHrAgent } from './hrAgentApi.js';
+import { indexPublishedVersion, searchPublishedPolicies } from './documentVectorSearch.js';
+import { createPipelineTraceId, pipelineLog, pipelineErrorDetails } from './pipelineLogger.js';
 
 export interface AssistantRequest {
   method: string;
@@ -72,6 +74,7 @@ interface Run {
   tools: string[];
   /** Policy passages found for this question, by the id the model uses to point at them. */
   passages: Map<string, Passage>;
+  traceId: string;
 }
 
 const POLICY_TTL_MS = 15 * 60_000;
@@ -116,6 +119,36 @@ async function allowedPolicies(r: Run): Promise<PolicyDoc[]> {
       if (!d || d.companyId !== r.cid || d.status !== 'PUBLISHED') return;
       hit = { at: now, companyId: r.cid, text: plainText(str(d.rawContent, 60_000)) };
       policyText.set(id, hit);
+      // Index only documents already returned by this employee's permission-filtered Home files route.
+      // Index failures must not block the existing keyword-based Ask HR fallback.
+      if (hit.text) {
+        await indexPublishedVersion({
+          ...d,
+          id,
+          companyId: r.cid,
+          title: str(it.title, 180) || 'Policy',
+          versionNumber: str(it.versionNumber, 30),
+        }, r.traceId).catch((err) => {
+          pipelineLog(r.traceId, 'policy.lazy_index', 'ERROR', { versionId: id, ...pipelineErrorDetails(err) });
+          console.warn('[assistant] policy vector indexing skipped:', err?.message || err);
+        });
+      }
+    } else if (hit.text) {
+      // Retry a previous failed indexing attempt on later questions (e.g. after Gemini/Atlas is configured).
+      const snap = await db().collection('versions').doc(id).get();
+      const d: any = snap.exists ? snap.data() : null;
+      if (d && d.companyId === r.cid && d.status === 'PUBLISHED') {
+        await indexPublishedVersion({
+          ...d,
+          id,
+          companyId: r.cid,
+          title: str(it.title, 180) || 'Policy',
+          versionNumber: str(it.versionNumber, 30),
+        }, r.traceId).catch((err) => {
+          pipelineLog(r.traceId, 'policy.lazy_index_retry', 'ERROR', { versionId: id, ...pipelineErrorDetails(err) });
+          console.warn('[assistant] policy vector indexing retry skipped:', err?.message || err);
+        });
+      }
     }
     if (hit.text) docs.push({ id, title: str(it.title, 120) || 'Policy', version: str(it.versionNumber, 20), text: hit.text });
   }));
@@ -185,7 +218,21 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
     }
     case 'search_policies': {
       const docs = await allowedPolicies(r);
-      const found = rankPassages(str(args?.query, 300), docs, 4, 450, false);
+      const policyQuery = str(args?.query, 300);
+      const allowedVersionIds = new Set(docs.map((d) => d.id));
+      let found: Array<{ docId: string; title: string; version: string; text: string; score: number }> = [];
+      try {
+        // Atlas search is company-filtered, then narrowed again to the exact versions this employee may open.
+        if (allowedVersionIds.size) found = (await searchPublishedPolicies(r.cid, policyQuery, 8, r.traceId)).filter((p) => allowedVersionIds.has(p.docId)).slice(0, 4);
+      } catch (err: any) {
+        pipelineLog(r.traceId, 'atlas.vector_search', 'ERROR', { ...pipelineErrorDetails(err) });
+        console.warn('[assistant] vector retrieval unavailable; using keyword search:', err?.message || err);
+      }
+      if (!found.length) {
+        pipelineLog(r.traceId, 'policy.search.keyword_fallback', 'START', { permittedDocuments: docs.length });
+        found = rankPassages(policyQuery, docs, 4, 450, false);
+        pipelineLog(r.traceId, 'policy.search.keyword_fallback', 'SUCCESS', { passages: found.length });
+      } else pipelineLog(r.traceId, 'policy.search.vector_results', 'SUCCESS', { passages: found.length, permittedDocuments: docs.length });
       for (const p of found) r.sources.set(`policy:${p.title}|${p.version}`, { kind: 'policy', label: p.version ? `${p.title} v${p.version}` : p.title });
       r.tools.push(name);
       const data = {
@@ -220,12 +267,18 @@ const systemPrompt = (company: string, today: string) => [
   `Today is ${today} (India).`,
 ].join('\n');
 
-async function chat(r: Run, messages: any[], withTools: boolean): Promise<any> {
+async function chat(r: Run, messages: any[], withTools: boolean, round: number): Promise<any> {
+  const startedAt = Date.now();
+  pipelineLog(r.traceId, 'ai.chat_completion.request', 'START', { round: round + 1, withTools, messageCount: messages.length });
   const res = await aiChat({
     cid: r.cid, uid: r.ctx.uid, feature: 'assistant', messages, tools: withTools ? TOOLS : undefined,
     temperature: 0.1, maxTokens: 450, timeoutMs: 45_000, budgetMs: 50_000,
   });
-  if (res.error || !res.message) throw new Error(res.error || 'AI service answered nothing');
+  if (res.error || !res.message) {
+    pipelineLog(r.traceId, 'ai.chat_completion.request', 'ERROR', { round: round + 1, durationMs: Date.now() - startedAt, error: res.error || 'no message' });
+    throw new Error(res.error || 'AI service answered nothing');
+  }
+  pipelineLog(r.traceId, 'ai.chat_completion.response', 'SUCCESS', { round: round + 1, durationMs: Date.now() - startedAt });
   return res.message;
 }
 
@@ -237,14 +290,25 @@ async function converse(r: Run, company: string, question: string, history: Chat
   const messages: any[] = [{ role: 'system', content: systemPrompt(company, istDay()) }, ...history, { role: 'user', content: question }];
   let rewrote = false;
   for (let round = 0; round < 5; round++) {
-    const msg = await chat(r, messages, round < 4);
+    pipelineLog(r.traceId, 'assistant.reasoning.round', 'START', { round: round + 1, messageCount: messages.length });
+    const msg = await chat(r, messages, round < 4, round);
     const calls: any[] = Array.isArray(msg.tool_calls) ? msg.tool_calls.slice(0, 4) : [];
     if (calls.length) {
       messages.push({ role: 'assistant', content: msg.content || null, tool_calls: calls });
       for (const c of calls) {
         let args: any = {};
         try { args = JSON.parse(c.function?.arguments || '{}'); } catch { /* bad arguments: run with none */ }
-        messages.push({ role: 'tool', tool_call_id: c.id, content: await runTool(r, String(c.function?.name || ''), args) });
+        const toolName = String(c.function?.name || 'unknown');
+        const toolStartedAt = Date.now();
+        pipelineLog(r.traceId, 'assistant.tool.execute', 'START', { tool: toolName });
+        try {
+          const toolResult = await runTool(r, toolName, args);
+          pipelineLog(r.traceId, 'assistant.tool.execute', 'SUCCESS', { tool: toolName, durationMs: Date.now() - toolStartedAt, resultCharacters: toolResult.length });
+          messages.push({ role: 'tool', tool_call_id: c.id, content: toolResult });
+        } catch (error) {
+          pipelineLog(r.traceId, 'assistant.tool.execute', 'ERROR', { tool: toolName, durationMs: Date.now() - toolStartedAt, ...pipelineErrorDetails(error) });
+          throw error;
+        }
       }
       continue;
     }
@@ -268,9 +332,13 @@ async function ask(ctx: AuthContext, cid: string, headers: Record<string, any>, 
   const question = str(body?.question, 500);
   if (question.length < 2) return fail(400, 'Type your question first.');
   const history = cleanHistory(body?.history);
-  const run: Run = { headers, ctx, cid, cache: new Map(), sources: new Map(), facts: [], tools: [], passages: new Map() };
+  const traceId = createPipelineTraceId('ask-hr');
+  const run: Run = { headers, ctx, cid, cache: new Map(), sources: new Map(), facts: [], tools: [], passages: new Map(), traceId };
+  const askStartedAt = Date.now();
+  pipelineLog(traceId, 'assistant.ask.start', 'START', { companyId: cid, userId: ctx.uid, historyTurns: history.length, questionCharacters: question.length });
 
   if (!aiEnabled()) {
+    pipelineLog(traceId, 'assistant.ai_disabled', 'WARN', { companyId: cid });
     // No AI key: the rule-based leave answer is still useful for leave questions.
     const j = await route(run, 'leave', 'POST', 'assist-ask', { question });
     if (j && !j.error && j.answered) return ok({ id: '', answer: j.answer, sources: [{ kind: 'policy', label: str(j.policyReference, 120) || 'Leave policy' }], unsure: false, off: true });
@@ -278,13 +346,14 @@ async function ask(ctx: AuthContext, cid: string, headers: Record<string, any>, 
   }
 
   const reason = (await reserveForPerson(cid, ctx.uid)) || (await reserveAiCall(cid));
-  if (reason) return ok({ id: '', answer: reason, sources: [], unsure: true, limited: true });
+  if (reason) { pipelineLog(traceId, 'assistant.rate_limit', 'SKIP', { companyId: cid }); return ok({ id: '', answer: reason, sources: [], unsure: true, limited: true }); }
 
   const company = await companyLabel(cid).catch(() => 'your company');
   let out: { answer: string; unsure: boolean };
   try {
     out = await converse(run, company, question, history);
   } catch (e: any) {
+    pipelineLog(traceId, 'assistant.conversation', 'ERROR', { ...pipelineErrorDetails(e) });
     console.warn('[assistant] failed:', e?.message || e);
     out = { answer: SORRY, unsure: true };
   }
@@ -298,6 +367,7 @@ async function ask(ctx: AuthContext, cid: string, headers: Record<string, any>, 
     id: ref.id, companyId: cid, uid: ctx.uid, question, answer: str(out.answer, 1500), tools: run.tools.slice(0, 12), unsure: out.unsure,
     helpful: null, escalated: false, model: model(), createdAt: new Date().toISOString(),
   }).catch(() => undefined);
+  pipelineLog(traceId, 'assistant.ask.complete', 'SUCCESS', { durationMs: Date.now() - askStartedAt, toolsUsed: run.tools.length, sources: sources.length, unsure: out.unsure, answerCharacters: out.answer.length, logId: ref.id });
   return ok({ id: ref.id, answer: out.answer, sources, quotes, unsure: out.unsure });
 }
 
@@ -348,6 +418,26 @@ export async function routeAssistant(r: AssistantRequest): Promise<Result> {
       case 'ask-hr': return POST ? await askHr(ctx, cid, body) : fail(405, 'Use POST.');
       // HR Agent (HR roles only; hrAgentApi.ts checks the person's permissions)
       case 'agent-status': case 'agent-chat': case 'agent-history': return await routeHrAgent({ method: r.method, action: r.action, ctx, cid, headers: r.headers, body });
+      case 'index-published': {
+        if (!POST) return fail(405, 'Use POST.');
+        if (!ctx.isCompanyAdmin && !ctx.perms.includes('doc.publish')) return fail(403, 'You do not have permission to publish documents.');
+        const versionId = str(body?.versionId, 200);
+        if (!versionId) return fail(400, 'A published version ID is required.');
+        const snap = await db().collection('versions').doc(versionId).get();
+        const version: any = snap.exists ? snap.data() : null;
+        if (!version || version.companyId !== cid) return fail(404, 'Published document version not found.');
+        if (version.status !== 'PUBLISHED') return fail(409, 'Only published document versions can be indexed.');
+        const traceId = createPipelineTraceId('publish-index');
+        pipelineLog(traceId, 'document.publish_index.request', 'START', { companyId: cid, versionId });
+        const indexed = await indexPublishedVersion({
+          ...version,
+          id: versionId,
+          companyId: cid,
+          title: str(version.documentTitle || version.title, 180) || 'HR document',
+        }, traceId);
+        pipelineLog(traceId, 'document.publish_index.request', 'SUCCESS', { companyId: cid, versionId, indexedChunks: indexed.indexed, skipped: indexed.skipped });
+        return ok({ indexed: indexed.indexed, skipped: indexed.skipped, versionId });
+      }
       default: return fail(404, 'Unknown request.');
     }
   } catch (err) {

@@ -27,6 +27,7 @@ import { uploadMediaToServer } from './mediaStorage';
 import { normalizeAuthorizedModules, getAuthorizationLabel, ModuleAuthorizationCode } from '../utils/authorization';
 import { appendApprovedHeaderAndFooter, formatDDMMYYYY, calculateDynamicReReviewDate, parseAnyDate, stripPolicyMetadataHeader, extractCleanBody } from '../utils/documentHeaderFooter';
 import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter, cleanDocxDataUrl, type HeaderFooterMetadata } from '../utils/documentTools';
+import { apiJson } from './apiClient';
 
 // Helper to verify if an employee belongs to a specific department or audience
 export function isEmployeeInDepartment(
@@ -877,6 +878,9 @@ export class DocumentGovernanceEngine {
     if (!data.effectiveFrom?.trim()) throw new Error('Validation error: Effective from Date is required.');
     if (!data.rawContent?.trim()) throw new Error('Validation error: Document content or file upload is required.');
 
+    const uploadTraceId = `governance-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const uploadStartedAt = Date.now();
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.create.start', status: 'START', fileName: data.fileName, mimeType: data.mimeType || 'unknown', contentCharacters: data.rawContent?.length || 0 }));
     const documentId = this.generateNextDocumentId(data.category);
     const masterId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const versionId = `ver-${Date.now()}-v10`;
@@ -925,10 +929,13 @@ export class DocumentGovernanceEngine {
     };
 
     if (isDocxUpload && sanitizedFileUrl) {
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.docx.stamping.start', status: 'START' }));
       try {
         const stampedDocx = await stampDocxWithHeaderFooter(sanitizedFileUrl, initialHeaderFooter);
         sanitizedFileUrl = stampedDocx.dataUrl;
+        console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.docx.stamping.complete', status: 'SUCCESS' }));
       } catch (cleanErr) {
+        console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.docx.stamping', status: 'ERROR', error: cleanErr instanceof Error ? cleanErr.message : String(cleanErr) }));
         console.warn('Could not stamp initial DOCX data URL on createDocument:', cleanErr);
       }
     } else if (isPdfUpload && sanitizedFileUrl) {
@@ -946,6 +953,7 @@ export class DocumentGovernanceEngine {
 
     // Persist large binary media (e.g. video/pdf/docx) to persistent server storage and IndexedDB
     if (sanitizedFileUrl && (isVideoUpload || sanitizedFileUrl.startsWith('data:'))) {
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.media_upload.start', status: 'START', fileName: data.fileName, mimeType: data.mimeType }));
       try {
         const uploadRes = await uploadMediaToServer({
           fileName: data.fileName || `${documentId}_v1.0.${isVideoUpload ? 'mp4' : isDocxUpload ? 'docx' : 'bin'}`,
@@ -955,12 +963,15 @@ export class DocumentGovernanceEngine {
           versionId,
         });
         sanitizedFileUrl = uploadRes.fileUrl;
+        console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.media_upload.complete', status: 'SUCCESS', fileUrlReturned: Boolean(uploadRes.fileUrl) }));
       } catch (uploadErr) {
+        console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.media_upload', status: 'ERROR', error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr) }));
         console.warn('[Governance] Media upload to server storage error:', uploadErr);
       }
     }
 
     // Store file in Storage Provider
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.storage_write.start', status: 'START', documentId }));
     const storageMeta = await defaultStorageProvider.uploadFile(
       documentId,
       data.category,
@@ -970,6 +981,7 @@ export class DocumentGovernanceEngine {
       data.mimeType || (isVideoUpload ? 'video/mp4' : 'text/markdown')
     );
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.storage_write.complete', status: 'SUCCESS', storageKey: storageMeta.storageKey, bytes: storageMeta.sizeBytes }));
     const newMaster: DocumentMaster = {
       id: masterId,
       documentId,
@@ -995,6 +1007,7 @@ export class DocumentGovernanceEngine {
       active: true,
     };
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.create.version_ready', status: 'SUCCESS', storageKey: storageMeta.storageKey, bytes: storageMeta.sizeBytes }));
     const newVersion: DocumentVersion = {
       id: versionId,
       documentMasterId: masterId,
@@ -1081,6 +1094,7 @@ export class DocumentGovernanceEngine {
       console.warn('[Governance] Could not trigger reviewer notification email:', e);
     }
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: uploadTraceId, event: 'document.create.complete', status: 'SUCCESS', documentId, versionId, durationMs: Date.now() - uploadStartedAt, initialStatus: 'IN_REVIEW' }));
     return { master: newMaster, version: newVersion };
   }
 
@@ -1102,6 +1116,9 @@ export class DocumentGovernanceEngine {
       previousVersionId?: string;
     }
   ): Promise<DocumentVersion> {
+    const revisionTraceId = `governance-revision-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const revisionStartedAt = Date.now();
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.start', status: 'START', documentMasterId: data.documentMasterId, fileName: data.fileName, mimeType: data.mimeType || 'unknown', contentCharacters: data.rawContent?.length || 0 }));
     if (creator.role !== UserRole.CREATOR && creator.role !== UserRole.REVIEWER) {
       throw new Error('Unauthorized: User must have HR Creator or Reviewer role to author revisions.');
     }
@@ -1202,11 +1219,14 @@ export class DocumentGovernanceEngine {
     // 3. Update document header and footer when it is being revised
     let sanitizedFileUrl = data.fileDataUrl;
     if (isDocx && sanitizedFileUrl) {
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.docx_stamping.start', status: 'START' }));
       try {
         sanitizedFileUrl = await cleanDocxDataUrl(sanitizedFileUrl);
         const stampedDocx = await stampDocxWithHeaderFooter(sanitizedFileUrl, revisionHeaderFooterData);
         sanitizedFileUrl = stampedDocx.dataUrl;
+        console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.docx_stamping.complete', status: 'SUCCESS' }));
       } catch (cleanErr) {
+        console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.docx_stamping', status: 'ERROR', error: cleanErr instanceof Error ? cleanErr.message : String(cleanErr) }));
         console.warn('Could not clean or stamp DOCX data URL on createNewVersion:', cleanErr);
       }
     } else if (isPdf && sanitizedFileUrl) {
@@ -1244,6 +1264,7 @@ export class DocumentGovernanceEngine {
     }
 
     // Store revised file in Storage Provider with updated header & footer
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.storage_write.start', status: 'START', documentId: master.documentId, versionId }));
     const storageMeta = await defaultStorageProvider.uploadFile(
       master.documentId,
       master.category,
@@ -1367,6 +1388,7 @@ export class DocumentGovernanceEngine {
       console.warn('[Governance] Could not trigger reviewer notification email for revised version:', e);
     }
 
+    console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionTraceId, event: 'document.revision.complete', status: 'SUCCESS', documentId: master.documentId, versionId, durationMs: Date.now() - revisionStartedAt, initialStatus: 'IN_REVIEW' }));
     return newVersion;
   }
 
@@ -1621,6 +1643,19 @@ export class DocumentGovernanceEngine {
       }
     } catch (e) {
       console.warn('Firestore cloud sync error:', e);
+    }
+
+    // 3a. Index the newly published version immediately for Ask HR.
+    // Indexing failure must not roll back publication; Ask HR retries lazily on the next policy question.
+    try {
+      const publishTraceId = `publish-${version.id}`;
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: publishTraceId, event: 'document.publish.indexing.start', status: 'START', documentId: master.documentId, versionId: version.id, versionNumber: version.versionNumber }));
+      const indexing = await apiJson<{ indexed: number; skipped: boolean }>('/api/assistant/index-published', { versionId: version.id });
+      console.info('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: publishTraceId, event: 'document.publish.indexing.complete', status: 'SUCCESS', indexedChunks: indexing.indexed || 0, skipped: indexing.skipped }));
+      console.info(`[Governance] Ask HR indexed ${indexing.indexed || 0} chunks for ${master.documentId} v${version.versionNumber}.`);
+    } catch (indexError: any) {
+      console.error('[HR_DOCUMENT_GOVERNANCE]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: `publish-${version.id}`, event: 'document.publish.indexing', status: 'ERROR', error: indexError instanceof Error ? indexError.message : String(indexError) }));
+      console.warn('[Governance] Immediate Ask HR indexing failed; Ask HR will retry on the next policy question:', indexError?.message || indexError);
     }
 
     // 4. Create Publication Record

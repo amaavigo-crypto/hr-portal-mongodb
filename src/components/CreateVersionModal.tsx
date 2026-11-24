@@ -226,12 +226,13 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 
     const lowerName = file.name.toLowerCase();
     const isAllowed =
+      lowerName.endsWith(".pdf") ||
       lowerName.endsWith(".docx") ||
       lowerName.endsWith(".doc") ||
       file.type.startsWith("video/") ||
       Boolean(lowerName.match(/\.(mp4|webm|mov|m4v|mkv|avi|ogv)$/));
     if (!isAllowed) {
-      setError("Invalid file format. Supported upload formats: Word (.docx) and Video (.mp4, .webm, .mov, etc.).");
+      setError("Invalid file format. Supported formats: PDF (.pdf), Word (.docx, .doc), and Video (.mp4, .webm, .mov, etc.).");
       return;
     }
 
@@ -239,9 +240,14 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     setError("");
     setFileName(file.name);
     const docTitle = selectedMaster?.title || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    const revisionUploadTraceId = `browser-upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.selected', status: 'START', fileName: file.name, mimeType: file.type || 'unknown', bytes: file.size }));
+
 
     try {
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.parse.start', status: 'START', fileName: file.name }));
       const parsed = await parseUploadedFile(file);
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.parse.complete', status: 'SUCCESS', fileName: file.name, extractedCharacters: parsed.extractedText?.length || 0, mimeType: parsed.mimeType }));
       setRawContent(parsed.extractedText || '');
       let effectiveUrl = parsed.fileDataUrl || '';
       const effectiveMime =
@@ -301,9 +307,11 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
         setUploadStatus(`Document loaded (${(file.size / 1024).toFixed(1)} KB)`);
       }
 
+      console.info('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.preview.ready', status: 'SUCCESS', fileName: file.name, stamped: effectiveUrl !== parsed.fileDataUrl }));
       setFileDataUrl(effectiveUrl);
       setContentTab('preview');
     } catch (err: any) {
+      console.error('[HR_DOCUMENT_UPLOAD]', JSON.stringify({ timestamp: new Date().toISOString(), traceId: revisionUploadTraceId, event: 'upload.parse', status: 'ERROR', fileName: file.name, error: err instanceof Error ? err.message : String(err) }));
       console.error('File parse error in revision:', err);
       setError('Could not parse file format. You can manually edit the content below.');
     } finally {
@@ -905,7 +913,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   <span>Upload File</span>
                   <input
                     type="file"
-                    accept=".docx,.doc,video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi"
+                    accept=".pdf,.docx,.doc,application/pdf,video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi"
                     onChange={handleFileUpload}
                     className="hidden"
                   />

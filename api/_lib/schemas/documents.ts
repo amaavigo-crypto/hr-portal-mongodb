@@ -103,6 +103,19 @@ export const documents = {
     ),
   ),
 
+  storageFiles: collection(
+    'Uploaded document files kept in the database (base64) when no object store is configured, e.g. on Vercel. Opened only through a signed link (api/_lib/storageApi.ts). Document id = fileId.',
+    defineSchema({ fileId: String, ...tenant, uploadedBy: String, fileName: String, mimeType: String, sizeBytes: Number, documentId: String, versionId: String, uploadedAt: String, base64: String }),
+  ),
+
+  hrDocumentChunks: collection(
+    'Ask HR vector search: text chunks of published policy versions with their embedding. Written and searched with the native MongoDB driver (Atlas vector index), so the adapter does not check it. Only the chunks of the currently published version are `active`.',
+    defineSchema(
+      { ...tenant, documentMasterId: String, documentId: String, versionId: String, versionNumber: String, title: String, chunkIndex: Number, text: String, contentHash: String, embedding: [Number], active: Boolean, indexedAt: Date },
+      [[{ companyId: 1, versionId: 1 }]],
+    ),
+  ),
+
   auditLogs: collection('Append-only audit trail of document actions. Never edited by the browser.', defineSchema({ ...tenant, action: reqStr, performedById: String, performedAt: String, documentId: String, documentVersionId: String, oldValue: String, newValue: String })),
 
   documentSuggestions: collection(

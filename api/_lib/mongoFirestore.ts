@@ -529,3 +529,8 @@ let singleton: MongoFirestore | null = null;
 export function mongoDb(): MongoFirestore {
   return (singleton ||= new MongoFirestore());
 }
+
+/** Native driver access for Atlas-only features such as $vectorSearch. Shares the same cached client/database. */
+export function nativeMongoDb(): Promise<Db> {
+  return getDb();
+}
