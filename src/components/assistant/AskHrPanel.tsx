@@ -11,12 +11,12 @@ export const ASK_HR_EVENT = 'ask-hr:open';
 export const openAskHr = (question?: string) => window.dispatchEvent(new CustomEvent(ASK_HR_EVENT, { detail: { question } }));
 
 const EMPLOYEE_SUGGESTIONS = ['How many casual leaves do I have?', 'What is the notice period?', 'What are the upcoming holidays?', 'What is the leave carry forward rule?'];
-const MANAGER_SUGGESTIONS = ['What is waiting for my approval?', 'Who in my team is on leave next week?', 'How was my team\'s attendance this week?'];
-const HR_SUGGESTIONS = ['What leave and attendance approvals are pending, and which are overdue?', 'Who is on leave in the next 7 days?', 'Who had the most late or absent days this month?', 'Show open leave exceptions'];
+const MANAGER_SUGGESTIONS = ['What is waiting for my approval?', 'Who in my team is on leave next week?', 'How was my team\'s attendance this week?', 'Does anyone in my team have an open resignation?'];
+const HR_SUGGESTIONS = ['What leave and attendance approvals are pending, and which are overdue?', 'Who is on leave in the next 7 days?', 'Which joiners have overdue onboarding tasks?', 'Who is serving notice and what clearance is pending?', 'Show open leave exceptions'];
 
 /** Which starter questions to show: HR gets company-wide ones, everyone else gets their own plus approvals for a manager. */
 export const suggestionsFor = (perms?: string[] | null, isAdmin?: boolean): string[] => {
-  if (isAdmin || (perms || []).includes('leave.manage') || (perms || []).includes('leave.report')) return [...HR_SUGGESTIONS, EMPLOYEE_SUGGESTIONS[0]];
+  if (isAdmin || (perms || []).some((p) => ['leave.manage', 'leave.report', 'lifecycle.manage'].includes(p))) return [...HR_SUGGESTIONS, EMPLOYEE_SUGGESTIONS[0]];
   return [...EMPLOYEE_SUGGESTIONS.slice(0, 2), ...MANAGER_SUGGESTIONS.slice(0, 1), EMPLOYEE_SUGGESTIONS[2]];
 };
 const KEY = (uid: string) => `ask-hr-chat:${uid}`;
@@ -121,7 +121,7 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
           <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
             {msgs.length === 0 && (
               <div>
-                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, holidays, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals and leave applications for you to confirm.</p>
+                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, onboarding tasks, exits, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals, leave applications and task updates for you to confirm.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
                 </div>

@@ -305,6 +305,21 @@ The same Ask HR panel also answers for managers and HR, with the tools their per
 - Same limits and logs as Ask HR (`ASSISTANT_DAILY_LIMIT`, `AI_MONTHLY_CALLS`, `assistantLogs`). Model: `OPENAI_ASSISTANT_MODEL` (default `gpt-4o-mini`).
 - Next stages: HR actions (mark attendance, resolve exceptions, balance adjust), then a daily watcher. Test: `npx tsx tests/leaveAgent.test.ts`.
 
+### People agent (onboarding, exits, letters)
+
+Same Ask HR panel and the same propose-then-confirm flow as the Leave agent; the People tools are in `shared/peopleAgentTools.ts` (registry and counting) and `api/_lib/peopleAgent.ts` (runners). Shared plumbing (`Run`, `route`, `give`, `makeProposal`) lives in `api/_lib/agentKit.ts`, so a new module is a new registry plus a runner file.
+
+| Tool | Who is told about it | Route behind it |
+|---|---|---|
+| `get_my_onboarding_tasks`, `get_my_exit`, `get_my_letters` | everyone | `onboarding-my`, `exit-my`, `my-letters` |
+| `get_exits`, `get_exit_details` | everyone (a manager gets their team, HR everyone, anyone else nothing) | `exits`, `exit` |
+| `get_onboarding_overview` | `lifecycle.manage` | `onboarding` |
+| `propose_task_done` | everyone (only an open task in their own task list) | `task-update` on confirm |
+| `propose_exit_decision` | everyone (a manager for their team, HR for everyone; a rejection needs a reason; only HR sets the last day) | `exit-decide` on confirm |
+| `propose_exit_clearance` | everyone (only the department owner or HR; waive is HR only; dues need an amount and a note) | `exit-clear` on confirm |
+
+Resigning, withdrawing a resignation, issuing letters and identity approvals are deliberately not available to the agent. Test: `npx tsx tests/peopleAgent.test.ts`.
+
 ## Flags (payroll checks, late marks, leave patterns)
 
 One list for HR to review, in Leave & Attendance > Flags (the old Exceptions screen, extended). Detection is plain arithmetic in `shared/anomalyEngine.ts`; AI is optional and only writes a one-line "what to check" for new flags (same number check as Ask HR). Nothing is deducted, changed or sent to employees because of a flag.

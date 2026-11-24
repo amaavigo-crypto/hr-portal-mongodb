@@ -201,7 +201,7 @@ export function matchEmployees<T extends { name?: string; empId?: string; email?
 
 // ------------------------------------------------------------------ proposals (the confirm cards)
 
-export type ProposalAction = 'leave_decision' | 'regularization_decision' | 'apply_leave';
+export type ProposalAction = 'leave_decision' | 'regularization_decision' | 'apply_leave' | 'task_done' | 'exit_decision' | 'exit_clearance';
 export const PROPOSAL_TTL_MS = 30 * 60_000;
 
 /** What the panel shows. Built by the server from the real record. */
