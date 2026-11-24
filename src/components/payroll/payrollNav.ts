@@ -1,12 +1,12 @@
-import { ClipboardList, DoorOpen, FileCheck, FileText, HandCoins, PlayCircle, Receipt, Percent, Settings, TrendingUp, Inbox, Wallet } from 'lucide-react';
+import { ClipboardList, DoorOpen, FileCheck, FileText, HandCoins, PlayCircle, Receipt, Percent, Settings, TrendingUp, Inbox, Landmark, Wallet } from 'lucide-react';
 import { createModuleNav, NavItem } from '../moduleNav';
 
-export const PAYROLL_SECTIONS = ['payslips', 'claims', 'tax', 'run', 'inputs', 'adjustments', 'salaries', 'revisions', 'approvals', 'settlements', 'taxadmin', 'setup'] as const;
+export const PAYROLL_SECTIONS = ['payslips', 'claims', 'tax', 'run', 'inputs', 'adjustments', 'salaries', 'revisions', 'approvals', 'settlements', 'taxadmin', 'statutory', 'setup'] as const;
 export type PayrollSection = (typeof PAYROLL_SECTIONS)[number];
 
 export const payrollNav = createModuleNav('amaavigo_payroll_tab', [...PAYROLL_SECTIONS], 'payslips', {
   payslips: FileText, claims: Receipt, tax: Percent, run: PlayCircle, inputs: ClipboardList, adjustments: HandCoins,
-  salaries: Wallet, revisions: TrendingUp, approvals: Inbox, settlements: DoorOpen, taxadmin: FileCheck, setup: Settings,
+  salaries: Wallet, revisions: TrendingUp, approvals: Inbox, settlements: DoorOpen, taxadmin: FileCheck, statutory: Landmark, setup: Settings,
 });
 
 /** Which sections this person gets. `me` is the response of payrollService.me(). */
@@ -24,6 +24,7 @@ export function payrollNavItems(me: any | null): NavItem[] {
     { key: 'approvals', label: 'Claim approvals', group: 'Manage payroll', show: !!(me.canView || me.isManager) },
     { key: 'settlements', label: 'Full & final', group: 'Manage payroll', show: !!me.canView },
     { key: 'taxadmin', label: 'Tax declarations', group: 'Manage payroll', show: !!me.canView },
+    { key: 'statutory', label: 'Statutory filings', group: 'Manage payroll', show: !!me.canView },
     { key: 'setup', label: 'Setup', group: 'Manage payroll', show: !!me.canView },
   ];
   return all.filter((i) => i.show).map(({ show: _s, ...i }) => i);

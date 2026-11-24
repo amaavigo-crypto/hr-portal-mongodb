@@ -33,6 +33,7 @@ export const payroll = {
   ),
   payrollRunLines: collection('One payslip line per person per run (earnings, deductions, loans, reimbursements, net pay).', defineSchema({ ...tenant, month: reqStr, uid: reqStr, employee: Mixed }, [[{ companyId: 1, month: 1 }], [{ companyId: 1, uid: 1 }]])),
   payrollAdjustments: collection('One-off earnings / deductions added to a month.', defineSchema({ ...tenant, uid: String, month: String, kind: oneOf(['EARNING', 'DEDUCTION']), label: String, amount: reqNum }, [[{ companyId: 1, month: 1 }]])),
+  payrollChallans: collection('Statutory deposits (PF, ESI, PT, TDS, LWF) made for a wage month: amount, date, challan and BSR details.', defineSchema({ ...tenant, authority: oneOf(['PF', 'ESI', 'PT', 'TDS', 'LWF']), month: reqStr, amount: reqNum, paidOn: String, challanNo: String, bsrCode: String, reference: String, dueDate: String, updatedBy: String, updatedAt: String, createdAt: String })),
   payrollLoans: collection('Loans and advances recovered in instalments.', defineSchema({ ...tenant, uid: reqStr, label: String, principal: Number, installment: Number, balance: Number, active: Boolean, appliedMonths: [String], note: String, by: String, createdAt: String })),
   payrollDeclarations: collection('Employee tax declarations for a financial year.', defineSchema({ ...tenant, uid: String, fy: String }, [[{ companyId: 1, fy: 1 }]])),
   payrollSettlements: collection('Full and final settlements for leavers.', defineSchema({ ...tenant, uid: String, status: String, createdAt: String })),

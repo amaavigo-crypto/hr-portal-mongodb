@@ -24,7 +24,7 @@ import { markCorrectionsApplied } from './leavePayroll.js';
 import { isIsoDate, istToday } from '../../shared/leaveEngine.js';
 import {
   INDIAN_STATES, calculateLine, isTdsComponent, lineFacts, maskAccount, r2, splitCtc, starterPayrollSettings, totalsOf,
-  type Adjustment, type CtcTemplateRow, type PayComponent, type PayrollSettings, type PtSlab,
+  type Adjustment, type CtcTemplateRow, type LwfRule, type PayComponent, type PayrollSettings, type PtSlab,
 } from '../../shared/payrollEngine.js';
 import { fyStartYear, sanitizeTaxSettings } from '../../shared/taxEngine.js';
 import {
@@ -32,6 +32,7 @@ import {
   money, needManage, needMonth, needOpenMonth, needView, num, ok, runId, runOf, slug, stripBank, structureId, whoIs,
   type InputRow, type LineDoc, type LoanDoc, type PayrollRequestIn, type Result, type RunDoc, type StructureDoc, type Who,
 } from './payrollKit.js';
+import { routeStatutory } from './statutoryApi.js';
 import { payrollChecks } from './flagsApi.js';
 import { dueRevisionCount, isLineManager, loadApprovedClaims, routeExtras, settledMap } from './payrollExtras.js';
 import {
@@ -97,6 +98,13 @@ export function sanitizePayrollSettings(input: any): PayrollSettings {
   }
   const defaultState = INDIAN_STATES.includes(str(input.pt?.defaultState, 60)) ? str(input.pt.defaultState, 60) : '';
 
+  const lwfStates: Record<string, LwfRule> = {};
+  for (const [state, rule] of Object.entries<any>(input.lwf?.states || {})) {
+    if (!INDIAN_STATES.includes(state) || !rule || typeof rule !== 'object') continue;
+    const months = Array.from(new Set((Array.isArray(rule.months) ? rule.months : []).map((m: any) => Math.trunc(Number(m))).filter((m: number) => m >= 1 && m <= 12))).sort((a: any, b: any) => a - b) as number[];
+    lwfStates[state] = { months, employee: num(rule.employee, 0, 100_000, 0), employer: num(rule.employer, 0, 100_000, 0) };
+  }
+
   return {
     daysBasis: input.daysBasis === 'FIXED_30' ? 'FIXED_30' : 'CALENDAR',
     attendanceMode: input.attendanceMode === 'ATTENDANCE' ? 'ATTENDANCE' : 'LEAVE_ONLY',
@@ -115,6 +123,7 @@ export function sanitizePayrollSettings(input: any): PayrollSettings {
       wageCeiling: num(input.esic?.wageCeiling, 0, 100_000_000, 21000),
     },
     pt: { enabled: input.pt?.enabled !== false, defaultState, states },
+    lwf: { enabled: input.lwf?.enabled === true, states: lwfStates },
     company: {
       legalName: str(input.company?.legalName, 120), address: str(input.company?.address, 300),
       tan: str(input.company?.tan, 12).toUpperCase(), pan: str(input.company?.pan, 12).toUpperCase(),
@@ -769,6 +778,8 @@ export async function routePayroll(r: PayrollRequestIn): Promise<Result> {
       case 'tax-statement': if (GET) return await taxStatement(who, r.query); break;
       case 'tds-register': if (GET) return await tdsRegister(who, r.query); break;
       default: {
+        const stat = await routeStatutory(r.action, r.method, who, body, r.query);
+        if (stat) return stat;
         const extra = await routeExtras(r.action, r.method, who, body, r.query);
         if (extra) return extra;
         return fail(404, `Unknown payroll action '${r.action}'.`);
