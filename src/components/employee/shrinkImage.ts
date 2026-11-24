@@ -5,7 +5,7 @@ import { MAX_IDENTITY_FILE_CHARS } from '../../../shared/employeeIdentity';
  * (location, device). Tries smaller sizes until it fits.
  */
 export async function shrinkImage(file: File): Promise<string> {
-  if (!/^image\//.test(file.type)) throw new Error('Choose an image file (JPG or PNG).');
+  if (!/^image\//.test(file.type)) throw new Error('Choose a photo (JPG or PNG) or a PDF.');
   if (file.size > 25 * 1024 * 1024) throw new Error('That image is too large.');
   const url = URL.createObjectURL(file);
   try {
@@ -32,4 +32,25 @@ export async function shrinkImage(file: File): Promise<string> {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Largest PDF accepted. The stored data URL must stay under MAX_IDENTITY_FILE_CHARS (base64 adds a third). */
+export const MAX_PDF_BYTES = 600 * 1024;
+
+const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(String(r.result));
+  r.onerror = () => reject(new Error('That file could not be read.'));
+  r.readAsDataURL(file);
+});
+
+/** A PDF goes as it is (if small enough); a photo is shrunk to a JPEG. */
+export async function prepareAttachment(file: File): Promise<string> {
+  if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+    if (file.size > MAX_PDF_BYTES) throw new Error('That PDF is too large. Keep it under about 600 KB.');
+    const url = await readAsDataUrl(file);
+    // Some browsers label a PDF as octet-stream; the server checks the real bytes anyway.
+    return url.replace(/^data:[^;,]*;base64,/, 'data:application/pdf;base64,');
+  }
+  return shrinkImage(file);
 }

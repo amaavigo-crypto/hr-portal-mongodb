@@ -14,7 +14,7 @@ import { hasPerm } from '../../shared/permissions.js';
 import {
   audit, db, loadPeople, loadProfiles, notify, nowIso, personByUid, profileId, profileOf, str, companyLabel, type Person, type Profile,
 } from './leaveCore.js';
-import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, checkIdentityImage, identityProblem, identityTypeKeys, normalizeIdentity } from '../../shared/employeeIdentity.js';
+import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, identityProblem, identityTypeKeys, normalizeIdentity } from '../../shared/employeeIdentity.js';
 import { PERSONAL_FIELDS, checkPersonalField } from '../../shared/employeePersonal.js';
 import { MAX_QUALIFICATIONS, cleanQualification } from '../../shared/employeeQualification.js';
 import { MAX_FAMILY_MEMBERS, cleanFamilyMember } from '../../shared/employeeFamily.js';
@@ -957,7 +957,7 @@ async function identityFileAdd(w: Who, body: any): Promise<Result> {
   const uid = await identityFileAccess(w, body?.uid);
   const type = str(body?.type, 40);
   if (!identityTypeKeys.includes(type)) return fail(400, 'Unknown identity type.');
-  const problem = checkIdentityImage(body?.dataUrl);
+  const problem = checkAttachment(body?.dataUrl);
   if (problem) return fail(400, problem);
   const have = await db().collection('employeeIdentityFiles').where('companyId', '==', w.cid).where('uid', '==', uid).where('type', '==', type).get();
   if (have.size >= MAX_IDENTITY_FILES) return fail(400, `You can keep up to ${MAX_IDENTITY_FILES} photos for each document. Remove one first.`);
@@ -974,7 +974,7 @@ async function identityFileReplace(w: Who, body: any): Promise<Result> {
   const meta = await db().collection('employeeIdentityFiles').doc(id).get();
   const m: any = meta.exists ? meta.data() : null;
   if (!m || m.companyId !== w.cid || m.uid !== uid) return fail(404, 'Photo not found.');
-  const problem = checkIdentityImage(body?.dataUrl);
+  const problem = checkAttachment(body?.dataUrl);
   if (problem) return fail(400, problem);
   const dataUrl = body.dataUrl as string;
   await db().collection('employeeIdentityData').doc(id).set({ companyId: w.cid, uid, dataUrl });
@@ -1167,7 +1167,7 @@ async function qualDocSet(w: Who, body: any): Promise<Result> {
   const id = str(body?.id, 128);
   const d = await qualOwn(w, uid, id);
   if (!d) return fail(404, 'That qualification was not found.');
-  const problem = checkIdentityImage(body?.dataUrl);
+  const problem = checkAttachment(body?.dataUrl);
   if (problem) return fail(400, problem);
   const dataUrl = body.dataUrl as string;
   await db().collection('employeeQualificationData').doc(id).set({ companyId: w.cid, uid, dataUrl });

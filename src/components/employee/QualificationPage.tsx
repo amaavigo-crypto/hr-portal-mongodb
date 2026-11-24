@@ -5,7 +5,8 @@ import {
   COURSE_NATURES, COURSE_TYPES, QUALIFICATIONS, QUALIFICATION_STATUSES, STREAMS, durationText, type Qualification,
 } from '../../../shared/employeeQualification';
 import { Drawer, Field, Notice, btnDanger, btnGhost, btnPrimary, input, niceDate, useRunner } from '../leave/ui';
-import { shrinkImage } from './shrinkImage';
+import { prepareAttachment } from './shrinkImage';
+import { FilePreview } from './FilePreview';
 
 type Item = Qualification & { id: string; hasDocument?: boolean; docKb?: number };
 const blank: Qualification = {
@@ -38,7 +39,7 @@ const ItemDrawer: React.FC<{ open: boolean; initial: Item | null; uid?: string; 
       footer={<div className="flex gap-2 justify-end"><button type="button" className={btnGhost} onClick={onClose}>Cancel</button>
         <button type="button" className={btnPrimary} disabled={busy} onClick={() => run(async () => {
           const saved = await lifecycleService.saveQualification({ uid, id: initial?.id, item: q });
-          if (file) await lifecycleService.setQualificationDoc({ uid, id: saved.id, dataUrl: await shrinkImage(file) });
+          if (file) await lifecycleService.setQualificationDoc({ uid, id: saved.id, dataUrl: await prepareAttachment(file) });
           onSaved(); onClose();
         }, initial ? 'Saved' : 'Added')}>{initial ? 'Save' : 'Add'}</button></div>}>
       <div className="space-y-5">
@@ -80,8 +81,8 @@ const ItemDrawer: React.FC<{ open: boolean; initial: Item | null; uid?: string; 
             </section>
             <section className="space-y-2">
               <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-400">Certificate</h4>
-              <input type="file" accept="image/*" aria-label="Certificate photo" className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-bold" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              <p className="text-[11px] text-slate-400">{initial?.hasDocument ? 'A certificate is already attached. Choosing a photo replaces it.' : 'A photo of the certificate or marksheet (JPG or PNG).'}</p>
+              <input type="file" accept="image/*,application/pdf" aria-label="Certificate photo or PDF" className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-bold" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <p className="text-[11px] text-slate-400">{initial?.hasDocument ? 'A certificate is already attached. Choosing a file replaces it.' : 'A photo (JPG or PNG) or a PDF of the certificate or marksheet, up to about 600 KB for a PDF.'}</p>
             </section>
           </>
         )}
@@ -116,7 +117,7 @@ export const QualificationPage: React.FC<{ uid?: string }> = ({ uid }) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    await run(async () => { await lifecycleService.setQualificationDoc({ uid, id: attachTo.current, dataUrl: await shrinkImage(file) }); await load(); }, 'Certificate attached');
+    await run(async () => { await lifecycleService.setQualificationDoc({ uid, id: attachTo.current, dataUrl: await prepareAttachment(file) }); await load(); }, 'Certificate attached');
   };
 
   return (
@@ -188,12 +189,12 @@ export const QualificationPage: React.FC<{ uid?: string }> = ({ uid }) => {
           })}
         </ol>
       )}
-      <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e)} aria-label="Choose a certificate photo" />
+      <input ref={fileInput} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => void onFile(e)} aria-label="Choose a certificate photo or PDF" />
       {viewing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" role="dialog" aria-label={viewing.title} onClick={() => setViewing(null)}>
           <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
             <button type="button" aria-label="Close" className="absolute -top-3 -right-3 bg-white rounded-full p-1.5 shadow" onClick={() => setViewing(null)}><X className="w-4 h-4" /></button>
-            {viewing.src ? <img src={viewing.src} alt={viewing.title} className="w-full max-h-[85vh] object-contain rounded-lg bg-white" /> : <div className="bg-white rounded-lg p-10 text-center text-sm text-slate-500">Loading…</div>}
+            {viewing.src ? <FilePreview src={viewing.src} title={viewing.title} /> : <div className="bg-white rounded-lg p-10 text-center text-sm text-slate-500">Loading…</div>}
           </div>
         </div>
       )}

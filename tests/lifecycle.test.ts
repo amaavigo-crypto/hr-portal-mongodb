@@ -336,6 +336,19 @@ assert.equal((await call(FOREIGN, 'GET', 'profile', {}, { uid: 'u_emp' })).statu
   await ok(EMP, 'POST', 'identity-file-delete', { id: a.id });
   assert.equal((await files(EMP)).length, 1);
   assert.equal((await call(EMP, 'GET', 'identity-file', {}, { id: a.id })).status, 404, 'gone for good');
+  // a PDF is accepted too, but only a real one
+  const pdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n').toString('base64');
+  assert.equal((await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: 'data:application/pdf;base64,' + Buffer.from('definitely not a pdf').toString('base64') })).status, 400, 'PDF bytes are checked');
+  assert.equal((await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: pdf + 'A'.repeat(950000) })).status, 400, 'PDF too large');
+  assert.equal((await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: 'data:text/html;base64,PGI+aGk8L2I+' })).status, 400, 'other types still refused');
+  const p1 = (await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: pdf })).json;
+  assert.ok(p1.id, 'PDF added');
+  assert.equal((await call(EMP, 'GET', 'identity-file', {}, { id: p1.id })).json.dataUrl, pdf);
+  assert.equal((await call(HR, 'GET', 'identity-file', {}, { id: p1.id, uid: 'u_emp' })).json.dataUrl, pdf, 'HR can open the PDF');
+  await ok(EMP, 'POST', 'identity-file-replace', { id: p1.id, dataUrl: jpeg });
+  await ok(EMP, 'POST', 'identity-file-replace', { id: p1.id, dataUrl: pdf });
+  assert.equal((await call(EMP, 'POST', 'identity-file-replace', { id: p1.id, dataUrl: 'data:application/pdf;base64,AAAA' })).status, 400);
+  await ok(EMP, 'POST', 'identity-file-delete', { id: p1.id });
 }
 
 // ---- employee qualifications
@@ -367,6 +380,10 @@ assert.equal((await call(FOREIGN, 'GET', 'profile', {}, { uid: 'u_emp' })).statu
   assert.equal((await call(FOREIGN, 'GET', 'qualifications', {}, { uid: 'u_emp' })).status, 404);
   // certificate photo
   assert.equal((await call(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: 'data:image/png;base64,AAAA' })).status, 400);
+  const qpdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n').toString('base64');
+  assert.equal((await call(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: 'data:application/pdf;base64,' + Buffer.from('nope nope').toString('base64') })).status, 400, 'PDF bytes are checked');
+  await ok(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: qpdf });
+  assert.equal((await call(HR, 'GET', 'qualification-doc', {}, { id: bach.id, uid: 'u_emp' })).json.dataUrl, qpdf, 'a certificate can be a PDF');
   await ok(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: jpeg });
   assert.equal((await list(EMP)).find((r: any) => r.id === bach.id).hasDocument, true);
   assert.ok(!JSON.stringify(await list(EMP)).includes('base64'), 'listing never carries the pictures');
