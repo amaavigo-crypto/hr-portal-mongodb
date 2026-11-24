@@ -14,6 +14,11 @@ export interface AuthContext {
   perms: string[];
   isCompanyAdmin: boolean;
   isPlatformAdmin: boolean;
+  /** Group administrators can switch between the organisations of their account. */
+  isGroupAdmin?: boolean;
+  accountId?: string | null;
+  /** The organisation the person's employee record belongs to (differs from companyId while switched). */
+  homeCompanyId?: string | null;
 }
 
 export class AuthError extends Error {
@@ -49,6 +54,9 @@ export async function authenticate(headers: Record<string, any> | undefined): Pr
     perms: Array.isArray(claims.perms) ? claims.perms.map(String) : [],
     isCompanyAdmin: claims.adm === true,
     isPlatformAdmin: claims.pa === true,
+    isGroupAdmin: claims.ga === true && !!claims.aid,
+    accountId: claims.aid ? String(claims.aid) : null,
+    homeCompanyId: claims.hid ? String(claims.hid) : null,
   };
 }
 

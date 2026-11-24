@@ -243,6 +243,10 @@ export interface TenantClaims {
   perms?: string[];
   adm?: boolean;
   pa?: boolean;
+  /** Account id, group-admin flag and home organisation id. Set only for group administrators. */
+  aid?: string;
+  ga?: boolean;
+  hid?: string;
 }
 
 export const CLAIMS_BYTE_LIMIT = 900;

@@ -19,7 +19,8 @@ import { authenticate, requirePermission, requirePlatformAdmin, authErrorRespons
 import { dispatchLiveEmail } from './serverEmail.js';
 import { syncDepartmentManagers, syncDepartmentManagersQuietly } from './deptManager.js';
 import { nextFreeEmployeeCode } from '../../shared/employeeCode.js';
-import { accountIdFor, backfillAccounts, newAccountDoc, releaseAccountIfEmpty } from './accounts.js';
+import { accountIdFor, backfillAccounts, newAccountDoc, releaseAccountIfEmpty, type AccountDoc } from './accounts.js';
+import { routeOrgAction } from './orgAdmin.js';
 import {
   ALL_MODULE_KEYS,
   DEFAULT_ROLE_TEMPLATES,
@@ -160,7 +161,7 @@ async function findEmployeeRef(uid: string): Promise<DocumentReference | null> {
  * Recomputes everything derived from a user's roles (permissions, portal, modules) from the source of
  * truth, writes it back to their employee doc and stamps it onto their ID token claims.
  */
-export async function syncUser(uid: string, preloaded?: { company?: CompanyDoc; roles?: RoleDef[] }): Promise<void> {
+export async function syncUser(uid: string, preloaded?: { company?: CompanyDoc; roles?: RoleDef[]; account?: AccountDoc | null }): Promise<void> {
   const ref = await findEmployeeRef(uid);
   if (!ref) return;
   const emp = (await ref.get()).data() as EmployeeDoc;
@@ -170,12 +171,19 @@ export async function syncUser(uid: string, preloaded?: { company?: CompanyDoc; 
   const modules = company.status === 'ACTIVE' ? company.modules : [];
   const perms = effectivePermissions(mine, company.status === 'ACTIVE' ? company.modules : ALL_MODULE_KEYS);
   const isAdmin = mine.some((r) => r.isAdmin);
+  // A group administrator acts as administrator in every organisation of the account, including this one.
+  let account: AccountDoc | null = null;
+  if (company.accountId) {
+    account = preloaded && 'account' in preloaded ? preloaded.account ?? null : (await db().collection('accounts').doc(company.accountId).get()).data() as AccountDoc | null ?? null;
+  }
+  const isGroupAdmin = !!account && emp.active && (account.groupAdminUids || []).includes(emp.authUid || uid);
 
   const claims: TenantClaims = {
     cid: company.id,
     cs: company.status,
     perms: emp.active && company.status === 'ACTIVE' ? perms : [],
-    adm: emp.active && company.status === 'ACTIVE' && isAdmin,
+    adm: emp.active && company.status === 'ACTIVE' && (isAdmin || isGroupAdmin),
+    ...(isGroupAdmin ? { aid: account!.id, ga: true, hid: company.id } : {}),
   };
   if (!claimsFitLimit(claims)) throw new Error('Too many permissions to fit in the sign-in token. Remove some from the role.');
 
@@ -197,12 +205,13 @@ export async function syncUser(uid: string, preloaded?: { company?: CompanyDoc; 
 
 async function syncCompanyUsers(companyId: string): Promise<number> {
   const [company, roles] = await Promise.all([loadCompany(companyId), loadRoles(companyId)]);
+  const account = company.accountId ? ((await db().collection('accounts').doc(company.accountId).get()).data() as AccountDoc | undefined) ?? null : null;
   const snap = await db().collection('employees').where('companyId', '==', companyId).get();
   let n = 0;
   for (const d of snap.docs) {
     const uid = (d.data() as EmployeeDoc).authUid;
     if (!uid) continue;
-    await syncUser(uid, { company, roles });
+    await syncUser(uid, { company, roles, account });
     n++;
   }
   return n;
@@ -998,6 +1007,8 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
     if (r.method === 'POST' && action === 'signup') return await signup(b, origin);
     if (r.method === 'GET' && action === 'me') return await me(headers);
     if (r.method === 'GET' && action === 'companies') return await listCompanies(headers);
+    const orgResult = await routeOrgAction(r.method, action, headers, b, { syncUser: (uid) => syncUser(uid) });
+    if (orgResult) return orgResult as TenantResult;
 
     if (r.method !== 'POST') return fail(405, 'Method not allowed.');
     switch (action) {

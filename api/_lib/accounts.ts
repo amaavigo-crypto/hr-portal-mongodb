@@ -13,6 +13,8 @@ export interface AccountDoc {
   ownerEmail: string;
   /** How many organisations this account may hold. */
   orgLimit: number;
+  /** Users who may switch between this account's organisations and act as administrator in each. */
+  groupAdminUids?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +30,7 @@ export function newAccountDoc(company: AccountSource, ts: string): AccountDoc {
     name: company.name,
     ownerEmail: String(company.adminEmail || '').toLowerCase(),
     orgLimit: DEFAULT_ORG_LIMIT,
+    groupAdminUids: [],
     createdAt: ts,
     updatedAt: ts,
   };

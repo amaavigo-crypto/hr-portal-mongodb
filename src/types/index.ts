@@ -101,6 +101,10 @@ export interface User {
   perms?: string[];
   /** True when the user holds the Company Admin role (full access, from the sign-in token). */
   isCompanyAdmin?: boolean;
+  /** True for group administrators (they can switch between their account's organisations). */
+  isGroupAdmin?: boolean;
+  /** The organisation this person's own employee record belongs to. */
+  homeCompanyId?: string;
   authorizedModules?: string | string[]; // 'ALL' | 'TALENT_ACQUISITION' | 'DOCUMENT_VERSION_CONTROL'
   /** @deprecated replaced by permissions; kept so old records still type-check */
   hrLevel?: HrLevel;

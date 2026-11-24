@@ -115,6 +115,18 @@ async function loadSession(fb: FirebaseUser): Promise<SessionState> {
 
   setTenant(company.id, company.name);
 
+  // A group administrator who has switched to another organisation has no employee record there: build the session from the token.
+  const switched = claims.ga === true && !!claims.hid && claims.hid !== claims.cid;
+  if (switched) {
+    const user: User = {
+      id: fb.uid, authUid: fb.uid, name: fb.displayName || email, email, role: UserRole.CREATOR,
+      perms: [], isCompanyAdmin: true, isGroupAdmin: true, homeCompanyId: String(claims.hid), authorizedModules: 'ALL',
+      companyId: company.id, companyName: company.name, departmentId: '', departmentName: '', title: 'Group administrator',
+      active: true, createdAt: '', updatedAt: '',
+    };
+    return { kind: 'ready', user, company };
+  }
+
   const profileSnap = await getDoc(doc(db, 'employees', fb.uid));
   if (!profileSnap.exists()) return { kind: 'error', message: 'Your profile could not be found. Ask your administrator.' };
 
@@ -126,6 +138,8 @@ async function loadSession(fb: FirebaseUser): Promise<SessionState> {
     companyName: company.name,
     perms: Array.isArray(claims.perms) ? claims.perms : [],
     isCompanyAdmin: claims.adm === true,
+    isGroupAdmin: claims.ga === true,
+    homeCompanyId: claims.ga === true ? company.id : undefined,
     authorizedModules: normalizeAuthorizedModules(parsed.authorizedModules),
     // Portal comes from the server-computed role on the profile; fall back to the safest one.
     role: [UserRole.CREATOR, UserRole.REVIEWER, UserRole.EMPLOYEE].includes(parsed.role) ? parsed.role : UserRole.EMPLOYEE,

@@ -43,6 +43,7 @@ import { useLeaveNav, resolveSection as resolveLeaveSection } from './leave/leav
 import { NavBadge } from './NavBadge';
 import { sumOf, useNavBadges } from '../services/navBadges';
 import { ModuleSubNav } from './moduleNav';
+import { OrgSwitcher } from './OrgSwitcher';
 import { payrollNav } from './payroll/payrollNav';
 import { peopleNav } from './lifecycle/peopleNav';
 import { hrbpNav } from './hrbp/hrbpNav';
@@ -422,6 +423,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                 </div>
               </div>
 
+              {currentUser.isGroupAdmin && <OrgSwitcher currentName={currentUser.companyName} />}
             </div>
 
             {/* Navigation Category Tree */}
