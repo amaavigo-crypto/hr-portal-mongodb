@@ -19,7 +19,7 @@ async function main() {
   scan('api');
   const missing = [...used].filter((n) => !SCHEMAS[n] && n !== 'things');
   assert.deepEqual(missing, [], `collections without a schema: ${missing.join(', ')}`);
-  assert.ok(Object.keys(SCHEMAS).length >= 74);
+  assert.ok(Object.keys(SCHEMAS).length >= 98);
 
   // 2. Valid documents pass
   const company = { id: 'cmp_1', name: 'Acme', slug: 'acme', status: 'ACTIVE', modules: ['talent-acquisition'], plan: 'trial', adminEmail: 'a@acme.com', employeeIdPrefix: 'ACM', nextEmployeeNumber: 2, createdAt: '2026-11-24T00:00:00.000Z', updatedAt: '2026-11-24T00:00:00.000Z' };
@@ -46,6 +46,12 @@ async function main() {
   assert.ok((await validateDoc('hiringItems', { id: 'r', companyId: 'c', kind: 'flowRun', applicationId: 'a', status: 'DANCING' }, 'full')).some((p) => p.path === 'status'));
   assert.deepEqual(await validateDoc('hiringItems', { id: 'r', companyId: 'c', kind: 'flowRun', applicationId: 'a', status: 'RUNNING' }, 'full'), []);
   assert.ok(HIRING_KINDS.includes('flowRun') && HRBP_KINDS.includes('pip'));
+
+  // 5b. Account-level collections have no companyId and get no companyId index
+  assert.deepEqual(await validateDoc('accounts', { id: 'acc_c', name: 'Acme Group', orgLimit: 3, groupAdminUids: ['u1'] }, 'full'), []);
+  assert.ok((await validateDoc('accounts', { id: 'acc_c', name: 'No limit' }, 'full')).some((p) => p.path === 'orgLimit'));
+  assert.ok(!indexesFor('accounts').some(([f]) => 'companyId' in f));
+  assert.ok(indexesFor('employmentHistory').some(([f]) => 'uid' in f));
 
   // 6. Unknown collections are never blocked
   assert.deepEqual(await validateDoc('things', { whatever: true }, 'full'), []);

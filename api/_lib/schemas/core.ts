@@ -16,10 +16,11 @@ export const core = {
       adminEmail: String,
       employeeIdPrefix: String,
       nextEmployeeNumber: Number,
+      accountId: String, // the account (customer) this organisation belongs to; see accounts.ts
       approvedAt: String,
       approvedBy: String,
       ...stamps,
-    }),
+    }, [[{ accountId: 1 }, { sparse: true }]]),
   ),
 
   departments: collection(

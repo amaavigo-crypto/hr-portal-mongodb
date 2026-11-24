@@ -12,6 +12,7 @@
 import mongoose, { type Model } from 'mongoose';
 import type { Def, IndexSpec } from './helpers.js';
 import { core } from './core.js';
+import { accounts } from './accounts.js';
 import { documents } from './documents.js';
 import { employee } from './employee.js';
 import { leave } from './leave.js';
@@ -21,7 +22,7 @@ import { people } from './people.js';
 
 export { HIRING_KINDS, HRBP_KINDS } from './hiring.js';
 
-export const SCHEMAS: Record<string, Def> = { ...core, ...documents, ...employee, ...leave, ...payroll, ...hiring, ...people };
+export const SCHEMAS: Record<string, Def> = { ...core, ...accounts, ...documents, ...employee, ...leave, ...payroll, ...hiring, ...people };
 
 export type ValidationMode = 'off' | 'warn' | 'enforce';
 export function validationMode(): ValidationMode {
@@ -127,8 +128,9 @@ export async function checkWrite(collection: string, id: string, data: Record<st
 
 /** The indexes a collection should have: `companyId` first (every query filters on it), then those in its schema. Never unique. */
 export function indexesFor(collection: string): IndexSpec[] {
-  const out: IndexSpec[] = [[{ companyId: 1 }, { name: 'companyId_1' }]];
   const def = SCHEMAS[collection];
+  // Account-level collections (accounts, transferRequests ...) have no companyId, so they get no companyId index.
+  const out: IndexSpec[] = !def || def.schema.path('companyId') ? [[{ companyId: 1 }, { name: 'companyId_1' }]] : [];
   if (!def) return out;
   for (const [fields, options] of def.schema.indexes() as any[]) {
     const keys = Object.keys(fields);
