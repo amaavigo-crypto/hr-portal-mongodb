@@ -1,15 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, RefreshCw, Sparkles } from 'lucide-react';
-import { Card, EmptyState, Notice, Skeleton, btnGhost } from '../leave/ui';
-import { dashboardService } from '../../services/dashboardService';
+import React from 'react';
+import { ArrowRight } from 'lucide-react';
+import { Card } from '../leave/ui';
 import { inr, monthLabel } from '../../services/payrollService';
-import { groupWidgets, type DashboardWidget, type WidgetId, type WidgetTarget } from '../../../shared/dashboard';
-
-interface Props {
-  /** Fallback name while the dashboard loads. */
-  fallbackName?: string;
-  onOpen: (target: WidgetTarget) => void;
-}
+import type { DashboardWidget, WidgetId, WidgetTarget } from '../../../shared/dashboard';
 
 const Count: React.FC<{ n: number; label: string; urgent?: boolean }> = ({ n, label, urgent }) => (
   <div>
@@ -107,65 +100,3 @@ export const WidgetCard: React.FC<{ w: DashboardWidget; onOpen: (t: WidgetTarget
     {BODY[w.id]!(w.data)}
   </Card>
 );
-
-export const HomeDashboard: React.FC<Props> = ({ fallbackName, onOpen }) => {
-  const [state, setState] = useState<{ loading: boolean; error: string | null; name: string; widgets: DashboardWidget[] }>({ loading: true, error: null, name: fallbackName || '', widgets: [] });
-
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
-    try {
-      const r = await dashboardService.me();
-      setState({ loading: false, error: null, name: r.name || fallbackName || '', widgets: r.widgets || [] });
-    } catch (e: any) {
-      setState((s) => ({ ...s, loading: false, error: e?.message || 'Could not load your dashboard' }));
-    }
-  }, [fallbackName]);
-
-  useEffect(() => { void load(); }, [load]);
-
-  const widgets = state.widgets.filter((w) => BODY[w.id]);
-  const groups = groupWidgets(widgets);
-  const first = (state.name || '').split(' ')[0];
-
-  return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-black text-slate-800">{first ? `Hello, ${first}` : 'Hello'}</h1>
-          <p className="text-xs text-slate-500">Only the things that are yours to see or do.</p>
-        </div>
-        <button type="button" className={btnGhost} onClick={() => void load()} disabled={state.loading}>
-          <RefreshCw className={`w-3.5 h-3.5 ${state.loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
-      </div>
-
-      {state.error && <Notice tone="error">{state.error}</Notice>}
-      {state.loading && state.widgets.length === 0 && <Skeleton rows={4} />}
-
-      {!state.loading && !state.error && groups.length === 0 && (
-        <Card><EmptyState icon={Sparkles} title="You are all caught up" text="Nothing needs you right now. Use the menu on the left to open a module." /></Card>
-      )}
-
-      {groups.map((g) => (
-        <section key={g.group} aria-label={g.title}>
-          <h2 className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">{g.title}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {g.widgets.map((w) => (
-              <Card key={w.id} title={w.title} subtitle={w.reason}
-                className={w.urgent ? 'border-[#FA7014]/40' : ''}
-                right={w.target ? (
-                  <button type="button" onClick={() => onOpen(w.target!)} className="text-xs font-bold text-[#FA7014] inline-flex items-center gap-1 hover:underline" aria-label={`Open ${w.title}`}>
-                    Open <ArrowRight className="w-3 h-3" />
-                  </button>
-                ) : undefined}>
-                {BODY[w.id]!(w.data)}
-              </Card>
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-};
-
-export default HomeDashboard;

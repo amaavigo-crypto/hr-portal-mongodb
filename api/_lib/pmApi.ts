@@ -11,6 +11,7 @@ import { OPEN_PLAN, PLAN_ROUTES, openPlanOf, planReminders, planView, syncPlans 
 import { WORK_ROUTES, checkinReminders, generateCheckins, runFeed } from './pmWork.js';
 import { REVIEW_ROUTES, autoOpen, releaseHeld, reviewDaily, visible } from './pmReviews.js';
 import { GROWTH_ROUTES, growthReminders } from './pmGrowth.js';
+import { PM2_ROUTES } from './pm2Api.js';
 import {
   active, fail, get, hasReports, isManagerOf, list, load, loadSystem, ok, reportsOf, settingsOf,
   type C, type Result, type Route,
@@ -148,7 +149,7 @@ export const ROUTES: Record<string, Route> = {
   my: { method: 'GET', who: 'any', run: (c) => my(c) },
   team: { method: 'GET', who: 'any', run: (c) => team(c) },
   'run-daily': { method: 'POST', who: 'hr', run: (c) => runNow(c) },
-  ...SETUP_ROUTES, ...PLAN_ROUTES, ...WORK_ROUTES, ...REVIEW_ROUTES, ...GROWTH_ROUTES,
+  ...SETUP_ROUTES, ...PLAN_ROUTES, ...WORK_ROUTES, ...REVIEW_ROUTES, ...GROWTH_ROUTES, ...PM2_ROUTES,
 };
 
 export async function routePm(r: PmRequest): Promise<Result> {

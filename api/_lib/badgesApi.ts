@@ -9,6 +9,7 @@
 import { routeHome } from './homeApi.js';
 import { routeLeave } from './leaveApi.js';
 import { routeLifecycle } from './lifecycleApi.js';
+import { routeFlow } from './flowApi.js';
 import { routePayroll } from './payrollApi.js';
 
 export interface Badges {
@@ -16,6 +17,8 @@ export interface Badges {
   payroll: { approvals: number };
   people: { tasks: number };
   employee: { acknowledgement: number };
+  /** Open Hiring Automation tasks owned by this person: the module is shown to people who are not hiring managers only when this is above zero. */
+  flow: { tasks: number };
 }
 
 const TTL_MS = 20_000;
@@ -33,19 +36,21 @@ export async function computeBadges(headers: Record<string, any>, ip?: string): 
       return empty;
     }
   };
-  const [inbox, mine, notes, claims, lifecycle, acks] = await Promise.all([
+  const [inbox, mine, notes, claims, lifecycle, acks, flowTasks] = await Promise.all([
     pick(() => routeLeave({ ...base, action: 'inbox', ip }), (j) => count((j.leaves || []).length + (j.regularizations || []).length), 0),
     pick(() => routeLeave({ ...base, action: 'my-requests', ip }), (j) => count((j.items || []).filter((r: any) => r.status === 'INFO_REQUESTED').length), 0),
     pick(() => routeLeave({ ...base, action: 'notifications', ip }), (j) => count(j.unread), 0),
     pick(() => routePayroll({ ...base, action: 'claims', query: { status: 'SUBMITTED' } }), (j) => count((j.items || []).length), 0),
     pick(() => routeLifecycle({ ...base, action: 'me' }), (j) => count(j.openTasks), 0),
     pick(() => routeHome({ ...base, action: 'acks' }), (j) => count(j.active?.count), 0),
+    pick(async () => (await routeFlow({ ...base, action: 'flow-my-tasks' })) || { status: 404, json: {} }, (j) => count((j.open || []).length), 0),
   ]);
   return {
     leave: { today: notes, my: mine, approvals: inbox },
     payroll: { approvals: claims },
     people: { tasks: lifecycle },
     employee: { acknowledgement: acks },
+    flow: { tasks: flowTasks },
   };
 }
 

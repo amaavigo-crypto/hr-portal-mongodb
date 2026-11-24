@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ArrowRight, Briefcase, CalendarCheck, CalendarDays, CalendarPlus, CheckCircle2, CreditCard, FileText, Fingerprint, LayoutGrid, Palmtree,
-  ListChecks, Receipt, ShieldCheck, Users, UserPlus, Zap,
+  ArrowRight, BarChart3, Briefcase, CalendarCheck, CalendarDays, CalendarPlus, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileText, Megaphone,
+  Palmtree, ListChecks, Receipt, Settings, ShieldCheck, UserCog, Users, UserPlus, Wallet, Wrench, Zap,
 } from 'lucide-react';
+import { quickActionsFor, type ActionIcon, type HomeRole } from '../../../shared/homeRole';
 import type { DashboardWidget, WidgetTarget } from '../../../shared/dashboard';
 import { homeService } from '../../services/homeService';
 import { leaveService } from '../../services/leaveService';
@@ -177,30 +178,32 @@ export const PipelineChart: React.FC<{ refreshKey: number; onOpen: (t: WidgetTar
 
 // ------------------------------------------------------------------ quick actions
 
-const ACTIONS: { label: string; Icon: React.FC<{ className?: string }>; target?: WidgetTarget }[] = [
-  { label: 'Refer a Candidate', Icon: UserPlus, target: { module: 'my-hiring' } },
-  { label: 'Apply Leave', Icon: CalendarPlus, target: { module: 'leave-management', section: 'my' } },
-  { label: 'Mark Attendance', Icon: Fingerprint, target: { module: 'leave-management', section: 'attendance' } },
-  { label: 'Raise Claim', Icon: Receipt, target: { module: 'payroll', section: 'claims' } },
-  { label: 'My Letters', Icon: FileText, target: { module: 'people', section: 'myletters' } },
-  { label: 'View Payslip', Icon: CreditCard, target: { module: 'payroll', section: 'payslips' } },
-  { label: 'My Policies', Icon: ShieldCheck, target: { module: 'document-version-control', docTab: 'employee' } },
-  { label: 'More', Icon: LayoutGrid },
-];
+const ICONS: Record<ActionIcon, React.FC<{ className?: string }>> = {
+  refer: UserPlus, leave: CalendarPlus, fix: Wrench, claim: Receipt, letters: FileText, payslip: CreditCard, policies: ShieldCheck, tasks: ListChecks,
+  approvals: ClipboardCheck, team: CalendarDays, claimApprovals: Receipt, hiring: Briefcase, addPerson: UserPlus, announce: Megaphone, reports: BarChart3,
+  users: UserCog, payroll: Wallet, requisition: ClipboardList, setup: Settings,
+};
 
-export const QuickActionsGrid: React.FC<{ onOpen: (t: WidgetTarget) => void }> = ({ onOpen }) => (
-  <Card className="min-w-0" title={<span className="inline-flex items-center gap-2"><Zap className="h-5 w-5" />Quick Actions</span>}>
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-      {ACTIONS.map((a) => (
-        <button key={a.label} type="button"
-          onClick={() => (a.target ? onOpen(a.target) : document.getElementById('home-more')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}
-          className="flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-[11px] font-medium leading-tight text-slate-800 shadow-sm hover:border-[#F36B21]/60 hover:bg-orange-50/40 cursor-pointer">
-          <a.Icon className="h-4 w-4 text-slate-700" />{a.label}
-        </button>
-      ))}
-    </div>
-  </Card>
-);
+/** Shortcuts for this kind of Home (see shared/homeRole.ts): an employee gets everyday self-service, HR and admins get the things they run. */
+export const QuickActionsGrid: React.FC<{ role: HomeRole; perms: string[]; isAdmin: boolean; onOpen: (t: WidgetTarget) => void; onAnnounce?: () => void }> = ({ role, perms, isAdmin, onOpen, onAnnounce }) => {
+  const actions = quickActionsFor(role, perms, isAdmin).filter((a) => a.special !== 'announce' || !!onAnnounce);
+  return (
+    <Card className="min-w-0" title={<span className="inline-flex items-center gap-2"><Zap className="h-5 w-5" />Quick Actions</span>}>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {actions.map((a) => {
+          const Icon = ICONS[a.icon];
+          return (
+            <button key={a.id} type="button"
+              onClick={() => (a.special === 'announce' ? onAnnounce?.() : a.target && onOpen(a.target))}
+              className="flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-[11px] font-medium leading-tight text-slate-800 shadow-sm hover:border-[#F36B21] hover:bg-orange-50 cursor-pointer">
+              <Icon className="h-4 w-4 text-slate-700" />{a.label}
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+};
 
 // ------------------------------------------------------------------ upcoming
 

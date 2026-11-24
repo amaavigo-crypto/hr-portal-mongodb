@@ -19,16 +19,18 @@ import { LoginSummaryCard } from './cards/LoginSummaryCard';
 import { AcksCard } from './cards/AcksCard';
 import { MyTasks } from './HomeOverview';
 import { Masonry } from './Masonry';
+import { PunchBar } from './PunchBar';
+import { homeRoleFor, homeCardRank } from '../../../shared/homeRole';
 import { Greeting, LeaveBalanceCard, PipelineChart, QuickActionsGrid, TeamAttendanceCard, TopTiles, UpcomingCard } from './HomeBlocks';
 
-interface Props { fallbackName?: string; onOpen: (target: WidgetTarget) => void }
+interface Props { fallbackName?: string; perms?: string[]; isAdmin?: boolean; onOpen: (target: WidgetTarget) => void }
 
 // These dashboard widgets have their own full card on Home now.
 const REPLACED: WidgetId[] = ['attendance', 'acknowledgements', 'latest-payslip'];
 // Leave balance is a personal, low-urgency item and sits beside the profile.
 const LEFT_WIDGETS: WidgetId[] = ['leave-balance'];
 
-export const HomePage: React.FC<Props> = ({ fallbackName, onOpen }) => {
+export const HomePage: React.FC<Props> = ({ fallbackName, perms = [], isAdmin = false, onOpen }) => {
   const [tick, setTick] = useState(0);
   const [manage, setManage] = useState(false);
   const layout = useLoad(() => homeService.layout(), [tick]);
@@ -54,6 +56,8 @@ export const HomePage: React.FC<Props> = ({ fallbackName, onOpen }) => {
   const first = name.split(' ')[0];
   const canManage = !!can && (can.announce || can.manageHome || can.people);
   const today = L?.today ? niceDate(L.today) : '';
+  // Managers are the people the server shows an approvals widget to (direct reports, covering for a manager, or HR).
+  const role = homeRoleFor({ perms, isAdmin, isManager: (dash.data?.widgets || []).some((w) => w.id === 'approvals') });
 
   return (
     <div className="w-full h-full overflow-y-auto bg-[#F7F8FA]">
@@ -71,13 +75,17 @@ export const HomePage: React.FC<Props> = ({ fallbackName, onOpen }) => {
 
         {layout.error && <Notice tone="error">{layout.error} <button type="button" className="underline font-bold" onClick={refresh}>Try again</button></Notice>}
 
+        {/* Pinned first for everyone with attendance set up: the one thing most people do before anything else. */}
+        <PunchBar refreshKey={tick} onChanged={refresh} />
+
         <TopTiles widgets={dash.data?.widgets || []} refreshKey={tick} onOpen={onOpen} />
 
-        {/* One masonry for every card: columns end together, so there are no empty gaps between boxes. */}
+        {/* One masonry for every card: columns end together, so there are no empty gaps between boxes.
+            The order follows the kind of person (employee, manager, HR, founder, admin): see shared/homeRole.ts. */}
         <Masonry id="home-more">
-            {[
+            {([
               <PipelineChart key="pipeline" refreshKey={tick} onOpen={onOpen} />,
-              <QuickActionsGrid key="quick-actions" onOpen={onOpen} />,
+              <QuickActionsGrid key="quick-actions" role={role} perms={perms} isAdmin={isAdmin} onOpen={onOpen} onAnnounce={can?.announce ? () => setManage(true) : undefined} />,
               <UpcomingCard key="upcoming" refreshKey={tick} onOpen={onOpen} />,
               <MyTasks key="my-tasks" widgets={dash.data?.widgets || []} onOpen={onOpen} />,
               <LeaveBalanceCard key="leave-balance" refreshKey={tick} onOpen={onOpen} />,
@@ -96,7 +104,7 @@ export const HomePage: React.FC<Props> = ({ fallbackName, onOpen }) => {
               show('quick-reports') && <QuickReportsCard key="quick-reports" reports={L?.quickReports || []} onOpen={onOpen} />,
               ...left.map((w) => <WidgetCard key={w.id} w={w} onOpen={onOpen} />),
               ] : []),
-            ]}
+            ] as React.ReactElement[]).filter(Boolean).sort((a, b) => homeCardRank(role, String(a.key)) - homeCardRank(role, String(b.key)))}
         </Masonry>
 
         {/* Company-wide availability is a useful scan across the full page width. */}

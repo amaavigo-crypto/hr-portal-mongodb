@@ -59,6 +59,7 @@ const HiringPipelineModule = lazyPage(() => import('./components/HiringPipelineM
 const MyHiringModule = lazyPage(() => import('./components/MyHiringModule').then((m) => m.MyHiringModule));
 const HiringAutomationModule = lazyPage(() => import('./components/HiringAutomationModule').then((m) => m.HiringAutomationModule));
 const PerformanceModule = lazyPage(() => import('./components/PerformanceModule').then((m) => m.PerformanceModule));
+const Performance2Module = lazyPage(() => import('./components/Performance2Module').then((m) => m.Performance2Module));
 const TasksModule = lazyPage(() => import('./components/TasksModule').then((m) => m.TasksModule));
 const WellbeingModule = lazyPage(() => import('./components/WellbeingModule').then((m) => m.WellbeingModule));
 const HrbpModule = lazyPage(() => import('./components/HrbpModule').then((m) => m.HrbpModule));
@@ -606,7 +607,7 @@ export default function App() {
         >
           {hrAgentModule === 'home' && (
             <div className="flex-1 min-w-0 overflow-y-auto">
-              <HomePage fallbackName={currentUser.name} onOpen={openDashboardTarget} />
+              <HomePage fallbackName={currentUser.name} perms={currentUser.perms || []} isAdmin={!!currentUser.isCompanyAdmin} onOpen={openDashboardTarget} />
             </div>
           )}
 
@@ -854,6 +855,12 @@ export default function App() {
           {hrAgentModule === 'performance' && currentUser && (
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <PerformanceModule currentUser={currentUser} users={allUsers} />
+            </div>
+          )}
+
+          {hrAgentModule === 'performance2' && currentUser && (
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <Performance2Module currentUser={currentUser} users={allUsers} />
             </div>
           )}
 

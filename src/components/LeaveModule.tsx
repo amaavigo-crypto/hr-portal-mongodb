@@ -15,10 +15,10 @@ import { HrBalances, HrPeople, HrReports, HrRequests } from './leave/HrOps';
 import { HrSetup } from './leave/HrSetup';
 import { HrAudit, HrDashboard, HrExceptions, HrYearEnd } from './leave/HrGovernance';
 import { LeaveSubNav } from './leave/LeaveSubNav';
-import { leaveNav, leaveNavItems, LeaveSection, resolveSection, useLeaveNav } from './leave/leaveNav';
+import { attendanceTabFor, AttendanceSubTab, leaveNav, leaveNavItems, LeaveSection, resolveSection, useLeaveNav } from './leave/leaveNav';
 import { MyLeave } from './leave/MyLeave';
 import { Today } from './leave/Today';
-import { Card, EmptyState, Notice, Skeleton, ToastProvider } from './leave/ui';
+import { Card, EmptyState, Notice, Segmented, Skeleton, ToastProvider } from './leave/ui';
 
 type Admin = 'policies' | 'overview' | 'requests' | 'people' | 'balances' | 'reports' | 'exceptions' | 'audit' | 'yearend' | 'setup';
 const ADMIN_KEY = 'amaavigo_leave_admin_tab';
@@ -27,7 +27,7 @@ const writeKey = (k: string, v: string) => { try { localStorage.setItem(k, v); }
 
 /**
  * Leave & attendance for every role.
- * Sections: Today · My leave · Attendance · Team calendar · Approvals (managers) · Manage (HR).
+ * Sections: Today · My leave · Attendance (My month, Fix attendance, Apply for days, Reports) · Team calendar · Approvals (managers) · Manage (HR).
  * The section menu is shown in the app sidebar under "Leave & Attendance". Screens without a sidebar (the employee portal)
  * pass `inlineNav` to show the same menu as pills at the top of the page.
  */
@@ -42,6 +42,9 @@ const LeaveScreens: React.FC<{ currentUser: User; inlineNav?: boolean }> = ({ cu
   const [admin, setAdminState] = useState<Admin>(() => (readKey(ADMIN_KEY) as Admin) || 'requests');
   const [apply, setApply] = useState<{ open: boolean; typeId?: string }>({ open: false });
   const [fixOpen, setFixOpen] = useState(false);
+  const [attTab, setAttTab] = useState<AttendanceSubTab>(() => attendanceTabFor(leaveNav.getState().section) || 'month');
+  // A link to one of the old attendance pages (Home, "New Regularization") opens its tab.
+  useEffect(() => { const t = attendanceTabFor(section); if (t) setAttTab(t); }, [section]);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const setAdmin = (t: Admin) => { setAdminState(t); writeKey(ADMIN_KEY, t); };
@@ -93,10 +96,16 @@ const LeaveScreens: React.FC<{ currentUser: User; inlineNav?: boolean }> = ({ cu
 
         {active === 'today' && <Today me={me} reload={reload} refreshKey={refreshKey} onApply={(typeId) => setApply({ open: true, typeId })} onOpen={(t) => leaveNav.setSection(t as LeaveSection)} />}
         {active === 'my' && <MyLeave me={me} reload={reload} refreshKey={refreshKey} onApply={(typeId) => setApply({ open: true, typeId })} />}
-        {active === 'attendance' && <AttendanceTab me={me} reload={reload} />}
-        {active === 'regularization' && <RegularizationPage me={me} onChanged={reload} />}
-        {active === 'application' && <AttendanceApplicationPage me={me} onChanged={reload} />}
-        {active === 'reports' && <AttendanceReportsPage me={me} />}
+        {active === 'attendance' && (
+          <div className="space-y-4">
+            <Segmented<AttendanceSubTab> value={attTab} onChange={(t) => { setAttTab(t); if (attendanceTabFor(section)) leaveNav.setSection('attendance'); }}
+              options={[{ value: 'month', label: 'My month' }, { value: 'regularization', label: 'Fix attendance' }, { value: 'application', label: 'Apply for days' }, { value: 'reports', label: 'Reports' }]} />
+            {attTab === 'month' && <AttendanceTab me={me} reload={reload} />}
+            {attTab === 'regularization' && <RegularizationPage me={me} onChanged={reload} />}
+            {attTab === 'application' && <AttendanceApplicationPage me={me} onChanged={reload} />}
+            {attTab === 'reports' && <AttendanceReportsPage me={me} />}
+          </div>
+        )}
         {active === 'team' && <TeamCalendar />}
         {active === 'approvals' && <ApprovalsTab reload={reload} />}
         {active === 'manage' && (

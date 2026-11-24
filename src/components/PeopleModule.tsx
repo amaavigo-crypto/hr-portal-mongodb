@@ -41,6 +41,14 @@ export const PeopleModule: React.FC<{ currentUser: User; inlineNav?: boolean }> 
   useEffect(() => { peopleNav.publish(peopleNavItems(me)); }, [me]);
   useEffect(() => () => peopleNav.publish([]), []);
 
+  // First visit of the session: someone with open joining or exit tasks lands on "My tasks" instead of the directory.
+  // Only when they are on the default page, so a link from Home or a page they chose themselves is never overridden.
+  useEffect(() => {
+    if (!me || !(me as any).openTasks) return;
+    try { if (sessionStorage.getItem('people-landed')) return; sessionStorage.setItem('people-landed', '1'); } catch { /* storage blocked: land once per page load */ }
+    if (peopleNav.getState().section === 'directory') peopleNav.setSection('tasks');
+  }, [me]);
+
   if (error) return <div className="p-6"><Notice tone="error">{error}</Notice></div>;
   if (!me) return <div className="p-6 text-sm text-slate-500">Loading…</div>;
 

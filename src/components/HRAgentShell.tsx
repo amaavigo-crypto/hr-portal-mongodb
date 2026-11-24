@@ -74,6 +74,7 @@ export type HRAgentModule =
   | 'my-hiring'
   | 'hrbp'
   | 'performance'
+  | 'performance2'
   | 'tasks'
   | 'hiring-automation'
   | 'wellbeing'
@@ -149,7 +150,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   // Auto-redirect if currently selected module is not permitted
   useEffect(() => {
     if (activeModule === 'home' || activeModule === 'policies') return;
-    if (activeModule === 'administration' || activeModule === 'leave-management' || activeModule === 'payroll' || activeModule === 'people' || activeModule === 'employee' || activeModule === 'my-hiring' || activeModule === 'hrbp' || activeModule === 'performance' || activeModule === 'tasks' || activeModule === 'hiring-automation' || activeModule === 'wellbeing') return;
+    if (activeModule === 'administration' || activeModule === 'leave-management' || activeModule === 'payroll' || activeModule === 'people' || activeModule === 'employee' || activeModule === 'my-hiring' || activeModule === 'hrbp' || activeModule === 'performance' || activeModule === 'performance2' || activeModule === 'tasks' || activeModule === 'hiring-automation' || activeModule === 'wellbeing') return;
     if (activeModule === 'document-version-control' && !hasDocGovAccess && hasTalentAccess) {
       onSelectModule('talent-acquisition-overview');
     } else if (
@@ -166,6 +167,10 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     }
   }, [activeModule, hasTalentAccess, hasDocGovAccess, onSelectModule]);
 
+  // Hiring Automation is for people who run hiring, or who have been given a step in a hiring flow. Everyone else would only see an empty module.
+  const showHiringAutomation = !!currentUser.isCompanyAdmin || hasAnyPerm(currentUser.perms, ['app.manage', 'req.manage_jd', 'req.hr_decide']) || badges.flow.tasks > 0 || activeModule === 'hiring-automation';
+  // The "Manage" group holds what people run for the company (hiring, policies, hiring flows, administration); it is left out when empty.
+  const showManageGroup = hasTalentAccess || hasDocGovAccess || showHiringAutomation || hasAdminAccess;
   // Pages this person can open: used for the top bar title and the "go to a page" search.
   const pages: { id: HRAgentModule; label: string }[] = ([
     { id: 'home', label: 'Home', show: true },
@@ -178,8 +183,9 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     { id: 'my-hiring', label: 'Referrals & interviews', show: true },
     { id: 'hrbp', label: 'HR Business Partner', show: true },
     { id: 'performance', label: 'Performance', show: true },
+    { id: 'performance2', label: 'Performance 2', show: true },
     { id: 'tasks', label: 'Tasks', show: true },
-    { id: 'hiring-automation', label: 'Hiring Automation', show: true },
+    { id: 'hiring-automation', label: 'Hiring Automation', show: showHiringAutomation },
     { id: 'wellbeing', label: 'Wellbeing', show: true },
     { id: 'people', label: 'People', show: true },
     { id: 'employee', label: 'Employee', show: true },
@@ -300,6 +306,133 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   }, []);
   const pageMatches = pageQuery.trim() ? pages.filter((p) => p.label.toLowerCase().includes(pageQuery.trim().toLowerCase())).slice(0, 6) : [];
   const initial = (currentUser.name || 'U').split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]?.toUpperCase()).join('') || 'U';
+
+  // Sidebar modules that share one layout. `keys` picks which of them to draw, so they can sit under "My work" or "Manage".
+  const renderModules = (keys: string[]) => ([
+                  { key: 'my-hiring' as const, title: 'Referrals & interviews', sub: 'Refer people, give interview feedback', Icon: Users, show: true },
+                  { key: 'hrbp' as const, title: 'HR Business Partner', sub: (hasAnyPerm(currentUser.perms, ['hrbp.manage', 'hrbp.view']) || !!currentUser.isCompanyAdmin) ? 'Org, talent, engagement & succession' : 'Surveys, recognition, learning & wellness', Icon: Layers, show: true },
+                  { key: 'performance' as const, title: 'Performance', sub: 'Targets, reviews, check-ins & growth', Icon: Check, show: true },
+                  { key: 'performance2' as const, title: 'Performance 2', sub: 'Calibration, increments, goals & 360', Icon: Check, show: true },
+                  { key: 'tasks' as const, title: 'Tasks', sub: 'My tasks, boards & dashboards', Icon: ListChecks, show: true },
+                  { key: 'hiring-automation' as const, title: 'Hiring Automation', sub: 'Your hiring steps, applicants & tasks', Icon: Workflow, show: showHiringAutomation },
+                  { key: 'wellbeing' as const, title: 'Wellbeing', sub: 'Short games for a break', Icon: Gamepad2, show: true },
+                ]).filter((m) => m.show && keys.includes(m.key)).map((m) => (
+                  <React.Fragment key={m.key}>
+                  <div className="relative">
+                  <button
+                    id={`nav-module-${m.key}`}
+                    type="button"
+                    onClick={() => {
+                      onSelectModule(m.key);
+                      if (m.key === 'hrbp') setIsHrbpExpanded(true);
+                      if (m.key === 'performance') setIsPmExpanded(true);
+                      if (m.key === 'tasks') setIsTaskExpanded(true);
+                      if (m.key === 'hiring-automation') setIsFlowExpanded(true);
+                      if (m.key === 'wellbeing') setIsWellbeingExpanded(true);
+                      setIsMobileSidebarOpen(false);
+                    }}
+                    className={`w-full ${activeModule === m.key ? (m.key === 'hrbp' || m.key === 'performance' || m.key === 'tasks' || m.key === 'hiring-automation' || m.key === 'wellbeing' ? 'pl-3 pr-10' : 'pl-3 pr-3') : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                      activeModule === m.key ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30' : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${activeModule === m.key ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'}`}>
+                        <m.Icon className="w-[15px] h-[15px]" />
+                      </div>
+                      <div className="truncate">
+                        <span className={`text-[12px] font-medium block truncate ${activeModule === m.key ? 'text-white' : 'text-slate-100'}`}>{m.title}</span>
+                        <span className="hidden">{m.sub}</span>
+                      </div>
+                    </div>
+                  </button>
+                  {m.key === 'hrbp' && activeModule !== 'hrbp' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  {m.key === 'hrbp' && activeModule === 'hrbp' && (
+                    <button
+                      id="nav-module-hrbp-toggle"
+                      type="button"
+                      onClick={() => setIsHrbpExpanded((v) => !v)}
+                      aria-expanded={isHrbpExpanded}
+                      aria-label={isHrbpExpanded ? 'Hide HR Business Partner sections' : 'Show HR Business Partner sections'}
+                      title={isHrbpExpanded ? 'Hide sections' : 'Show sections'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                    >
+                      {isHrbpExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
+                  {m.key === 'performance' && activeModule !== 'performance' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  {m.key === 'performance' && activeModule === 'performance' && (
+                    <button
+                      id="nav-module-performance-toggle"
+                      type="button"
+                      onClick={() => setIsPmExpanded((v) => !v)}
+                      aria-expanded={isPmExpanded}
+                      aria-label={isPmExpanded ? 'Hide Performance sections' : 'Show Performance sections'}
+                      title={isPmExpanded ? 'Hide sections' : 'Show sections'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                    >
+                      {isPmExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
+                  {m.key === 'tasks' && activeModule !== 'tasks' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  {m.key === 'tasks' && activeModule === 'tasks' && (
+                    <button
+                      id="nav-module-tasks-toggle"
+                      type="button"
+                      onClick={() => setIsTaskExpanded((v) => !v)}
+                      aria-expanded={isTaskExpanded}
+                      aria-label={isTaskExpanded ? 'Hide Tasks sections' : 'Show Tasks sections'}
+                      title={isTaskExpanded ? 'Hide sections' : 'Show sections'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                    >
+                      {isTaskExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
+                  {m.key === 'hiring-automation' && activeModule !== 'hiring-automation' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  {m.key === 'hiring-automation' && activeModule === 'hiring-automation' && (
+                    <button
+                      id="nav-module-hiring-automation-toggle"
+                      type="button"
+                      onClick={() => setIsFlowExpanded((v) => !v)}
+                      aria-expanded={isFlowExpanded}
+                      aria-label={isFlowExpanded ? 'Hide Hiring Automation sections' : 'Show Hiring Automation sections'}
+                      title={isFlowExpanded ? 'Hide sections' : 'Show sections'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                    >
+                      {isFlowExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
+                  {m.key === 'wellbeing' && activeModule !== 'wellbeing' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  {m.key === 'wellbeing' && activeModule === 'wellbeing' && (
+                    <button
+                      id="nav-module-wellbeing-toggle"
+                      type="button"
+                      onClick={() => setIsWellbeingExpanded((v) => !v)}
+                      aria-expanded={isWellbeingExpanded}
+                      aria-label={isWellbeingExpanded ? 'Hide Wellbeing sections' : 'Show Wellbeing sections'}
+                      title={isWellbeingExpanded ? 'Hide sections' : 'Show sections'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                    >
+                      {isWellbeingExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
+                  </div>
+                  {m.key === 'performance' && activeModule === 'performance' && isPmExpanded && (
+                    <ModuleSubNav nav={pmNav} label="Performance sections" variant="sidebar" idPrefix="nav-submodule-performance" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                  )}
+                  {m.key === 'tasks' && activeModule === 'tasks' && isTaskExpanded && (
+                    <ModuleSubNav nav={taskNav} label="Tasks sections" variant="sidebar" idPrefix="nav-submodule-tasks" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                  )}
+                  {m.key === 'hiring-automation' && activeModule === 'hiring-automation' && isFlowExpanded && (
+                    <ModuleSubNav nav={flowNav} label="Hiring Automation sections" variant="sidebar" idPrefix="nav-submodule-hiring-automation" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                  )}
+                  {m.key === 'hrbp' && activeModule === 'hrbp' && isHrbpExpanded && (
+                    <ModuleSubNav nav={hrbpNav} label="HR Business Partner sections" variant="sidebar" idPrefix="nav-submodule-hrbp" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                  )}
+                  {m.key === 'wellbeing' && activeModule === 'wellbeing' && isWellbeingExpanded && (
+                    <ModuleSubNav nav={wellbeingNav} label="Wellbeing sections" variant="sidebar" idPrefix="nav-submodule-wellbeing" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                  )}
+                  </React.Fragment>
+                ));
 
   const displayId = currentUser.empId || currentUser.loginId || currentUser.id || '';
   const authLabel = hasTalentAccess && hasDocGovAccess ? 'All Modules' : hasTalentAccess ? 'Talent Acquisition' : hasDocGovAccess ? 'Document Version Control' : 'Employee Portal';
@@ -460,6 +593,230 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                     </button>
                   );
                 })}
+                <div className="px-2.5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400" role="presentation">My work</div>
+                {/* ---------------------------------------------------- */}
+                {/* LEAVE & ATTENDANCE (every role)                      */}
+                {/* ---------------------------------------------------- */}
+                <div className="relative">
+                <button
+                  id="nav-module-leave-management"
+                  type="button"
+                  onClick={() => {
+                    onSelectModule('leave-management');
+                    setIsLeaveExpanded(true);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`w-full ${activeModule === 'leave-management' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                    activeModule === 'leave-management'
+                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
+                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                        activeModule === 'leave-management' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
+                      }`}
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'leave-management' ? 'text-white' : 'text-slate-100'}`}>
+                        Leave &amp; Attendance
+                      </span>
+                      <span className="hidden">Leave, holidays, attendance &amp; approvals</span>
+                    </div>
+                  </div>
+                  <NavBadge tone="dark" count={sumOf(badges.leave)} className="ml-1.5" />
+                </button>
+                {activeModule !== 'leave-management' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                {activeModule === 'leave-management' && (
+                  <button
+                    id="nav-module-leave-toggle"
+                    type="button"
+                    onClick={() => setIsLeaveExpanded((v) => !v)}
+                    aria-expanded={isLeaveExpanded}
+                    aria-label={isLeaveExpanded ? 'Hide leave sections' : 'Show leave sections'}
+                    title={isLeaveExpanded ? 'Hide sections' : 'Show sections'}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                  >
+                    {isLeaveExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                )}
+                </div>
+
+                {/* Leave sections (Today, My leave, Attendance, Team calendar, Approvals, Manage) */}
+                {activeModule === 'leave-management' && isLeaveExpanded && (
+                  <LeaveSubNav variant="sidebar" counts={badges.leave} onNavigate={() => setIsMobileSidebarOpen(false)} />
+                )}
+
+                {/* ---------------------------------------------------- */}
+                {/* PAYROLL (everyone sees payslips; payroll.* sees more) */}
+                {/* ---------------------------------------------------- */}
+                <div className="relative">
+                <button
+                  id="nav-module-payroll"
+                  type="button"
+                  onClick={() => {
+                    onSelectModule('payroll');
+                    setIsPayrollExpanded(true);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`w-full ${activeModule === 'payroll' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                    activeModule === 'payroll'
+                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
+                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                        activeModule === 'payroll' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
+                      }`}
+                    >
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'payroll' ? 'text-white' : 'text-slate-100'}`}>
+                        Payroll
+                      </span>
+                      <span className="hidden">Payslips, salary runs &amp; statutory setup</span>
+                    </div>
+                  </div>
+                  <NavBadge tone="dark" count={sumOf(badges.payroll)} className="ml-1.5" />
+                </button>
+                {activeModule !== 'payroll' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                {activeModule === 'payroll' && (
+                  <button
+                    id="nav-module-payroll-toggle"
+                    type="button"
+                    onClick={() => setIsPayrollExpanded((v) => !v)}
+                    aria-expanded={isPayrollExpanded}
+                    aria-label={isPayrollExpanded ? 'Hide payroll sections' : 'Show payroll sections'}
+                    title={isPayrollExpanded ? 'Hide sections' : 'Show sections'}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                  >
+                    {isPayrollExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                )}
+                </div>
+
+                {activeModule === 'payroll' && isPayrollExpanded && (
+                  <ModuleSubNav nav={payrollNav} counts={badges.payroll} label="Payroll sections" variant="sidebar" idPrefix="nav-submodule-payroll" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                )}
+
+                {renderModules(['tasks', 'performance', 'performance2', 'wellbeing', 'hrbp', 'my-hiring'])}
+                {/* ---------------------------------------------------- */}
+                {/* PEOPLE (directory, joining tasks, exits, letters) */}
+                {/* ---------------------------------------------------- */}
+                <div className="relative">
+                <button
+                  id="nav-module-people"
+                  type="button"
+                  onClick={() => {
+                    onSelectModule('people');
+                    setIsPeopleExpanded(true);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`w-full ${activeModule === 'people' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                    activeModule === 'people'
+                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
+                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                        activeModule === 'people' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'people' ? 'text-white' : 'text-slate-100'}`}>
+                        People
+                      </span>
+                      <span className="hidden">Directory, onboarding, exits &amp; letters</span>
+                    </div>
+                  </div>
+                  <NavBadge tone="dark" count={sumOf(badges.people)} className="ml-1.5" />
+                </button>
+                {activeModule !== 'people' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                {activeModule === 'people' && (
+                  <button
+                    id="nav-module-people-toggle"
+                    type="button"
+                    onClick={() => setIsPeopleExpanded((v) => !v)}
+                    aria-expanded={isPeopleExpanded}
+                    aria-label={isPeopleExpanded ? 'Hide people sections' : 'Show people sections'}
+                    title={isPeopleExpanded ? 'Hide sections' : 'Show sections'}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                  >
+                    {isPeopleExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                )}
+                </div>
+
+                {activeModule === 'people' && isPeopleExpanded && (
+                  <ModuleSubNav nav={peopleNav} counts={badges.people} label="People sections" variant="sidebar" idPrefix="nav-submodule-people" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                )}
+
+                {/* ---------------------------------------------------- */}
+                {/* EMPLOYEE (transactions and reports) */}
+                {/* ---------------------------------------------------- */}
+                <div className="relative">
+                <button
+                  id="nav-module-employee"
+                  type="button"
+                  onClick={() => {
+                    onSelectModule('employee');
+                    setIsEmployeeExpanded(true);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`w-full ${activeModule === 'employee' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                    activeModule === 'employee'
+                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
+                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                        activeModule === 'employee' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
+                      }`}
+                    >
+                      <Contact className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'employee' ? 'text-white' : 'text-slate-100'}`}>
+                        Employee
+                      </span>
+                      <span className="hidden">Master data, acknowledgements &amp; reports</span>
+                    </div>
+                  </div>
+                  <NavBadge tone="dark" count={sumOf(badges.employee)} className="ml-1.5" />
+                </button>
+                {activeModule !== 'employee' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                {activeModule === 'employee' && (
+                  <button
+                    id="nav-module-employee-toggle"
+                    type="button"
+                    onClick={() => setIsEmployeeExpanded((v) => !v)}
+                    aria-expanded={isEmployeeExpanded}
+                    aria-label={isEmployeeExpanded ? 'Hide employee sections' : 'Show employee sections'}
+                    title={isEmployeeExpanded ? 'Hide sections' : 'Show sections'}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
+                  >
+                    {isEmployeeExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                )}
+                </div>
+
+                {activeModule === 'employee' && isEmployeeExpanded && (
+                  <ModuleSubNav nav={employeeNav} counts={badges.employee} label="Employee sections" variant="sidebar" idPrefix="nav-submodule-employee" onNavigate={() => setIsMobileSidebarOpen(false)} />
+                )}
+
+                {showManageGroup && <div className="px-2.5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400" role="presentation">Manage</div>}
                 {/* ---------------------------------------------------- */}
                 {/* 1. TALENT ACQUISITION (Authorized check)             */}
                 {/* ---------------------------------------------------- */}
@@ -702,355 +1059,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   </button>
                 )}
 
-                {/* ---------------------------------------------------- */}
-                {/* LEAVE & ATTENDANCE (every role)                      */}
-                {/* ---------------------------------------------------- */}
-                <div className="relative">
-                <button
-                  id="nav-module-leave-management"
-                  type="button"
-                  onClick={() => {
-                    onSelectModule('leave-management');
-                    setIsLeaveExpanded(true);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`w-full ${activeModule === 'leave-management' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                    activeModule === 'leave-management'
-                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
-                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                        activeModule === 'leave-management' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
-                      }`}
-                    >
-                      <CalendarDays className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'leave-management' ? 'text-white' : 'text-slate-100'}`}>
-                        Leave &amp; Attendance
-                      </span>
-                      <span className="hidden">Leave, holidays, attendance &amp; approvals</span>
-                    </div>
-                  </div>
-                  <NavBadge tone="dark" count={sumOf(badges.leave)} className="ml-1.5" />
-                </button>
-                {activeModule !== 'leave-management' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                {activeModule === 'leave-management' && (
-                  <button
-                    id="nav-module-leave-toggle"
-                    type="button"
-                    onClick={() => setIsLeaveExpanded((v) => !v)}
-                    aria-expanded={isLeaveExpanded}
-                    aria-label={isLeaveExpanded ? 'Hide leave sections' : 'Show leave sections'}
-                    title={isLeaveExpanded ? 'Hide sections' : 'Show sections'}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                  >
-                    {isLeaveExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </button>
-                )}
-                </div>
-
-                {/* Leave sections (Today, My leave, Attendance, Team calendar, Approvals, Manage) */}
-                {activeModule === 'leave-management' && isLeaveExpanded && (
-                  <LeaveSubNav variant="sidebar" counts={badges.leave} onNavigate={() => setIsMobileSidebarOpen(false)} />
-                )}
-
-                {/* ---------------------------------------------------- */}
-                {/* PAYROLL (everyone sees payslips; payroll.* sees more) */}
-                {/* ---------------------------------------------------- */}
-                <div className="relative">
-                <button
-                  id="nav-module-payroll"
-                  type="button"
-                  onClick={() => {
-                    onSelectModule('payroll');
-                    setIsPayrollExpanded(true);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`w-full ${activeModule === 'payroll' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                    activeModule === 'payroll'
-                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
-                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                        activeModule === 'payroll' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
-                      }`}
-                    >
-                      <Wallet className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'payroll' ? 'text-white' : 'text-slate-100'}`}>
-                        Payroll
-                      </span>
-                      <span className="hidden">Payslips, salary runs &amp; statutory setup</span>
-                    </div>
-                  </div>
-                  <NavBadge tone="dark" count={sumOf(badges.payroll)} className="ml-1.5" />
-                </button>
-                {activeModule !== 'payroll' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                {activeModule === 'payroll' && (
-                  <button
-                    id="nav-module-payroll-toggle"
-                    type="button"
-                    onClick={() => setIsPayrollExpanded((v) => !v)}
-                    aria-expanded={isPayrollExpanded}
-                    aria-label={isPayrollExpanded ? 'Hide payroll sections' : 'Show payroll sections'}
-                    title={isPayrollExpanded ? 'Hide sections' : 'Show sections'}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                  >
-                    {isPayrollExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </button>
-                )}
-                </div>
-
-                {activeModule === 'payroll' && isPayrollExpanded && (
-                  <ModuleSubNav nav={payrollNav} counts={badges.payroll} label="Payroll sections" variant="sidebar" idPrefix="nav-submodule-payroll" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                )}
-
-                {/* ---------------------------------------------------- */}
-                {/* MY HIRING (everyone: refer a candidate, interviews you are on) and HRBP (HR business partners) */}
-                {/* ---------------------------------------------------- */}
-                {([
-                  { key: 'my-hiring' as const, title: 'Referrals & interviews', sub: 'Refer people, give interview feedback', Icon: Users, show: true },
-                  { key: 'hrbp' as const, title: 'HR Business Partner', sub: (hasAnyPerm(currentUser.perms, ['hrbp.manage', 'hrbp.view']) || !!currentUser.isCompanyAdmin) ? 'Org, talent, engagement & succession' : 'Surveys, recognition, learning & wellness', Icon: Layers, show: true },
-                  { key: 'performance' as const, title: 'Performance', sub: 'Targets, reviews, check-ins & growth', Icon: Check, show: true },
-                  { key: 'tasks' as const, title: 'Tasks', sub: 'My tasks, boards & dashboards', Icon: ListChecks, show: true },
-                  { key: 'hiring-automation' as const, title: 'Hiring Automation', sub: 'Your hiring steps, applicants & tasks', Icon: Workflow, show: true },
-                  { key: 'wellbeing' as const, title: 'Wellbeing', sub: 'Short games for a break', Icon: Gamepad2, show: true },
-                ]).filter((m) => m.show).map((m) => (
-                  <React.Fragment key={m.key}>
-                  <div className="relative">
-                  <button
-                    id={`nav-module-${m.key}`}
-                    type="button"
-                    onClick={() => {
-                      onSelectModule(m.key);
-                      if (m.key === 'hrbp') setIsHrbpExpanded(true);
-                      if (m.key === 'performance') setIsPmExpanded(true);
-                      if (m.key === 'tasks') setIsTaskExpanded(true);
-                      if (m.key === 'hiring-automation') setIsFlowExpanded(true);
-                      if (m.key === 'wellbeing') setIsWellbeingExpanded(true);
-                      setIsMobileSidebarOpen(false);
-                    }}
-                    className={`w-full ${activeModule === m.key ? (m.key === 'hrbp' || m.key === 'performance' || m.key === 'tasks' || m.key === 'hiring-automation' || m.key === 'wellbeing' ? 'pl-3 pr-10' : 'pl-3 pr-3') : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                      activeModule === m.key ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30' : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${activeModule === m.key ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'}`}>
-                        <m.Icon className="w-[15px] h-[15px]" />
-                      </div>
-                      <div className="truncate">
-                        <span className={`text-[12px] font-medium block truncate ${activeModule === m.key ? 'text-white' : 'text-slate-100'}`}>{m.title}</span>
-                        <span className="hidden">{m.sub}</span>
-                      </div>
-                    </div>
-                  </button>
-                  {m.key === 'hrbp' && activeModule !== 'hrbp' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                  {m.key === 'hrbp' && activeModule === 'hrbp' && (
-                    <button
-                      id="nav-module-hrbp-toggle"
-                      type="button"
-                      onClick={() => setIsHrbpExpanded((v) => !v)}
-                      aria-expanded={isHrbpExpanded}
-                      aria-label={isHrbpExpanded ? 'Hide HR Business Partner sections' : 'Show HR Business Partner sections'}
-                      title={isHrbpExpanded ? 'Hide sections' : 'Show sections'}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                    >
-                      {isHrbpExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                  {m.key === 'performance' && activeModule !== 'performance' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                  {m.key === 'performance' && activeModule === 'performance' && (
-                    <button
-                      id="nav-module-performance-toggle"
-                      type="button"
-                      onClick={() => setIsPmExpanded((v) => !v)}
-                      aria-expanded={isPmExpanded}
-                      aria-label={isPmExpanded ? 'Hide Performance sections' : 'Show Performance sections'}
-                      title={isPmExpanded ? 'Hide sections' : 'Show sections'}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                    >
-                      {isPmExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                  {m.key === 'tasks' && activeModule !== 'tasks' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                  {m.key === 'tasks' && activeModule === 'tasks' && (
-                    <button
-                      id="nav-module-tasks-toggle"
-                      type="button"
-                      onClick={() => setIsTaskExpanded((v) => !v)}
-                      aria-expanded={isTaskExpanded}
-                      aria-label={isTaskExpanded ? 'Hide Tasks sections' : 'Show Tasks sections'}
-                      title={isTaskExpanded ? 'Hide sections' : 'Show sections'}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                    >
-                      {isTaskExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                  {m.key === 'hiring-automation' && activeModule !== 'hiring-automation' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                  {m.key === 'hiring-automation' && activeModule === 'hiring-automation' && (
-                    <button
-                      id="nav-module-hiring-automation-toggle"
-                      type="button"
-                      onClick={() => setIsFlowExpanded((v) => !v)}
-                      aria-expanded={isFlowExpanded}
-                      aria-label={isFlowExpanded ? 'Hide Hiring Automation sections' : 'Show Hiring Automation sections'}
-                      title={isFlowExpanded ? 'Hide sections' : 'Show sections'}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                    >
-                      {isFlowExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                  {m.key === 'wellbeing' && activeModule !== 'wellbeing' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                  {m.key === 'wellbeing' && activeModule === 'wellbeing' && (
-                    <button
-                      id="nav-module-wellbeing-toggle"
-                      type="button"
-                      onClick={() => setIsWellbeingExpanded((v) => !v)}
-                      aria-expanded={isWellbeingExpanded}
-                      aria-label={isWellbeingExpanded ? 'Hide Wellbeing sections' : 'Show Wellbeing sections'}
-                      title={isWellbeingExpanded ? 'Hide sections' : 'Show sections'}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                    >
-                      {isWellbeingExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                  </div>
-                  {m.key === 'performance' && activeModule === 'performance' && isPmExpanded && (
-                    <ModuleSubNav nav={pmNav} label="Performance sections" variant="sidebar" idPrefix="nav-submodule-performance" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                  )}
-                  {m.key === 'tasks' && activeModule === 'tasks' && isTaskExpanded && (
-                    <ModuleSubNav nav={taskNav} label="Tasks sections" variant="sidebar" idPrefix="nav-submodule-tasks" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                  )}
-                  {m.key === 'hiring-automation' && activeModule === 'hiring-automation' && isFlowExpanded && (
-                    <ModuleSubNav nav={flowNav} label="Hiring Automation sections" variant="sidebar" idPrefix="nav-submodule-hiring-automation" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                  )}
-                  {m.key === 'hrbp' && activeModule === 'hrbp' && isHrbpExpanded && (
-                    <ModuleSubNav nav={hrbpNav} label="HR Business Partner sections" variant="sidebar" idPrefix="nav-submodule-hrbp" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                  )}
-                  {m.key === 'wellbeing' && activeModule === 'wellbeing' && isWellbeingExpanded && (
-                    <ModuleSubNav nav={wellbeingNav} label="Wellbeing sections" variant="sidebar" idPrefix="nav-submodule-wellbeing" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                  )}
-                  </React.Fragment>
-                ))}
-
-                {/* ---------------------------------------------------- */}
-                {/* PEOPLE (directory, joining tasks, exits, letters) */}
-                {/* ---------------------------------------------------- */}
-                <div className="relative">
-                <button
-                  id="nav-module-people"
-                  type="button"
-                  onClick={() => {
-                    onSelectModule('people');
-                    setIsPeopleExpanded(true);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`w-full ${activeModule === 'people' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                    activeModule === 'people'
-                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
-                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                        activeModule === 'people' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'people' ? 'text-white' : 'text-slate-100'}`}>
-                        People
-                      </span>
-                      <span className="hidden">Directory, onboarding, exits &amp; letters</span>
-                    </div>
-                  </div>
-                  <NavBadge tone="dark" count={sumOf(badges.people)} className="ml-1.5" />
-                </button>
-                {activeModule !== 'people' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                {activeModule === 'people' && (
-                  <button
-                    id="nav-module-people-toggle"
-                    type="button"
-                    onClick={() => setIsPeopleExpanded((v) => !v)}
-                    aria-expanded={isPeopleExpanded}
-                    aria-label={isPeopleExpanded ? 'Hide people sections' : 'Show people sections'}
-                    title={isPeopleExpanded ? 'Hide sections' : 'Show sections'}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                  >
-                    {isPeopleExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </button>
-                )}
-                </div>
-
-                {activeModule === 'people' && isPeopleExpanded && (
-                  <ModuleSubNav nav={peopleNav} counts={badges.people} label="People sections" variant="sidebar" idPrefix="nav-submodule-people" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                )}
-
-                {/* ---------------------------------------------------- */}
-                {/* EMPLOYEE (transactions and reports) */}
-                {/* ---------------------------------------------------- */}
-                <div className="relative">
-                <button
-                  id="nav-module-employee"
-                  type="button"
-                  onClick={() => {
-                    onSelectModule('employee');
-                    setIsEmployeeExpanded(true);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`w-full ${activeModule === 'employee' ? 'pl-3 pr-10' : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                    activeModule === 'employee'
-                      ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30'
-                      : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                        activeModule === 'employee' ? 'bg-transparent text-white' : 'bg-transparent text-slate-300'
-                      }`}
-                    >
-                      <Contact className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <span className={`text-[12px] font-medium block truncate ${activeModule === 'employee' ? 'text-white' : 'text-slate-100'}`}>
-                        Employee
-                      </span>
-                      <span className="hidden">Master data, acknowledgements &amp; reports</span>
-                    </div>
-                  </div>
-                  <NavBadge tone="dark" count={sumOf(badges.employee)} className="ml-1.5" />
-                </button>
-                {activeModule !== 'employee' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                {activeModule === 'employee' && (
-                  <button
-                    id="nav-module-employee-toggle"
-                    type="button"
-                    onClick={() => setIsEmployeeExpanded((v) => !v)}
-                    aria-expanded={isEmployeeExpanded}
-                    aria-label={isEmployeeExpanded ? 'Hide employee sections' : 'Show employee sections'}
-                    title={isEmployeeExpanded ? 'Hide sections' : 'Show sections'}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                  >
-                    {isEmployeeExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </button>
-                )}
-                </div>
-
-                {activeModule === 'employee' && isEmployeeExpanded && (
-                  <ModuleSubNav nav={employeeNav} counts={badges.employee} label="Employee sections" variant="sidebar" idPrefix="nav-submodule-employee" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                )}
-
+                {renderModules(['hiring-automation'])}
                 {/* ---------------------------------------------------- */}
                 {/* 3. ADMINISTRATION (people, departments, roles)       */}
                 {/* ---------------------------------------------------- */}
