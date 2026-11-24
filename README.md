@@ -287,6 +287,21 @@ Short games for a break (3 to 8 minutes) that also give HR a skill picture for t
 
 A floating "Ask HR" button (all roles) opens a chat panel; Ctrl+K search also offers "Ask HR: ...". Read-only: it answers about the person's own leave, holidays, notice period, payslips and the published policies they may read. Code: `api/_lib/assistantApi.ts` (tools run as the caller through the existing routers), `shared/assistantEngine.ts`, `src/components/assistant/`. Logs in `assistantLogs`, daily counts in `assistantUsage` (server-only). Env: `OPENAI_ASSISTANT_MODEL` (optional), `ASSISTANT_DAILY_LIMIT` (per person, default 30); it also counts against `AI_MONTHLY_CALLS`. Test: `npx tsx tests/assistant.engine.test.ts`.
 
+### Leave & Attendance agent (stage 1, read-only)
+
+The same Ask HR panel now also answers for managers and HR, with the tools their permissions unlock (registry and counting in `shared/leaveAgentTools.ts`, wiring in `assistantApi.ts`). It is read-only: it cannot approve, reject or change anything yet.
+
+| Tool | Who is told about it | What it reads |
+|---|---|---|
+| `get_pending_approvals`, `get_team_calendar`, `get_attendance_summary` | everyone (the route limits data to own / team / company) | `inbox`, `team-calendar`, `attendance-report` |
+| `get_leave_exceptions`, `get_leave_requests_overview` | `leave.report` or `leave.manage` | `exceptions`, `all-requests` |
+| `find_employee`, `get_employee_leave_ledger` | `leave.manage` | `people`, `balances-of` |
+
+- Every tool calls the existing leave route with the signed-in person's own login, so company and permission checks are the ones the screens use. The server also refuses a tool the person's permissions do not unlock, even if the model asks for it.
+- Counts (attendance totals, requests per status, who is late most) are worked out in code and handed to the model; any number in an answer that is not in the tool results is rejected.
+- Same limits and logs as Ask HR (`ASSISTANT_DAILY_LIMIT`, `AI_MONTHLY_CALLS`, `assistantLogs`). Model: `OPENAI_ASSISTANT_MODEL` (default `gpt-4o-mini`).
+- Next stages: propose-then-confirm for approve/reject, then a daily watcher. Test: `npx tsx tests/leaveAgent.test.ts`.
+
 ## Flags (payroll checks, late marks, leave patterns)
 
 One list for HR to review, in Leave & Attendance > Flags (the old Exceptions screen, extended). Detection is plain arithmetic in `shared/anomalyEngine.ts`; AI is optional and only writes a one-line "what to check" for new flags (same number check as Ask HR). Nothing is deducted, changed or sent to employees because of a flag.

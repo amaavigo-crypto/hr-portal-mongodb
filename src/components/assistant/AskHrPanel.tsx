@@ -8,10 +8,18 @@ interface Msg { role: 'user' | 'assistant'; content: string; id?: string; source
 export const ASK_HR_EVENT = 'ask-hr:open';
 export const openAskHr = (question?: string) => window.dispatchEvent(new CustomEvent(ASK_HR_EVENT, { detail: { question } }));
 
-const SUGGESTIONS = ['How many casual leaves do I have?', 'What is the notice period?', 'What are the upcoming holidays?', 'What is the leave carry forward rule?'];
+const EMPLOYEE_SUGGESTIONS = ['How many casual leaves do I have?', 'What is the notice period?', 'What are the upcoming holidays?', 'What is the leave carry forward rule?'];
+const MANAGER_SUGGESTIONS = ['What is waiting for my approval?', 'Who in my team is on leave next week?', 'How was my team\'s attendance this week?'];
+const HR_SUGGESTIONS = ['What leave and attendance approvals are pending, and which are overdue?', 'Who is on leave in the next 7 days?', 'Who had the most late or absent days this month?', 'Show open leave exceptions'];
+
+/** Which starter questions to show: HR gets company-wide ones, everyone else gets their own plus approvals for a manager. */
+export const suggestionsFor = (perms?: string[] | null, isAdmin?: boolean): string[] => {
+  if (isAdmin || (perms || []).includes('leave.manage') || (perms || []).includes('leave.report')) return [...HR_SUGGESTIONS, EMPLOYEE_SUGGESTIONS[0]];
+  return [...EMPLOYEE_SUGGESTIONS.slice(0, 2), ...MANAGER_SUGGESTIONS.slice(0, 1), EMPLOYEE_SUGGESTIONS[2]];
+};
 const KEY = (uid: string) => `ask-hr-chat:${uid}`;
 
-export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
+export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isAdmin?: boolean }> = ({ userId, perms, isAdmin }) => {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>(() => {
     try { const v = JSON.parse(localStorage.getItem(KEY(userId)) || '[]'); return Array.isArray(v) ? v.slice(-20) : []; } catch { return []; }
@@ -82,7 +90,7 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
               <p className="text-sm font-bold text-slate-900">Ask HR</p>
-              <p className="text-[11px] text-slate-500">Answers from your own data and company policies</p>
+              <p className="text-[11px] text-slate-500">Leave, attendance and policy answers from your own access</p>
             </div>
             <div className="flex items-center gap-1">
               {msgs.length > 0 && <button type="button" onClick={() => setMsgs([])} title="New chat" aria-label="New chat" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 cursor-pointer"><RotateCcw className="h-4 w-4" /></button>}
@@ -93,9 +101,9 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
           <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
             {msgs.length === 0 && (
               <div>
-                <p className="text-sm text-slate-700">Hi, ask me about your leave, holidays, notice period, payslips or company policies.</p>
+                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, holidays, approvals, your team or company policies. I only show what your role can see, and I can't approve or change anything yet.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
+                  {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
                 </div>
               </div>
             )}
