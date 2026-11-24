@@ -19,6 +19,7 @@ import { authenticate, requirePermission, requirePlatformAdmin, authErrorRespons
 import { dispatchLiveEmail } from './serverEmail.js';
 import { syncDepartmentManagers, syncDepartmentManagersQuietly } from './deptManager.js';
 import { nextFreeEmployeeCode } from '../../shared/employeeCode.js';
+import { accountIdFor, backfillAccounts, newAccountDoc, releaseAccountIfEmpty } from './accounts.js';
 import {
   ALL_MODULE_KEYS,
   DEFAULT_ROLE_TEMPLATES,
@@ -66,6 +67,8 @@ interface CompanyDoc {
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED';
   modules: string[];
   plan: string;
+  /** The account (customer) this organisation belongs to. */
+  accountId?: string;
   adminEmail: string;
   employeeIdPrefix: string;
   nextEmployeeNumber: number;
@@ -290,6 +293,7 @@ async function signup(body: any, origin?: string): Promise<TenantResult> {
     status: 'PENDING',
     modules: [],
     plan: 'trial',
+    accountId: accountIdFor(companyId),
     adminEmail: email,
     employeeIdPrefix: prefixFromName(companyName),
     nextEmployeeNumber: 2,
@@ -299,6 +303,7 @@ async function signup(body: any, origin?: string): Promise<TenantResult> {
 
   const user = await auth.createUser({ email, password, displayName: adminName, emailVerified: false });
   try {
+    await db().collection('accounts').doc(company.accountId!).set(newAccountDoc(company, ts));
     await db().collection('companies').doc(companyId).set(company);
     const roles = await seedDefaultRoles(companyId);
     const deptId = newId('dep');
@@ -333,6 +338,7 @@ async function signup(body: any, origin?: string): Promise<TenantResult> {
     // Roll back so a failed signup never leaves half a company behind.
     await auth.deleteUser(user.uid).catch(() => {});
     await db().collection('companies').doc(companyId).delete().catch(() => {});
+    await db().collection('accounts').doc(company.accountId!).delete().catch(() => {});
     throw err;
   }
   return ok({ companyId, status: 'PENDING', message: 'Registration received. We will review it and activate your account.' });
@@ -477,7 +483,8 @@ async function deleteCompany(headers: Record<string, any>, body: any): Promise<T
     deleted: counts,
   });
   await db().collection('companies').doc(companyId).delete();
-  return ok({ companyId, done: true, deleted: counts });
+  const accountRemoved = await releaseAccountIfEmpty(db(), company.accountId);
+  return ok({ companyId, done: true, deleted: counts, accountRemoved });
 }
 
 async function updateCompanyModules(headers: Record<string, any>, body: any): Promise<TenantResult> {
@@ -489,6 +496,12 @@ async function updateCompanyModules(headers: Record<string, any>, body: any): Pr
   await db().collection('companies').doc(companyId).update({ modules, updatedAt: nowIso(), ...(body.plan ? { plan: str(body.plan, 40) } : {}) });
   const updated = await syncCompanyUsers(companyId);
   return ok({ companyId, modules, usersUpdated: updated });
+}
+
+/** Platform admin: gives every existing company an account. Safe to run again. */
+async function backfillAccountsRoute(headers: Record<string, any>): Promise<TenantResult> {
+  await requirePlatformAdmin(headers);
+  return ok(await backfillAccounts(db()));
 }
 
 async function createUser(headers: Record<string, any>, body: any, origin?: string): Promise<TenantResult> {
@@ -992,6 +1005,7 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
       case 'suspend-company': return await setCompanyStatus(headers, b, 'SUSPENDED');
       case 'update-company-modules': return await updateCompanyModules(headers, b);
       case 'delete-company': return await deleteCompany(headers, b);
+      case 'backfill-accounts': return await backfillAccountsRoute(headers);
       case 'landing-content-save': return await saveLandingContentRoute(headers, b);
       case 'landing-content-undo': return await undoLandingContentRoute(headers);
       case 'create-user': return await createUser(headers, b, origin);
