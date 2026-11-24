@@ -1,7 +1,9 @@
-import { jsPDF } from 'jspdf';
+// jsPDF (about 350 KB) loads only when someone clicks Download.
+import type { jsPDF } from 'jspdf';
 
 /** Plain letter on A4: the text as issued, wrapped, with the reference number at the top right. */
-export function downloadLetterPdf(letter: { number: string; title: string; recipient: string; text: string }) {
+export async function downloadLetterPdf(letter: { number: string; title: string; recipient: string; text: string }): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();

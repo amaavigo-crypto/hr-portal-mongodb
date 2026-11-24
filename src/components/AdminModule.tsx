@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AlertCircle, Building2, CalendarDays, CheckCircle2, Copy, Loader2, Mail, Pencil, Plus, ShieldCheck, Trash2, Upload, UserPlus, Users, X,
+  AlertCircle, Building2, CalendarDays, CheckCircle2, Copy, Loader2, Mail, Pencil, Plus, ShieldCheck, Sparkles, Trash2, Upload, UserPlus, Users, X,
 } from 'lucide-react';
 import type { Company, Department, User } from '../types';
 import { roleHealth, type RoleFinding } from '../../shared/roleHealth';
@@ -9,10 +9,11 @@ import { pipelineService } from '../services/pipelineService';
 import { firestoreService } from '../services/firestoreService';
 import { PERMISSIONS, hasPerm, type RoleDef } from '../../shared/permissions';
 import { ToastProvider, useToast } from './leave/ui';
+import { CompanyAiUsage } from './AiUsagePanel';
 
 import { OrganisationsTab } from './OrganisationsTab';
 
-type Tab = 'users' | 'departments' | 'roles' | 'integrations' | 'organisations';
+type Tab = 'users' | 'departments' | 'roles' | 'integrations' | 'organisations' | 'ai';
 
 /** Set by App.tsx when Google sends the browser back to /?google=... after the connect screen. */
 const readGoogleFlash = (): { result: string; reason: string } | null => {
@@ -82,6 +83,7 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
       canRoles && { key: 'roles' as Tab, label: 'Roles & permissions', icon: <ShieldCheck className="h-3.5 w-3.5" /> },
       canIntegrations && { key: 'integrations' as Tab, label: 'Integrations', icon: <CalendarDays className="h-3.5 w-3.5" /> },
       canOrgs && { key: 'organisations' as Tab, label: 'Organisations', icon: <Building2 className="h-3.5 w-3.5" /> },
+      canIntegrations && { key: 'ai' as Tab, label: 'AI helpers', icon: <Sparkles className="h-3.5 w-3.5" /> },
     ].filter(Boolean) as { key: Tab; label: string; icon: React.ReactNode }[],
     [canUsers, canDepts, canRoles, canIntegrations, canOrgs]
   );
@@ -131,6 +133,7 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
       {tab === 'roles' && canRoles && <RolesTab roles={roles} users={users} company={company} currentUser={currentUser} />}
       {tab === 'integrations' && canIntegrations && <IntegrationsTab />}
       {tab === 'organisations' && canOrgs && <OrganisationsTab />}
+      {tab === 'ai' && canIntegrations && <CompanyAiUsage />}
     </div>
     </ToastProvider>
   );

@@ -14,14 +14,16 @@ import {
   Calendar,
   MessageSquare,
   Ban,
+  Loader2,
 } from 'lucide-react';
 import { DocumentMaster, DocumentVersion, User, VersionStatus, VersionType } from '../types';
 import { governanceEngine } from '../services/governance';
+import { assistantService } from '../services/assistantService';
 import { parseUploadedFile, extractTextFromRawPdfStream, isRawPdfStream } from '../utils/fileParser';
 import { stripPolicyMetadataHeader, extractCleanBody, formatDDMMYYYY, calculateDynamicReReviewDate, parseAnyDate, DocumentHeaderTable } from '../utils/documentHeaderFooter';
 import { WysiwygDocumentEditor } from './WysiwygDocumentEditor';
 import { DocumentViewer } from './DocumentViewer';
-import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter } from '../utils/documentStamper';
+import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter } from '../utils/documentTools';
 
 interface CreateVersionModalProps {
   currentUser: User;
@@ -55,6 +57,11 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   const [selectedDocId, setSelectedDocId] = useState<string>(defaultDocId);
   const [revisionType, setRevisionType] = useState<VersionType>(VersionType.MINOR);
   const [changeSummary, setChangeSummary] = useState('');
+  const [changeReason, setChangeReason] = useState('');
+  const [aiOn, setAiOn] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiDrafted, setAiDrafted] = useState<'' | 'AI' | 'BASIC'>('');
+  const [aiNote, setAiNote] = useState('');
   const [rawContent, setRawContent] = useState('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -72,6 +79,22 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => { assistantService.status().then((r) => setAiOn(!!r.enabled)).catch(() => setAiOn(false)); }, []);
+
+  /** Fills the change summary with a plain-words draft of what changed. HR checks it and writes the reason themselves. */
+  const draftSummary = async () => {
+    setAiNote(''); setAiBusy(true);
+    try {
+      const r = await assistantService.policySummary(selectedDocId, extractCleanBody(rawContent));
+      if (r.off) setAiNote('AI drafting is not switched on for your company. Please write the summary yourself.');
+      else if (r.firstVersion) setAiNote('This policy has no earlier published version to compare with. Please write the summary yourself.');
+      else if (r.unchanged) setAiNote('The wording is the same as the published version, so there is nothing to summarise.');
+      else if (r.summary) { setChangeSummary(r.summary); setAiDrafted(r.source === 'AI' ? 'AI' : 'BASIC'); }
+    } catch (e: any) {
+      setAiNote(e?.message || 'Could not draft the summary right now. Please write it yourself.');
+    } finally { setAiBusy(false); }
+  };
 
   const handleEffectiveFromChange = (newDate: string) => {
     setEffectiveFrom(newDate);
@@ -302,6 +325,10 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
       setError('Please provide a brief change summary of what was revised.');
       return;
     }
+    if (!changeReason.trim()) {
+      setError('Please say why this policy is changing. This is for the approver and must be written by you.');
+      return;
+    }
     if (!effectiveFrom || !effectiveFrom.trim()) {
       setError('Effective Date for Revision is mandatory.');
       return;
@@ -331,6 +358,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               : 'pdf'
           }`,
         changeSummary: changeSummary.trim(),
+        changeReason: changeReason.trim(),
         effectiveFrom: effectiveFrom || new Date().toISOString().split('T')[0],
         reviewDueDate: reviewDueDate || new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
         fileDataUrl,
@@ -748,21 +776,54 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 
           {/* CHANGE SUMMARY */}
           <div>
-            <div className="mb-1.5">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider" htmlFor="input-change-summary">
-                Change Summary / Release Notes <span className="text-[#FA7014]">*</span>
+                What changed <span className="text-[#FA7014]">*</span>
               </label>
+              {aiOn && selectedMaster?.currentPublishedVersionId && rawContent.trim() && (
+                <button
+                  type="button"
+                  onClick={draftSummary}
+                  disabled={aiBusy}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-[#FA7014] hover:bg-orange-100 disabled:opacity-60 cursor-pointer"
+                >
+                  {aiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {aiBusy ? 'Reading the changes…' : 'Draft with AI'}
+                </button>
+              )}
             </div>
 
             <textarea
               id="input-change-summary"
               value={changeSummary}
-              onChange={(e) => setChangeSummary(e.target.value)}
-              rows={2}
-              placeholder="Detail specifically what was changed from the previous published baseline..."
+              onChange={(e) => { setChangeSummary(e.target.value); setAiDrafted(''); }}
+              rows={3}
+              placeholder="Say what was changed compared with the published version, for example: Casual leave raised from 12 to 15 days."
               className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
               required
             />
+            {aiDrafted && (
+              <p className="mt-1 text-[11px] text-amber-700">
+                {aiDrafted === 'AI' ? 'Drafted by AI from the differences between the two versions.' : 'A basic summary counted from the differences.'} Please read it and fix anything that is wrong.
+              </p>
+            )}
+            {aiNote && <p className="mt-1 text-[11px] text-slate-600">{aiNote}</p>}
+          </div>
+
+          {/* WHY: always written by the person */}
+          <div>
+            <label className="mb-1.5 block text-xs font-bold text-slate-700 uppercase tracking-wider" htmlFor="input-change-reason">
+              Why is it changing? <span className="text-[#FA7014]">*</span>
+            </label>
+            <textarea
+              id="input-change-reason"
+              value={changeReason}
+              onChange={(e) => setChangeReason(e.target.value)}
+              rows={2}
+              placeholder="For example: Management approved a higher casual leave limit from this April."
+              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
+            />
+            <p className="mt-1 text-[11px] text-slate-500">You write this one yourself. The AI only knows what changed, not the reason.</p>
           </div>
 
           {/* UPDATED DOCUMENT HEADER & FOOTER PREVIEW FOR REVISION */}

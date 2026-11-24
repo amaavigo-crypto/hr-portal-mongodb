@@ -38,12 +38,10 @@ import { generateCorporatePdfBlob } from '../utils/pdfGenerator';
 import {
   stampPdfWithHeaderFooter,
   stampDocxWithHeaderFooter,
-  toUint8Array,
   downloadDocumentWithIntactFormat,
   resolveDocumentBytes,
   generateCorporateDocxBlob,
-} from '../utils/documentStamper';
-import { renderAsync } from 'docx-preview';
+} from '../utils/documentTools';
 import { resolvePlayableMediaUrl } from '../services/mediaStorage';
 import { InlineRevisionComment, User } from '../types';
 
@@ -760,7 +758,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       const container = docxContainerRef.current;
       container.innerHTML = '';
       setLoadingDocx(true);
-      renderAsync(stampedDocxBlob, container, undefined, {
+      import('docx-preview').then(({ renderAsync }) => renderAsync(stampedDocxBlob, container, undefined, {
         inWrapper: true,
         ignoreWidth: false,
         ignoreHeight: false,
@@ -769,7 +767,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         renderHeaders: true,
         renderFooters: true,
         className: 'docx-preview-doc',
-      })
+      }))
         .then(() => {
           if (isCurrent) {
             setLoadingDocx(false);

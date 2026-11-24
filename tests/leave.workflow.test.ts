@@ -319,16 +319,16 @@ const cover = await ok(MGR, 'GET', 'assist-cover', undefined, { from: today, to:
 assert.ok(cover.teamSize >= 1);
 assert.ok(Array.isArray(cover.gaps));
 const { polishWording } = await import('../api/_lib/leaveAi.ts');
-assert.deepEqual(await polishWording('3 days'), { text: '3 days', ai: false });
+assert.deepEqual(await polishWording('3 days', 'c1'), { text: '3 days', ai: false });
 // with a key, a rewrite that changes a number is thrown away; one that keeps the figures is used
 process.env.OPENAI_API_KEY = 'k';
 const realFetch = globalThis.fetch;
-globalThis.fetch = (async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'You get 5 days.' } }] }) })) as any;
-assert.equal((await polishWording('Casual leave: 3 days.')).ai, false, 'changed figure rejected');
-globalThis.fetch = (async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'You can take 3 days.' } }] }) })) as any;
-assert.equal((await polishWording('Casual leave: 3 days.')).ai, true);
+globalThis.fetch = (async () => ({ ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify({ choices: [{ message: { content: 'You get 5 days.' } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }) })) as any;
+assert.equal((await polishWording('Casual leave: 3 days.', 'c1')).ai, false, 'changed figure rejected');
+globalThis.fetch = (async () => ({ ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify({ choices: [{ message: { content: 'You can take 3 days.' } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }) })) as any;
+assert.equal((await polishWording('Casual leave: 3 days.', 'c1')).ai, true);
 globalThis.fetch = (async () => { throw new Error('down'); }) as any;
-assert.equal((await polishWording('Casual leave: 3 days.')).text, 'Casual leave: 3 days.');
+assert.equal((await polishWording('Casual leave: 3 days.', 'c1')).text, 'Casual leave: 3 days.');
 globalThis.fetch = realFetch;
 delete process.env.OPENAI_API_KEY;
 

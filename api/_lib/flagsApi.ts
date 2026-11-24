@@ -19,7 +19,7 @@ import {
 import { dayKind, istToday } from '../../shared/leaveEngine.js';
 import { unverifiedNumbers } from '../../shared/assistantEngine.js';
 import {
-  DEFAULT_FLAG_SETTINGS, SEVERITY_ORDER, lateFlags, leaveFlags, payrollFlags, sanitizeFlagSettings,
+  DEFAULT_FLAG_SETTINGS, SEVERITY_ORDER, lateFlags, leaveFlags, payrollFlags, sanitizeFlagSettings, teamLeaveFlags,
   type AttendanceDay, type Flag, type FlagSettings, type PayrollPerson,
 } from '../../shared/anomalyEngine.js';
 import { canAct, canAnyFlag, canSee, flagAccess, type FlagAccess } from './flagsAccess.js';
@@ -193,7 +193,12 @@ export async function runFlagScan(cid: string): Promise<{ late: number; leave: n
     };
   });
   const late = lateFlags(today, lateIn, s);
-  const leave = leaveFlags(today, leaveIn, s);
+  // Teams are the people who report to the same manager; the same leave facts, grouped.
+  const byUid = new Map(leaveIn.map((x) => [x.uid, x]));
+  const reports = new Map<string, string[]>();
+  for (const p of active) { const m = profiles.get(p.uid)?.managerUid; if (m && m !== p.uid) reports.set(m, [...(reports.get(m) || []), p.uid]); }
+  const teams = [...reports].map(([m, uids]) => ({ managerUid: m, managerName: people.find((x) => x.uid === m)?.name || 'a manager', members: uids.map((u) => byUid.get(u)!).filter(Boolean) }));
+  const leave = [...leaveFlags(today, leaveIn, s), ...teamLeaveFlags(today, teams, s)];
   const fresh = [...(await store(cid, late)), ...(await store(cid, leave))];
   await closeGone(cid, CATEGORY.LATE, new Set(late.map((f) => docId(cid, f.key))));
   await closeGone(cid, CATEGORY.LEAVE, new Set(leave.map((f) => docId(cid, f.key))));

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database } from 'lucide-react';
-import { assistantService, type AssistantSource } from '../../services/assistantService';
+import { assistantService, type AssistantQuote, type AssistantSource } from '../../services/assistantService';
 
-interface Msg { role: 'user' | 'assistant'; content: string; id?: string; sources?: AssistantSource[]; unsure?: boolean; rated?: boolean | null; sent?: string; question?: string }
+interface Msg { role: 'user' | 'assistant'; content: string; id?: string; sources?: AssistantSource[]; quotes?: AssistantQuote[]; unsure?: boolean; rated?: boolean | null; sent?: string; question?: string }
 
 /** Other parts of the app (the Ctrl+K search) open the panel with a question by firing this event. */
 export const ASK_HR_EVENT = 'ask-hr:open';
@@ -36,7 +36,7 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
     setBusy(true);
     try {
       const r = await assistantService.ask(question, history);
-      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, id: r.id, sources: r.sources || [], unsure: r.unsure, question }]);
+      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, id: r.id, sources: r.sources || [], quotes: r.quotes || [], unsure: r.unsure, question }]);
     } catch (e: any) {
       setMsgs((m) => [...m, { role: 'assistant', content: e?.message || 'Something went wrong. Please try again.', unsure: true, question }]);
     } finally { setBusy(false); }
@@ -104,6 +104,16 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
             ) : (
               <div key={i} className="max-w-[92%]">
                 <p className="whitespace-pre-wrap rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{m.content}</p>
+                {m.quotes && m.quotes.length > 0 && (
+                  <div className="mt-1.5 space-y-1.5">
+                    {m.quotes.map((q) => (
+                      <blockquote key={q.id} className="rounded-xl border-l-4 border-[#FA7014] bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
+                        <div className="mb-0.5 font-bold text-slate-900">{q.title}{q.version ? ` (version ${q.version})` : ''}, exact wording:</div>
+                        <span className="whitespace-pre-wrap">&ldquo;{q.text}&rdquo;</span>
+                      </blockquote>
+                    ))}
+                  </div>
+                )}
                 {m.sources && m.sources.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {m.sources.map((s, k) => (

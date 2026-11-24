@@ -68,6 +68,8 @@ export interface LeaveFacts {
   isDelegate: boolean;
   /** Leave requests plus attendance corrections waiting for this person's decision. */
   approvals: number;
+  /** Of those, and of expense claims waiting for this person, how many have waited too long (shared/reminderRules.ts). */
+  overdue?: number;
   balances: { typeId?: string; code: string; name: string; balance: number; pending: number; used: number; eligible?: boolean; isLop?: boolean; requiresBalance?: boolean }[];
   attendanceToday: { checkIn: string | null; checkOut: string | null };
 }
@@ -164,7 +166,7 @@ export function buildWidgets(input: DashboardInput): DashboardWidget[] {
       id: 'approvals', title: 'Waiting for your approval', group: 'attention',
       reason: leave.isDelegate && !leave.isManager ? 'You are covering for a manager' : 'People who report to you',
       target: { module: 'leave-management', section: 'approvals' }, urgent: leave.approvals > 0,
-      data: { leave: leave.approvals, claims },
+      data: { leave: leave.approvals, claims, overdue: leave.overdue || 0 },
     });
   }
 

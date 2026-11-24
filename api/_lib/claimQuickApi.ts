@@ -2,7 +2,7 @@
  * Reading a bill photo. The AI only reads; the checks and decisions are in shared/claimScan.ts.
  * Only the bill image is sent to the AI. Proof photos (people, places) are never analysed, only stored.
  */
-import { aiJson, aiEnabled, type Part } from './openaiHelper.js';
+import { aiJson, aiEnabled, s, type Part } from './ai/index.js';
 import { cleanScan, type ScanInfo } from '../../shared/claimScan.js';
 
 const SYSTEM = [
@@ -22,14 +22,21 @@ const SYSTEM = [
 export interface BillFile { type: string; data: string; name?: string }
 
 export async function scanBill(
-  cid: string, _uid: string, file: BillFile, categories: string[], today: string
+  cid: string, uid: string, file: BillFile, categories: string[], today: string
 ): Promise<{ scan?: ScanInfo; notABill?: boolean; off?: boolean; error?: string }> {
   if (!aiEnabled()) return { off: true };
   const lead: Part = { type: 'text', text: `Allowed categories: ${categories.join(', ') || '(none)'}. Today is ${today}.` };
   const picture: Part = file.type === 'application/pdf'
     ? { type: 'file', file: { filename: file.name || 'bill.pdf', file_data: `data:application/pdf;base64,${file.data}` } }
     : { type: 'image_url', image_url: { url: `data:${file.type};base64,${file.data}` } };
-  const res = await aiJson({ cid, feature: 'claims.scan', system: SYSTEM, user: [lead, picture], maxTokens: 400 });
+  const res = await aiJson({
+    cid, uid, feature: 'claims.scan', system: SYSTEM, user: [lead, picture], maxTokens: 400, temperature: 0, timeoutMs: 30000, budgetMs: 40000,
+    schema: s.obj({
+      isBill: s.optional(s.bool(), true),
+      amount: s.optional(s.any()), date: s.optional(s.str(30), ''), vendor: s.optional(s.str(120), ''), gstin: s.optional(s.str(40), ''),
+      category: s.optional(s.str(60), ''), confidence: s.optional(s.any()),
+    }),
+  });
   if (res.off) return { off: true };
   if (res.error || !res.data) return { error: res.error || 'The bill could not be read.' };
   if (res.data.isBill === false) return { notABill: true };

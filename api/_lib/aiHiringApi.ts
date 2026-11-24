@@ -10,6 +10,8 @@
  *   ai-recommend                 a hiring recommendation with the reasons listed
  *   ai-followup / ai-followup-send   a draft email for the next step (HR edits, then sends)
  *   ai-insights                  plain-language reading of the founder dashboard
+ *   ai-questions                 interview question kit from the role, the resume facts and any gaps
+ *   ai-panel                     founder note on where the panel stands (verdict fixed by rules, AI writes the wording)
  *
  * Fairness: prompts use "Candidate A, B" and never include names, contact details, age, gender, address or photos. Interview
  * scorecards only count once every panel member has submitted (the blind-feedback rule), and raw scorecards are never sent anywhere.
@@ -23,8 +25,9 @@ import { aiJson, aiUsage, type Part } from './openaiHelper.js';
 import { loadDashboard } from './analyticsApi.js';
 import { MANAGE_PERMS, extractResumeFacts, getItem, getRequisition, listItems, newId, putItem, requisitionForApplication, scoreFor, whoIs, type Item, type PipeRequest } from './pipelineApi.js';
 import { summarise, type Scorecard } from '../../shared/interviewEngine.js';
+import { unverifiedNumbers } from '../../shared/assistantEngine.js';
 import { requisitionMaxCtcLpa } from '../../shared/hiringBudget.js';
-import { VERDICT_LABEL, analyseHistory, buildInsights, cleanExtraction, findDuplicates, recommend, type Extraction } from '../../shared/resumeAi.js';
+import { VERDICT_LABEL, analyseHistory, buildInsights, cleanExtraction, experienceYears, findDuplicates, recommend, type Extraction } from '../../shared/resumeAi.js';
 
 type Result = { status: number; json: any };
 const db = () => adminDb();
@@ -50,9 +53,10 @@ const EXTRACT_SYSTEM = [
   'You read resumes for an HR team. Use ONLY what the resume says. Never guess or fill gaps.',
   'Ignore and do not output name, contact details, age, gender, nationality, marital status, address or photo.',
   'Return JSON only in exactly this shape:',
-  '{"skills":["..."],"yearsExperience":0,"education":[{"degree":"","institute":"","year":""}],"certifications":["..."],"history":[{"company":"","role":"","from":"YYYY-MM","to":"YYYY-MM or present"}],"projects":["one line each, relevant ones only"],"summary":"two sentences about the work experience"}',
+  '{"skills":["..."],"yearsExperience":0,"education":[{"degree":"","institute":"","year":""}],"certifications":["..."],"noticePeriod":"","history":[{"company":"","role":"","from":"YYYY-MM","to":"YYYY-MM or present"}],"projects":["one line each, relevant ones only"],"summary":"two sentences about the work experience"}',
   'history: every job with start and end month. If a month is unknown, use your best reading of the year as YYYY-01 for a start and YYYY-12 for an end, and skip the job if there is no year at all.',
-  'yearsExperience: total professional experience in years, a number, or null if it cannot be worked out.',
+  'yearsExperience: total professional experience in years as STATED on the resume, a number, or null if it is not stated (it is re-counted from the job dates afterwards).',
+  'noticePeriod: the notice period exactly as written on the resume (for example "30 days" or "Immediate"), or an empty string if it is not mentioned.',
 ].join('\n');
 
 async function aiResume(ctx: AuthContext, b: any): Promise<Result> {
@@ -93,6 +97,10 @@ async function aiResume(ctx: AuthContext, b: any): Promise<Result> {
   if (!res.data) return fail(502, res.error || 'The AI could not read this resume.');
 
   const extraction = cleanExtraction(res.data);
+  // Years are counted from the job dates in code; the figure the resume states is only used when there are no usable dates.
+  const counted = experienceYears(extraction.history, todayYm());
+  extraction.yearsSource = counted !== null ? 'HISTORY' : extraction.yearsExperience !== null ? 'STATED' : null;
+  if (counted !== null) extraction.yearsExperience = counted;
   const analysis = analyseHistory(extraction.history, todayYm());
   const savedAt = nowIso();
   const prior = (await listItems(cid, 'aiResume')).find((r) => r.applicationId === a.id);
@@ -305,12 +313,87 @@ async function aiInsights(cid: string): Promise<Result> {
   return ok({ insights, narrative, generatedBy: narrative ? 'AI' : 'RULES', note: ai.off ? 'AI is off, so only the rule-based insights are shown.' : ai.error || '' });
 }
 
+// ------------------------------------------------------------------ interview question kit
+
+export interface KitQuestion { area: string; question: string; why: string }
+
+/** Questions built without AI: one per key skill, one for each gap or short stay, plus a few every interview needs. */
+export function fallbackQuestions(role: string, skills: string[], gaps: number, shortStints: number): KitQuestion[] {
+  const out: KitQuestion[] = skills.slice(0, 5).map((s) => ({ area: 'Skills', question: `Tell me about a recent piece of work where you used ${s}. What was your part, and what was the result?`, why: `${s} is a key skill for this role.` }));
+  if (gaps > 0) out.push({ area: 'History', question: 'Your resume shows a break between jobs. What were you doing, and what did you take from that time?', why: 'The resume shows a gap of 3 months or more.' });
+  if (shortStints > 0) out.push({ area: 'History', question: 'Some of your roles were short. What made you move on in those cases?', why: 'The resume shows a stay under 6 months.' });
+  out.push({ area: 'Role', question: `What attracts you to the ${role} role, and what would you want to achieve in your first 90 days?`, why: 'Checks motivation and how the candidate thinks about the role.' });
+  out.push({ area: 'Behaviour', question: 'Describe a time you disagreed with a colleague. How did you handle it?', why: 'Checks communication and teamwork.' });
+  return out.slice(0, 10);
+}
+
+async function aiQuestions(ctx: AuthContext, b: any): Promise<Result> {
+  const cid = ctx.companyId!;
+  const a = await getApplication(cid, str(b.applicationId, 100));
+  if (!a) return fail(404, 'Candidate not found.');
+  const [req, aiRes] = await Promise.all([requisitionForApplication(cid, a), listItems(cid, 'aiResume')]);
+  const read = aiRes.find((r) => r.applicationId === a.id);
+  const role = String(req?.positionTitle || a.designation || 'this role');
+  const keySkills = skillList(req?.keySkills);
+  const jd = String(req?.jd?.text || '').slice(0, 3000);
+  const ex = read?.extraction;
+  const gaps = (read?.analysis?.gaps || []).length as number;
+  const shortStints = (read?.analysis?.shortStints || 0) as number;
+  let questions = fallbackQuestions(role, keySkills, gaps, shortStints);
+  let generatedBy: 'AI' | 'RULES' = 'RULES';
+  const ai = await aiJson({
+    cid, feature: 'hiring.questions', maxTokens: 900, temperature: 0.4, cacheKey: JSON.stringify([a.id, role, keySkills, jd.length, ex?.skills, gaps, shortStints]),
+    system: `You prepare an interview question kit for an interviewer. Write 8 to 10 questions: some on the role's key skills, some that dig into this candidate's resume (skills they list, gaps, short stays, certifications), and 2 on behaviour. Each has a short area label and one line on why it is worth asking. Questions must be open and job-related. ${FAIR_RULES} Shape: {"questions":[{"area":"","question":"","why":""}]}`,
+    user: JSON.stringify({ role, keySkillsRequired: keySkills, jobDescription: jd || 'not provided', candidate: ex ? { skills: ex.skills, certifications: ex.certifications, yearsExperience: ex.yearsExperience, recentRoles: (ex.history || []).slice(-3).map((h: any) => h.role), employmentGaps: gaps, shortStays: shortStints, projects: (ex.projects || []).slice(0, 4) } : 'resume not read yet' }),
+  });
+  const got = Array.isArray(ai.data?.questions) ? (ai.data.questions as any[]).map((x) => ({ area: str(x?.area, 30) || 'General', question: str(x?.question, 300), why: str(x?.why, 200) })).filter((x) => x.question.length > 10).slice(0, 10) : [];
+  if (got.length >= 5) { questions = got; generatedBy = 'AI'; }
+  return ok({ questions, generatedBy, resumeRead: !!ex, note: ai.off ? 'AI is off, so these are standard questions built from the key skills.' : ai.error || (got.length && got.length < 5 ? 'The AI gave too few questions, so standard ones are shown.' : '') });
+}
+
+// ------------------------------------------------------------------ founder panel summary
+
+/** The verdict is fixed by recommend(); this only builds the plain wording used when AI is off or fails its number check. */
+export function panelFallback(label: string, points: number, reasons: string[], missing: string[], pending: number): string {
+  const lines = [`${label} (${points} points).`, ...reasons];
+  if (pending > 0) lines.push(`${pending} interview${pending === 1 ? ' is' : 's are'} still waiting for feedback from the whole panel, so ${pending === 1 ? 'it is' : 'they are'} not counted yet.`);
+  if (missing.length) lines.push(`Still missing: ${missing.join('; ')}.`);
+  return lines.join(' ');
+}
+
+async function aiPanel(ctx: AuthContext, b: any): Promise<Result> {
+  const cid = ctx.companyId!;
+  const a = await getApplication(cid, str(b.applicationId, 100));
+  if (!a) return fail(404, 'Candidate not found.');
+  const f = await factsFor(cid, a);
+  const r = rec(f);
+  const label = VERDICT_LABEL[r.verdict];
+  const base = panelFallback(label, r.points, r.reasons, r.missing, f.interviewsPending);
+  let narrative = base;
+  let generatedBy: 'AI' | 'RULES' = 'RULES';
+  let note = '';
+  const facts = { verdict: label, points: r.points, reasons: r.reasons, stillMissing: r.missing, interviewsWaitingForPanel: f.interviewsPending, facts: anon(f, 'The candidate') };
+  const ai = await aiJson({
+    cid, feature: 'hiring.panel', maxTokens: 450, cacheKey: JSON.stringify([a.id, r.points, r.reasons, r.missing, f.interview, f.interviewsPending]),
+    system: `You write a 3 to 5 sentence note for the founder who makes the final hiring decision, summarising where the interview panel and the other checks stand. The verdict is already decided: state it exactly and never change or soften it. Mention where the panel agrees or splits, the main reason for the verdict, and anything still missing. Use only numbers that appear in the facts. ${FAIR_RULES} Shape: {"narrative":"..."}`,
+    user: JSON.stringify(facts),
+  });
+  if (ai.data?.narrative) {
+    const text = String(ai.data.narrative).slice(0, 1200);
+    if (unverifiedNumbers(text, [JSON.stringify(facts)]).length) note = 'The AI note used a number that is not in the records, so the plain note is shown.';
+    else { narrative = text; generatedBy = 'AI'; }
+  } else if (ai.error) note = ai.error;
+  else if (ai.off) note = 'AI is off, so this note is rule-based.';
+  return ok({ verdict: r.verdict, verdictLabel: label, points: r.points, reasons: r.reasons, missing: r.missing, interview: f.interview, interviewsPending: f.interviewsPending, narrative, generatedBy, note });
+}
+
 // ------------------------------------------------------------------ routing
 
 const ACTIONS: Record<string, { method: 'GET' | 'POST'; who: 'hr' | 'dash' }> = {
   'ai-status': { method: 'GET', who: 'hr' }, 'ai-resume': { method: 'POST', who: 'hr' }, 'dup-scan': { method: 'GET', who: 'hr' }, 'dup-merge': { method: 'POST', who: 'hr' },
   'ai-compare': { method: 'POST', who: 'hr' }, 'ai-recommend': { method: 'POST', who: 'hr' }, 'ai-followup': { method: 'POST', who: 'hr' }, 'ai-followup-send': { method: 'POST', who: 'hr' },
   'ai-insights': { method: 'GET', who: 'dash' },
+  'ai-questions': { method: 'POST', who: 'hr' }, 'ai-panel': { method: 'POST', who: 'dash' },
 };
 
 export async function routeAiHiring(r: PipeRequest): Promise<Result | null> {
@@ -332,6 +415,8 @@ export async function routeAiHiring(r: PipeRequest): Promise<Result | null> {
       case 'ai-recommend': return await aiRecommend(ctx, b);
       case 'ai-followup': return await aiFollowup(ctx, b);
       case 'ai-followup-send': return await aiFollowupSend(ctx, b);
+      case 'ai-questions': return await aiQuestions(ctx, b);
+      case 'ai-panel': return await aiPanel(ctx, b);
       default: return await aiInsights(ctx.companyId);
     }
   } catch (err: any) {

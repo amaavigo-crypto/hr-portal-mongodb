@@ -1,4 +1,5 @@
-import { jsPDF } from 'jspdf';
+// jsPDF (about 350 KB) loads only when someone clicks Download.
+import type { jsPDF } from 'jspdf';
 import { num, slipRows } from './payslipPdf';
 
 /** The lines of a settlement: salary, encashment and extras, gratuity, then everything taken off. */
@@ -11,7 +12,8 @@ export function settlementRows(s: any) {
   return { earn, ded, reimb };
 }
 
-export function downloadSettlementPdf(s: any, company: any) {
+export async function downloadSettlementPdf(s: any, company: any): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const M = 40;

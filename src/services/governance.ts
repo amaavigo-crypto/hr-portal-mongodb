@@ -26,7 +26,7 @@ import { firestoreService } from './firestoreService';
 import { uploadMediaToServer } from './mediaStorage';
 import { normalizeAuthorizedModules, getAuthorizationLabel, ModuleAuthorizationCode } from '../utils/authorization';
 import { appendApprovedHeaderAndFooter, formatDDMMYYYY, calculateDynamicReReviewDate, parseAnyDate, stripPolicyMetadataHeader, extractCleanBody } from '../utils/documentHeaderFooter';
-import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter, cleanDocxDataUrl, HeaderFooterMetadata } from '../utils/documentStamper';
+import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter, cleanDocxDataUrl, type HeaderFooterMetadata } from '../utils/documentTools';
 
 // Helper to verify if an employee belongs to a specific department or audience
 export function isEmployeeInDepartment(
@@ -1093,6 +1093,8 @@ export class DocumentGovernanceEngine {
       rawContent: string;
       fileName: string;
       changeSummary: string;
+      /** Why the policy is changing. Written by HR, never drafted by AI. */
+      changeReason?: string;
       effectiveFrom?: string;
       reviewDueDate?: string;
       mimeType?: string;
@@ -1283,6 +1285,7 @@ export class DocumentGovernanceEngine {
       previousVersionId: predecessorVersion?.id,
       previousVersionNumber: predecessorVersion?.versionNumber,
       changeSummary: data.changeSummary || `Revision ${nextVersionNumber} created from predecessor ${baselineNumber}.`,
+      changeReason: data.changeReason || '',
       locked: false,
       createdFromVersionId: predecessorVersion?.id,
     };

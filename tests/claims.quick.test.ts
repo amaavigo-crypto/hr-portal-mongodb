@@ -84,6 +84,7 @@ process.env.OPENAI_API_KEY = 'k';
 aiReply = { isBill: true, amount: 1000, date: D, vendor: 'Grand Hotel', gstin: '27AAPFU0939F1ZV', category: 'Travel', confidence: { amount: 'high', date: 'high', vendor: 'high', gstin: 'high' } };
 const sc = await ok(EMP, 'POST', 'claim-draft-scan', { id: d1.id });
 assert.equal(sc.scanned, true); assert.equal(sc.scan.amount, 1000); assert.equal(sc.scan.gstinValid, true); assert.equal(sc.category, 'Travel');
+assert.ok(fdb.all('aiUsageLog').some((l: any) => l.feature === 'claims.scan'), 'scan is in the AI usage log');
 aiReply = { isBill: false };
 assert.equal((await ok(EMP, 'POST', 'claim-draft-scan', { id: d1.id })).notABill, true);
 aiReply = { isBill: true, amount: 1000, date: D, vendor: 'Grand Hotel', gstin: '27AAPFU0939F1ZV', category: 'Travel', confidence: {} };

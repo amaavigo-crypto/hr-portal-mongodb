@@ -9,12 +9,18 @@ import { listApplications, APPLICATION_STAGES } from './recruitmentData.js';
 import { listItems, type PipeRequest } from './pipelineApi.js';
 import { loadPeople } from './leaveCore.js';
 import { computeDashboard, type Dashboard } from '../../shared/hiringAnalytics.js';
+import { cached } from './serverCache.js';
 
 type Result = { status: number; json: any };
 const todayIst = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
 const canSee = (ctx: AuthContext) => ctx.isCompanyAdmin || ['req.founder_decide', 'hrbp.view', 'hrbp.manage'].some((p) => ctx.perms.includes(p));
 
-export async function loadDashboard(cid: string): Promise<Dashboard> {
+/** Hiring dashboard figures for one company. Kept for up to a minute (cleared by any write), see serverCache.ts. */
+export function loadDashboard(cid: string): Promise<Dashboard> {
+  return cached(`hdash:${cid}`, () => computeCompanyDashboard(cid));
+}
+
+async function computeCompanyDashboard(cid: string): Promise<Dashboard> {
   const db = adminDb();
   const [reqSnap, apps, offers, costs, exitSnap, people] = await Promise.all([
     db.collection('requisitions').where('companyId', '==', cid).get(),

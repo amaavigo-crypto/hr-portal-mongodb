@@ -20,24 +20,14 @@ import { payrollNav } from './components/payroll/payrollNav';
 import { QuickClaimLauncher } from './components/payroll/QuickClaimLauncher';
 import { ClaimApp, claimAppMode } from './components/claimapp/ClaimApp';
 import { peopleNav } from './components/lifecycle/peopleNav';
-import { EmployeeModule } from './components/employee/EmployeeModule';
 import type { WidgetTarget } from '../shared/dashboard';
 import { hasAnyPerm } from '../shared/permissions';
 import { AuthScreen } from './components/AuthScreen';
 import { PendingApprovalView } from './components/PendingApprovalView';
 import { onSession, reloadSession, signOutUser, type SessionState } from './services/authService';
-import { CreatorDashboard } from './components/CreatorDashboard';
-import { ReviewerDashboard } from './components/ReviewerDashboard';
-import { EmployeePortalView } from './components/EmployeePortalView';
-import { EmployeeComplianceModule } from './components/EmployeeComplianceModule';
-import { CreateDocumentModal } from './components/CreateDocumentModal';
-import { CreateVersionModal } from './components/CreateVersionModal';
-import { ReviewDocumentModal } from './components/ReviewDocumentModal';
-import { DocumentDetailModal } from './components/DocumentDetailModal';
 import { NotificationDrawer } from './components/NotificationDrawer';
-import { DocumentViewer } from './components/DocumentViewer';
 import { formatDDMMYYYY } from './utils/documentHeaderFooter';
-import { downloadDocumentWithIntactFormat } from './utils/documentStamper';
+import { downloadDocumentWithIntactFormat } from './utils/documentTools';
 import { FileText, X, Download, ExternalLink, Users, FileSpreadsheet, UserCheck } from 'lucide-react';
 import { StatusBadge } from './components/StatusBadge';
 import { HRAgentShell, HRAgentModule } from './components/HRAgentShell';
@@ -67,6 +57,18 @@ const ApplicationsModule = lazyPage(() => import('./components/ApplicationsModul
 const LeaveModule = lazyPage(() => import('./components/LeaveModule').then((m) => m.LeaveModule));
 const PayrollModule = lazyPage(() => import('./components/PayrollModule').then((m) => m.PayrollModule));
 const PeopleModule = lazyPage(() => import('./components/PeopleModule').then((m) => m.PeopleModule));
+
+const EmployeeModule = lazyPage(() => import('./components/employee/EmployeeModule').then((m) => m.EmployeeModule));
+// Document Version Control screens carry the heavy document tools; they load the first time they are opened.
+const CreatorDashboard = lazyPage(() => import('./components/CreatorDashboard').then((m) => m.CreatorDashboard));
+const ReviewerDashboard = lazyPage(() => import('./components/ReviewerDashboard').then((m) => m.ReviewerDashboard));
+const EmployeePortalView = lazyPage(() => import('./components/EmployeePortalView').then((m) => m.EmployeePortalView));
+const EmployeeComplianceModule = lazyPage(() => import('./components/EmployeeComplianceModule').then((m) => m.EmployeeComplianceModule));
+const CreateDocumentModal = lazyPage(() => import('./components/CreateDocumentModal').then((m) => m.CreateDocumentModal), null);
+const CreateVersionModal = lazyPage(() => import('./components/CreateVersionModal').then((m) => m.CreateVersionModal), null);
+const ReviewDocumentModal = lazyPage(() => import('./components/ReviewDocumentModal').then((m) => m.ReviewDocumentModal), null);
+const DocumentDetailModal = lazyPage(() => import('./components/DocumentDetailModal').then((m) => m.DocumentDetailModal), null);
+const DocumentViewer = lazyPage(() => import('./components/DocumentViewer').then((m) => m.DocumentViewer), null);
 
 const ACTIVE_TAB_STORAGE_KEY = 'amaavigo_active_tab';
 const HR_AGENT_MODULE_STORAGE_KEY = 'amaavigo_hr_agent_module';

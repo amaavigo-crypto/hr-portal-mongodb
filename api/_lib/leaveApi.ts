@@ -819,7 +819,7 @@ async function assistAsk(who: Who, body: any): Promise<Result> {
   const profiles = await loadProfiles(who.cid);
   const prof = effectiveProfile(c.settings, c.me, profiles.get(c.me.uid));
   const a = answerPolicyQuestion(question, c.settings, prof.policyId);
-  const w = a.answered ? await polishWording(a.answer) : { text: a.answer, ai: false };
+  const w = a.answered ? await polishWording(a.answer, who.cid) : { text: a.answer, ai: false };
   return ok({ answer: w.text, policyReference: a.reference, policyVersion: c.settings.policyVersion || 1, answered: a.answered, aiWording: w.ai, requiresHumanDecision: true });
 }
 
@@ -1868,7 +1868,9 @@ export async function runLeaveCron(): Promise<Result> {
       out.push({ companyId: cid, error: err?.message || String(err) });
     }
   }
-  return ok({ today, companies: out });
+  // Policy, claim and review reminders go out in the same daily call (one email per person).
+  const reminders = await (await import('./reminderApi.js')).runAllReminders(today).catch((e: any) => ({ error: String(e?.message || e) }));
+  return ok({ today, companies: out, reminders });
 }
 
 // ------------------------------------------------------------------ router
@@ -1913,6 +1915,7 @@ export async function routeLeave(r: LeaveRequestIn): Promise<Result> {
       case 'doc-set': if (POST) return await docSet(who, body); break;
       case 'doc-get': if (GET) return await docGet(who, r.query); break;
       case 'team-calendar': if (GET) return await teamCalendar(who, r.query); break;
+      case 'team-week': if (GET) return await (await import('./teamWeekApi.js')).teamWeekView(who.cid, who.ctx.uid, istToday()); break;
       case 'check-in': if (POST) return await punch(who, 'in', r.ip, body); break;
       case 'check-out': if (POST) return await punch(who, 'out', r.ip, body); break;
       case 'attendance': if (GET) return await attendance(who, r.query); break;

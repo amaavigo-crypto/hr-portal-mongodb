@@ -37,6 +37,10 @@ export const people = {
   wbSettings: collection('Wellbeing module settings. Document id = companyId.', defineSchema({ companyId: String })),
   wbAudit: collection('Audit of HR views of individual game results.', defineSchema({ ...tenant, at: String })),
 
+  aiUsageLog: collection('One row per AI call: feature, model, tokens, cost in micro-dollars, duration, success. Written by api/_lib/ai (the shared AI layer).', defineSchema({ id: String, ...tenant, uid: String, feature: reqStr, provider: String, model: String, month: String, inputTokens: Number, outputTokens: Number, costMicros: Number, ms: Number, ok: Boolean, error: String, at: String }, [[{ companyId: 1, month: 1 }]])),
+  agentActions: collection('HR Agent: one row per question (who, question, answer, tools used). Write-once, never updated.', defineSchema({ id: String, kind: String, ...tenant, uid: reqStr, email: String, question: String, answer: String, tools: [String], unsure: Boolean, model: String, createdAt: String }, [[{ companyId: 1, uid: 1 }]])),
+  agentUsage: collection('HR Agent: questions a person asked today. Document id = `<companyId>__<uid>__<day>`.', defineSchema({ ...tenant, uid: reqStr, day: String, count: Number, updatedAt: String })),
+  reminderLog: collection('Daily reminder digests already sent, so a reminder never goes out twice. Document id derives from company, person and reminder key.', defineSchema({ ...tenant, uid: reqStr, key: reqStr, lastSent: String, at: String })),
   assistantLogs: collection('Ask HR questions and answers (for quality and cost review).', defineSchema({ ...tenant, uid: String, at: String })),
   assistantUsage: collection('Ask HR usage counters per company and month.', defineSchema({ ...tenant })),
 };

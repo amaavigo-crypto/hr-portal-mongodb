@@ -7,7 +7,7 @@ const keys = (m: any) => leaveNavItems(m).map((i) => i.key);
 // an employee gets four sections, not seven
 assert.deepEqual(keys(me()), ['today', 'my', 'attendance', 'team']);
 // a manager adds Approvals, HR adds Manage
-assert.deepEqual(keys(me({ isManager: true })), ['today', 'my', 'attendance', 'team', 'approvals']);
+assert.deepEqual(keys(me({ isManager: true })), ['today', 'my', 'attendance', 'team', 'teamweek', 'approvals']);
 assert.deepEqual(keys(me({ canManage: true })), ['today', 'my', 'attendance', 'team', 'approvals', 'manage']);
 assert.deepEqual(keys(me({ canReport: true })), ['today', 'my', 'attendance', 'team', 'manage']);
 // nothing before leave is set up or when the person has no record

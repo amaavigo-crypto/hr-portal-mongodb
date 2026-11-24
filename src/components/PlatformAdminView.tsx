@@ -5,6 +5,7 @@ import { platformApi } from '../services/adminService';
 import { MODULES } from '../../shared/permissions';
 import { LandingContentAdmin } from './LandingContentAdmin';
 import { AccountsPanel } from './AccountsPanel';
+import { PlatformAiUsage } from './AiUsagePanel';
 
 interface Props {
   email: string;
@@ -22,7 +23,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<'companies' | 'accounts' | 'landing'>('companies');
+  const [tab, setTab] = useState<'companies' | 'accounts' | 'landing' | 'ai'>('companies');
   const [busyId, setBusyId] = useState('');
   // Module choices per company that are being edited but not saved yet
   const [draft, setDraft] = useState<Record<string, string[]>>({});
@@ -126,7 +127,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
 
       <main className={`mx-auto space-y-4 p-4 sm:p-6 ${tab === 'landing' ? 'max-w-7xl' : 'max-w-5xl'}`}>
         <div className="flex gap-1 border-b border-slate-200">
-          {([['companies', 'Companies'], ['accounts', 'Accounts'], ['landing', 'Landing page']] as const).map(([id, label]) => (
+          {([['companies', 'Companies'], ['accounts', 'Accounts'], ['landing', 'Landing page'], ['ai', 'AI usage']] as const).map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -136,7 +137,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
             </button>
           ))}
         </div>
-        {tab === 'landing' ? <LandingContentAdmin /> : tab === 'accounts' ? <AccountsPanel /> : <>
+        {tab === 'landing' ? <LandingContentAdmin /> : tab === 'ai' ? <PlatformAiUsage /> : tab === 'accounts' ? <AccountsPanel /> : <>
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Companies</h1>
           <p className="text-sm text-slate-500">

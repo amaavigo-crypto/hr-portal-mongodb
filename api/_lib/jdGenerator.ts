@@ -17,8 +17,7 @@ export interface JdResult {
   note?: string;
 }
 
-const OPENAI_BASE_URL = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-const MODEL = process.env.OPENAI_JD_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+import { aiEnabled, aiText } from './ai/index.js';
 const REQUEST_TIMEOUT_MS = 45000;
 
 function experienceLine(r: JdRequest): string {
@@ -91,61 +90,20 @@ function buildUserPrompt(r: JdRequest): string {
   ].join('\n');
 }
 
-export async function generateJobDescription(r: JdRequest): Promise<JdResult> {
-  const apiKey = (process.env.OPENAI_API_KEY || '').trim();
-  if (!apiKey || apiKey === 'MY_OPENAI_API_KEY') {
+export async function generateJobDescription(r: JdRequest, cid = ''): Promise<JdResult> {
+  if (!aiEnabled() || !cid) {
     return {
       text: buildTemplateJd(r),
       generatedBy: 'TEMPLATE',
       note: 'OPENAI_API_KEY is not configured, so a structured template was generated instead.',
     };
   }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-  try {
-    const res = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: buildUserPrompt(r) },
-        ],
-      }),
-      signal: controller.signal,
-    });
-
-    const raw = await res.text();
-    let data: any = null;
-    try {
-      data = raw ? JSON.parse(raw) : null;
-    } catch {
-      /* non-JSON error body */
-    }
-
-    if (!res.ok) {
-      const detail = data?.error?.message || raw.slice(0, 200) || `HTTP ${res.status}`;
-      throw new Error(`OpenAI API error (HTTP ${res.status}): ${detail}`);
-    }
-
-    const text = String(data?.choices?.[0]?.message?.content || '').trim();
-    if (!text) throw new Error('Empty response from model');
-    return { text, generatedBy: 'AI' };
-  } catch (err: any) {
-    const message = err?.name === 'AbortError' ? `timed out after ${REQUEST_TIMEOUT_MS / 1000}s` : err?.message || 'unknown error';
-    console.warn('[JD Generator] OpenAI call failed, using template:', message);
-    return {
-      text: buildTemplateJd(r),
-      generatedBy: 'TEMPLATE',
-      note: `AI generation failed (${message}); a structured template was generated instead.`,
-    };
-  } finally {
-    clearTimeout(timer);
-  }
+  const res = await aiText({ cid, feature: 'jd', system: SYSTEM_PROMPT, user: buildUserPrompt(r), maxTokens: 1500, timeoutMs: REQUEST_TIMEOUT_MS, budgetMs: REQUEST_TIMEOUT_MS + 10000 });
+  if (res.text) return { text: res.text, generatedBy: 'AI' };
+  console.warn('[JD Generator] AI call failed, using template:', res.error);
+  return {
+    text: buildTemplateJd(r),
+    generatedBy: 'TEMPLATE',
+    note: `AI generation failed (${res.error || 'unknown error'}); a structured template was generated instead.`,
+  };
 }

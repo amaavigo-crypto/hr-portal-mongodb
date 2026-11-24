@@ -15,7 +15,8 @@ export const tokens = (s: string): string[] =>
   ((String(s || '').toLowerCase().match(/[a-z0-9]+/g) || []) as string[]).filter((t) => t.length > 1 && !STOP.has(t)).map((t) => (t.length > 4 && t.endsWith('s') ? t.slice(0, -1) : t));
 
 /** Splits text into passages of roughly `size` characters, keeping paragraphs together where it can. */
-export function chunkText(text: string, size = 900): string[] {
+/** With merge off, each paragraph stays its own passage (used when passages are quoted back word for word). */
+export function chunkText(text: string, size = 900, merge = true): string[] {
   const paras = String(text || '').replace(/\r/g, '').split(/\n{2,}|\n(?=[#\d]+[.)]?\s)/).map((p) => p.replace(/\s+/g, ' ').trim()).filter(Boolean);
   const out: string[] = [];
   let cur = '';
@@ -25,7 +26,7 @@ export function chunkText(text: string, size = 900): string[] {
       for (let i = 0; i < p.length; i += size) out.push(p.slice(i, i + size));
       continue;
     }
-    if (cur && cur.length + p.length + 1 > size) { out.push(cur); cur = p; } else cur = cur ? `${cur} ${p}` : p;
+    if (cur && (!merge || cur.length + p.length + 1 > size)) { out.push(cur); cur = p; } else cur = cur ? `${cur} ${p}` : p;
   }
   if (cur) out.push(cur);
   return out;
@@ -35,11 +36,11 @@ export interface PolicyDoc { id: string; title: string; version: string; text: s
 export interface Passage { docId: string; title: string; version: string; text: string; score: number }
 
 /** The best matching passages for a question, best first. Title words count extra so "leave policy" finds the Leave Policy. */
-export function rankPassages(query: string, docs: PolicyDoc[], k = 4): Passage[] {
+export function rankPassages(query: string, docs: PolicyDoc[], k = 4, size = 900, merge = true): Passage[] {
   const q = Array.from(new Set(tokens(query)));
   if (q.length === 0) return [];
   const all: { doc: PolicyDoc; text: string; tk: string[] }[] = [];
-  for (const d of docs) for (const c of chunkText(d.text)) all.push({ doc: d, text: c, tk: tokens(c) });
+  for (const d of docs) for (const c of chunkText(d.text, size, merge)) all.push({ doc: d, text: c, tk: tokens(c) });
   if (all.length === 0) return [];
   const df = new Map<string, number>();
   for (const a of all) for (const t of new Set(a.tk)) df.set(t, (df.get(t) || 0) + 1);
@@ -84,4 +85,34 @@ export function cleanHistory(raw: unknown): ChatTurn[] {
     .filter((t: any) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string' && t.content.trim())
     .map((t: any) => ({ role: t.role as 'user' | 'assistant', content: String(t.content).trim().slice(0, 600) }))
     .slice(-6);
+}
+
+// ------------------------------------------------------------------ quoting the policy exactly
+
+const MARKER = /\s*\[\[quote:([A-Za-z0-9]+)\]\]/g;
+
+/** The answer with the quote markers taken out (used before checking its numbers, so a marker id is never mistaken for a figure). */
+export const withoutMarkers = (answer: string) => String(answer || '').replace(MARKER, '');
+
+const norm = (s: string) => String(s || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
+
+/**
+ * The model only says WHICH passage supports a sentence ([[quote:P2]]); the words of the quote come from the stored policy text.
+ * Markers for passages that were never retrieved are dropped, and anything the model put in quotation marks that is not
+ * word for word in a retrieved passage loses its quotation marks, so nothing invented is ever shown as a quote.
+ */
+export function applyQuotes<T extends { text: string }>(answer: string, byId: Map<string, T>): { answer: string; used: { id: string; passage: T }[] } {
+  const used: { id: string; passage: T }[] = [];
+  let text = String(answer || '').replace(MARKER, (_m, id: string) => {
+    const passage = byId.get(id);
+    if (passage && !used.some((u) => u.id === id)) used.push({ id, passage });
+    return '';
+  });
+  const haystack = Array.from(byId.values()).map((p) => norm(p.text));
+  text = text.replace(/([\u201c"])([^\u201d"]{25,}?)([\u201d"])/g, (m, _a: string, inner: string) => {
+    if (inner.trim().split(/\s+/).length < 5) return m;
+    const n = norm(inner).replace(/[.…]+$/, '');
+    return haystack.some((h) => h.includes(n)) ? m : inner;
+  });
+  return { answer: text.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').trim(), used };
 }

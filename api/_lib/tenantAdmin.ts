@@ -15,6 +15,7 @@ import { FieldValue } from './fieldValue.js';
 import { routeData } from './dataApi.js';
 import { getLandingContentRoute, saveLandingContentRoute, undoLandingContentRoute } from './landingContentApi.js';
 import { adminApp, adminAuth, adminDb, isAdminConfigured } from './firebaseAdmin.js';
+import { companyAiUsage, allAiUsage } from './aiUsageApi.js';
 import { authenticate, requirePermission, requirePlatformAdmin, authErrorResponse, AuthError, type AuthContext } from './authContext.js';
 import { dispatchLiveEmail } from './serverEmail.js';
 import { syncDepartmentManagers, syncDepartmentManagersQuietly } from './deptManager.js';
@@ -1111,6 +1112,8 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
     const orgDeps = { syncUser: (uid: string) => syncUser(uid), nextEmployeeId };
     const orgResult = (await routeOrgAction(r.method, action, headers, b, orgDeps)) ?? (await routeTransferAction(r.method, action, headers, b, orgDeps));
     if (orgResult) return orgResult as TenantResult;
+    if (r.method === 'GET' && action === 'ai-usage') return await companyAiUsage(headers);
+    if (r.method === 'GET' && action === 'ai-usage-all') return await allAiUsage(headers);
 
     if (r.method !== 'POST') return fail(405, 'Method not allowed.');
     switch (action) {

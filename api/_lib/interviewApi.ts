@@ -15,6 +15,7 @@ import { flowAdvanceHook } from './flowApi.js';
 import { createTeamsMeeting, sendWhatsApp } from './integrations.js';
 import { cancelGoogleMeeting, createGoogleMeeting, updateGoogleMeeting } from './googleCalendar.js';
 import { adminDb } from './firebaseAdmin.js';
+import { aiEnabled, aiText } from './ai/index.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
 import { getApplication, listApplications, type ApplicationDoc } from './recruitmentData.js';
 import { dispatchLiveEmail } from './serverEmail.js';
@@ -423,33 +424,16 @@ export function plainSummary(cards: Scorecard[], candidate: string, role: string
   return lines.join('\n');
 }
 
-async function aiSummary(cards: Scorecard[], candidate: string, role: string): Promise<{ text: string; generatedBy: 'AI' | 'TEMPLATE'; note?: string }> {
+async function aiSummary(cid: string, cards: Scorecard[], candidate: string, role: string): Promise<{ text: string; generatedBy: 'AI' | 'TEMPLATE'; note?: string }> {
   const base = plainSummary(cards, candidate, role);
-  const key = (process.env.OPENAI_API_KEY || '').trim();
-  if (!key || key === 'MY_OPENAI_API_KEY') return { text: base, generatedBy: 'TEMPLATE', note: 'OPENAI_API_KEY is not set, so a plain summary was made.' };
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
-  try {
-    const baseUrl = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, signal: controller.signal,
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You summarise interview panel feedback for HR. Be neutral and concise (under 180 words). Report where interviewers agree and disagree, the main strengths, the main concerns and a one-line overall read. Do not invent facts and do not mention anything that is not in the scorecards.' },
-          { role: 'user', content: `Candidate: ${candidate}\nRole: ${role}\n\n${cards.map((c, i) => `Interviewer ${i + 1}: recommendation ${RECOMMENDATION_LABEL[c.recommendation]}; ratings ${JSON.stringify(c.ratings)}; strengths: ${c.strengths || '-'}; concerns: ${c.concerns || '-'}`).join('\n')}` },
-        ],
-      }),
-    });
-    const data: any = await res.json().catch(() => null);
-    const text = String(data?.choices?.[0]?.message?.content || '').trim();
-    if (!res.ok || !text) throw new Error(data?.error?.message || `HTTP ${res.status}`);
-    return { text, generatedBy: 'AI' };
-  } catch (e: any) {
-    return { text: base, generatedBy: 'TEMPLATE', note: `AI summary failed (${e?.message || 'error'}); a plain summary was made.` };
-  } finally {
-    clearTimeout(timer);
-  }
+  if (!aiEnabled()) return { text: base, generatedBy: 'TEMPLATE', note: 'OPENAI_API_KEY is not set, so a plain summary was made.' };
+  const res = await aiText({
+    cid, feature: 'interview.summary', timeoutMs: 25000, budgetMs: 30000, maxTokens: 500,
+    system: 'You summarise interview panel feedback for HR. Be neutral and concise (under 180 words). Report where interviewers agree and disagree, the main strengths, the main concerns and a one-line overall read. Do not invent facts and do not mention anything that is not in the scorecards.',
+    user: `Candidate: ${candidate}\nRole: ${role}\n\n${cards.map((c, i) => `Interviewer ${i + 1}: recommendation ${RECOMMENDATION_LABEL[c.recommendation]}; ratings ${JSON.stringify(c.ratings)}; strengths: ${c.strengths || '-'}; concerns: ${c.concerns || '-'}`).join('\n')}`,
+  });
+  if (res.text) return { text: res.text, generatedBy: 'AI' };
+  return { text: base, generatedBy: 'TEMPLATE', note: `AI summary failed (${res.error || 'error'}); a plain summary was made.` };
 }
 
 async function intAiSummary(ctx: AuthContext, b: any): Promise<Result> {
@@ -459,7 +443,7 @@ async function intAiSummary(ctx: AuthContext, b: any): Promise<Result> {
   const cards: Scorecard[] = it.scorecards || [];
   const complete = (it.panel as PanelMember[]).every((p) => cards.some((c) => c.interviewerId === p.uid));
   if (!complete) return fail(409, `Waiting for ${(it.panel as PanelMember[]).length - cards.length} more scorecard(s). The summary is made once everyone has submitted, so nobody is influenced early.`);
-  const res = await aiSummary(cards, it.candidateName, it.positionTitle);
+  const res = await aiSummary(cid, cards, it.candidateName, it.positionTitle);
   const next: Item = { ...it, aiSummary: { text: res.text, generatedBy: res.generatedBy, at: nowIso() } };
   await putItem(next);
   return ok({ aiSummary: next.aiSummary, note: res.note });

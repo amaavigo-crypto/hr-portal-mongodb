@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { applicationDefault, cert, getApp, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { disableServerCache } from './serverCache.js';
 import { isMongoConfigured, mongoDb } from './mongoFirestore.js';
 
 const fileConfig: Record<string, any> = (() => {
@@ -68,6 +69,8 @@ export function adminApp(): App {
 let fake: { db?: any; auth?: any } | null = null;
 export function __useFakeAdmin(f: { db?: any; auth?: any } | null) {
   fake = f;
+  // The test fake does not report writes, so nothing may be served from the dashboard cache.
+  if (f) disableServerCache();
 }
 
 export function adminAuth(): Auth {

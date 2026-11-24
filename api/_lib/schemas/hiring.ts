@@ -8,7 +8,7 @@ import { collection, defineSchema, oneOf, reqStr, stamps, tenant, Mixed } from '
 export const HIRING_KINDS = [
   'posting', 'jdTemplate', 'referral', 'resume', 'scoreSettings', 'rating', 'position', 'assessment', 'screening',
   'interview', 'offer', 'offerTpl', 'kitTemplate', 'flow', 'flowFamily', 'flowRun', 'flowTask', 'skillTest', 'scrlink',
-  'google', 'data', 'mapping', 'policy',
+  'google', 'data', 'mapping', 'policy', 'aiUsage',
 ] as const;
 
 export const HRBP_KINDS = [

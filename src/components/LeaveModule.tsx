@@ -18,6 +18,7 @@ import { LeaveSubNav } from './leave/LeaveSubNav';
 import { attendanceTabFor, AttendanceSubTab, leaveNav, leaveNavItems, LeaveSection, resolveSection, useLeaveNav } from './leave/leaveNav';
 import { MyLeave } from './leave/MyLeave';
 import { Today } from './leave/Today';
+import { TeamWeek } from './leave/TeamWeek';
 import { Card, EmptyState, Notice, Segmented, Skeleton, ToastProvider } from './leave/ui';
 
 type Admin = 'policies' | 'overview' | 'requests' | 'people' | 'balances' | 'reports' | 'exceptions' | 'audit' | 'yearend' | 'setup';
@@ -107,6 +108,7 @@ const LeaveScreens: React.FC<{ currentUser: User; inlineNav?: boolean }> = ({ cu
           </div>
         )}
         {active === 'team' && <TeamCalendar />}
+        {active === 'teamweek' && <TeamWeek />}
         {active === 'approvals' && <ApprovalsTab reload={reload} />}
         {active === 'manage' && (
           <div className="space-y-5">

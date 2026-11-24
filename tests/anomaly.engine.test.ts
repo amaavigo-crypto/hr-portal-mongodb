@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_FLAG_SETTINGS as S, sanitizeFlagSettings, payrollFlags, lateFlags, leaveFlags, type PayrollPerson } from '../shared/anomalyEngine';
+import { DEFAULT_FLAG_SETTINGS as S, sanitizeFlagSettings, payrollFlags, lateFlags, leaveFlags, teamLeaveFlags, type PayrollPerson } from '../shared/anomalyEngine';
 
 const P = (o: Partial<PayrollPerson> & { uid: string }): PayrollPerson => ({ name: o.uid, gross: 60000, net: 52000, deductions: 8000, lopDays: 0, adjustments: 0, largestAdjustment: 0, accountKey: '', ...o });
 
@@ -48,6 +48,25 @@ assert.equal(leaveFlags('2026-11-12', [{ uid: 'a', name: 'A', isOff, requests: [
 vf = leaveFlags('2026-11-12', [{ uid: 'a', name: 'A', isOff, requests: [L('2026-10-05', { typeName: 'Sick leave' }), L('2026-10-20', { typeName: 'Sick leave' }), L('2026-11-03', { typeName: 'Sick leave' })] }], S);
 assert.ok(vf.some((x) => x.code === 'SHORT_SICK_LEAVES'));
 assert.ok(!JSON.stringify(vf).toLowerCase().includes('suspicious'));
+
+// Monday starts and Friday ends repeat
+const mf = leaveFlags('2026-11-12', [{ uid: 'a', name: 'A', isOff: () => false, requests: [L('2026-09-07'), L('2026-09-18'), L('2026-10-12')] }], S);
+assert.equal(mf.find((x) => x.code === 'MONDAY_FRIDAY_LEAVES')!.facts.leaves, 3);
+assert.ok(!leaveFlags('2026-11-12', [{ uid: 'a', name: 'A', isOff: () => false, requests: [L('2026-09-08'), L('2026-09-23'), L('2026-10-14')] }], S).some((x) => x.code === 'MONDAY_FRIDAY_LEAVES'), 'Tuesday and Wednesday leaves are not a pattern');
+assert.ok(!JSON.stringify(mf).toLowerCase().match(/suspicious|abuse|misuse/), 'neutral wording');
+
+// a team with too many people on leave on one day
+const mem = (uid: string, ...days: string[]) => ({ uid, name: uid.toUpperCase(), isOff, requests: days.map((d) => L(d, { status: d === '2026-11-19' && uid === 'e' ? 'PENDING' : 'APPROVED' })) });
+const team = (n: number, ...away: string[][]) => ({ managerUid: 'm', managerName: 'Mira', members: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].slice(0, n).map((u, i) => mem(u, ...(away[i] || []))) });
+const day = '2026-11-18';
+let tf = teamLeaveFlags('2026-11-16', [team(8, [day], [day], [day], [day])], S);
+assert.equal(tf.length, 1); assert.equal(tf[0].code, 'TEAM_LEAVE_OVER_LIMIT'); assert.equal(tf[0].facts.away, 4); assert.equal(tf[0].facts.team, 8);
+assert.equal(teamLeaveFlags('2026-11-16', [team(8, [day], [day], [day])], S).length, 0, '3 of 8 is within 40%');
+assert.equal(teamLeaveFlags('2026-11-16', [team(2, [day], [day])], S).length, 0, 'tiny teams are not flagged');
+assert.equal(teamLeaveFlags('2026-11-16', [team(8, ['2026-11-21'], ['2026-11-21'], ['2026-11-21'], ['2026-11-21'])], S).length, 0, 'a weekend is not a working day');
+tf = teamLeaveFlags('2026-11-16', [team(5, [day, '2026-11-19'], [day, '2026-11-19'], [day, '2026-11-19'], ['2026-11-19'], ['2026-11-19'])], S);
+assert.equal(tf.length, 1, 'one flag per team per week, showing the busiest day'); assert.equal(tf[0].facts.day, '2026-11-19'); assert.equal(tf[0].facts.away, 5);
+assert.equal(teamLeaveFlags('2026-11-16', [team(8, [day], [day], [day], [day])], { ...S, leave: false }).length, 0);
 
 // settings are clamped
 assert.equal(sanitizeFlagSettings({ latePer30: 999, payChangePct: -4 }).latePer30, 30);

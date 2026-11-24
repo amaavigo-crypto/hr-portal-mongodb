@@ -23,6 +23,7 @@
  * Server-only collections: homeSettings, announcements, moodCheckins, loginDaily, personalDates.
  */
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
+import { cached } from './serverCache.js';
 import { hasPerm } from '../../shared/permissions.js';
 import { addDays, istParts, istToday, isIsoDate, sessionsOf } from '../../shared/leaveEngine.js';
 import {
@@ -646,12 +647,35 @@ async function loginSummary(w: Who, q: any): Promise<Result> {
 
 // ------------------------------------------------------------------ router
 
+const CACHED_HOME_READS = new Set(['layout', 'profile', 'calendar', 'on-leave', 'wishes', 'people-dates', 'acks', 'announcements', 'mood-summary', 'login-summary']);
+
+function homeRead(w: Who, action: string, query: any): Promise<Result> {
+  switch (action) {
+    case 'layout': return layout(w);
+    case 'profile': return profile(w);
+    case 'calendar': return calendar(w, query);
+    case 'on-leave': return onLeave(w, query);
+    case 'wishes': return wishes(w, query);
+    case 'people-dates': return peopleDates(w);
+    case 'acks': return acks(w);
+    case 'announcements': return announcements(w, query);
+    case 'mood-summary': return moodSummary(w, query);
+    case 'login-summary': return loginSummary(w, query);
+  }
+  return Promise.resolve(fail(404, `Unknown home action: ${action}`));
+}
+
 export async function routeHome(r: HomeRequestIn): Promise<Result> {
   try {
     const w = await whoIs(r.headers);
     const GET = r.method === 'GET';
     const POST = r.method === 'POST';
     const body = r.body && typeof r.body === 'object' ? r.body : {};
+    // Read-only Home cards are kept for up to a minute per person (cleared by any write, see serverCache.ts).
+    if (GET && CACHED_HOME_READS.has(r.action)) {
+      const key = `home:${w.cid}:${w.ctx.uid}:${w.isAdmin ? 'a' : ''}:${[...w.perms].sort().join(',')}:${r.action}:${JSON.stringify(r.query || {})}`;
+      return await cached(key, () => homeRead(w, r.action, r.query), { keep: (res) => res.status === 200 });
+    }
     switch (r.action) {
       case 'layout': if (GET) return await layout(w); break;
       case 'profile': if (GET) return await profile(w); break;

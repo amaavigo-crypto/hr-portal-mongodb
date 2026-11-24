@@ -19,7 +19,7 @@ import { parseUploadedFile } from '../utils/fileParser';
 import { stripPolicyMetadataHeader, calculateDynamicReReviewDate, parseAnyDate } from '../utils/documentHeaderFooter';
 import { WysiwygDocumentEditor } from './WysiwygDocumentEditor';
 import { DocumentViewer } from './DocumentViewer';
-import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter } from '../utils/documentStamper';
+import { stampPdfWithHeaderFooter, stampDocxWithHeaderFooter } from '../utils/documentTools';
 
 interface CreateDocumentModalProps {
   currentUser: User;

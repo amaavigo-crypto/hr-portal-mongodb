@@ -59,7 +59,9 @@ import {
   normalizeAuthorizedModules,
 } from '../utils/authorization';
 import { hasAnyPerm } from '../../shared/permissions';
+import { canUseHrAgent } from '../../shared/hrAgentTools';
 import { AskHrPanel, openAskHr } from './assistant/AskHrPanel';
+import { HrAgentPanel } from './assistant/HrAgentPanel';
 
 export type HRAgentModule =
   | 'home'
@@ -1204,6 +1206,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
         </div>
       </div>
       <AskHrPanel userId={currentUser.authUid || currentUser.id} />
+      {canUseHrAgent(currentUser.perms, !!currentUser.isCompanyAdmin) && <HrAgentPanel userId={currentUser.authUid || currentUser.id} />}
 
     </div>
   );
