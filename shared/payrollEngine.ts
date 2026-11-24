@@ -56,6 +56,17 @@ export interface PtSlab {
   gender?: 'ANY' | 'F' | 'M';
 }
 
+/**
+ * Labour Welfare Fund. The rates differ by state and change often, so none are pre-filled: HR enters, for each state,
+ * the months it is deducted in (for example 6 and 12) and the fixed employee and employer amount for that month.
+ */
+export interface LwfRule {
+  /** Calendar months (1-12) in which the fund is deducted. */
+  months: number[];
+  employee: number;
+  employer: number;
+}
+
 export interface PayrollSettings {
   /** CALENDAR: pay for the real days of the month. FIXED_30: always treat the month as 30 days. */
   daysBasis: 'CALENDAR' | 'FIXED_30';
@@ -72,6 +83,8 @@ export interface PayrollSettings {
   pf: { enabled: boolean; employeePct: number; employerPct: number; edliPct: number; adminPct: number; wageCeiling: number };
   esic: { enabled: boolean; employeePct: number; employerPct: number; wageCeiling: number };
   pt: { enabled: boolean; defaultState: string; states: Record<string, PtSlab[]> };
+  /** Labour Welfare Fund by state. Off until HR turns it on and enters the rates. */
+  lwf?: { enabled: boolean; states: Record<string, LwfRule> };
   company: { legalName: string; address: string; tan: string; pan: string };
   /** Gratuity for full and final settlements: last basic x daysPerYear / divisor x completed years, up to a cap. */
   gratuity: { enabled: boolean; minYears: number; daysPerYear: number; divisor: number; cap: number };
@@ -145,6 +158,9 @@ export interface PayrollLine {
     esicEmployee: number;
     esicEmployer: number;
     pt: number;
+    /** Labour Welfare Fund. Present only in a month where it is deducted. */
+    lwfEmployee?: number;
+    lwfEmployer?: number;
   };
   gross: number;
   totalDeductions: number;
@@ -236,6 +252,7 @@ export function starterPayrollSettings(): PayrollSettings {
     pf: { enabled: true, employeePct: 12, employerPct: 12, edliPct: 0.5, adminPct: 0.5, wageCeiling: 15000 },
     esic: { enabled: true, employeePct: 0.75, employerPct: 3.25, wageCeiling: 21000 },
     pt: { enabled: true, defaultState: 'Maharashtra', states: structuredClone(STARTER_PT) },
+    lwf: { enabled: false, states: {} },
     company: { legalName: '', address: '', tan: '', pan: '' },
     gratuity: { enabled: true, minYears: 5, daysPerYear: 15, divisor: 26, cap: 2_000_000 },
     defaultNoticeDays: 30,
@@ -327,6 +344,17 @@ export function professionalTax(settings: PayrollSettings, state: string, gender
   return rInt(feb && slab.febAmount !== undefined ? slab.febAmount : slab.amount);
 }
 
+/** Labour Welfare Fund for one month: the state's fixed amounts in the months it is deducted, nothing otherwise. */
+export function labourWelfareFund(settings: Pick<PayrollSettings, 'lwf' | 'pt'>, state: string, month: string, paidDays: number): { employee: number; employer: number } {
+  const lwf = settings.lwf;
+  if (!lwf?.enabled || paidDays <= 0) return { employee: 0, employer: 0 };
+  const rule = lwf.states[state || settings.pt.defaultState];
+  if (!rule) return { employee: 0, employer: 0 };
+  const m = parseInt(month.slice(5, 7), 10);
+  if (!rule.months.includes(m)) return { employee: 0, employer: 0 };
+  return { employee: rInt(rule.employee), employer: rInt(rule.employer) };
+}
+
 // ------------------------------------------------------------------ one employee, one month
 
 export function calculateLine(i: LineInput): PayrollLine {
@@ -396,12 +424,17 @@ export function calculateLine(i: LineInput): PayrollLine {
     warnings.push(`No professional tax slabs are set for ${st.state || s.pt.defaultState || 'this state'}; PT is 0.`);
   }
 
+  const lwf = labourWelfareFund(s, st.state || s.pt.defaultState, i.month, paidDays);
+  if (s.lwf?.enabled && paidDays > 0 && !s.lwf.states[st.state || s.pt.defaultState]) {
+    warnings.push(`No Labour Welfare Fund rate is set for ${st.state || s.pt.defaultState || 'this state'}; LWF is 0.`);
+  }
+
   const loanTotal = r2(i.loanRecoveries.reduce((n, l) => n + l.amount, 0));
   const componentDed = r2(deductions.reduce((n, d) => n + d.amount, 0));
   const reimbursements = (i.reimbursements || []).filter((r) => r.amount > 0);
   const reimbursementTotal = r2(reimbursements.reduce((n, r) => n + r.amount, 0));
   const tds = r2(deductions.filter((d) => d.id === 'tds-auto' || (s.components.find((c) => c.id === d.id) && isTdsComponent(s.components.find((c) => c.id === d.id)!))).reduce((n, d) => n + d.amount, 0));
-  const totalDeductions = r2(componentDed + pfEmployee + esicEmployee + pt + adjDed + loanTotal);
+  const totalDeductions = r2(componentDed + pfEmployee + esicEmployee + pt + lwf.employee + adjDed + loanTotal);
   const rawNet = r2(gross + reimbursementTotal - totalDeductions);
   const net = Math.max(0, rawNet);
   const shortfall = rawNet < 0 ? r2(-rawNet) : 0;
@@ -419,8 +452,8 @@ export function calculateLine(i: LineInput): PayrollLine {
   return {
     paidDays, payDays, earnings, deductions, adjustments: i.adjustments, encashment: encash, loans: i.loanRecoveries,
     reimbursements, reimbursementTotal, tds,
-    statutory: { pfWage, pfEmployee, pfEmployer, edli, pfAdmin, esicWage, esicEmployee, esicEmployer, pt },
-    gross, totalDeductions, net, employerCost: r2(gross + reimbursementTotal + pfEmployer + edli + pfAdmin + esicEmployer), shortfall, warnings, blocking,
+    statutory: { pfWage, pfEmployee, pfEmployer, edli, pfAdmin, esicWage, esicEmployee, esicEmployer, pt, ...(lwf.employee || lwf.employer ? { lwfEmployee: lwf.employee, lwfEmployer: lwf.employer } : {}) },
+    gross, totalDeductions, net, employerCost: r2(gross + reimbursementTotal + pfEmployer + edli + pfAdmin + esicEmployer + lwf.employer), shortfall, warnings, blocking,
   };
 }
 
@@ -439,6 +472,9 @@ export interface RunTotals {
   employerCost: number;
   reimbursements: number;
   tds: number;
+  /** Labour Welfare Fund; present only when some line carries it. */
+  lwfEmployee?: number;
+  lwfEmployer?: number;
 }
 
 export function totalsOf(lines: (Pick<PayrollLine, 'gross' | 'totalDeductions' | 'net' | 'employerCost' | 'statutory'> & Partial<Pick<PayrollLine, 'reimbursementTotal' | 'tds'>>)[]): RunTotals {
@@ -448,6 +484,10 @@ export function totalsOf(lines: (Pick<PayrollLine, 'gross' | 'totalDeductions' |
     t.reimbursements += l.reimbursementTotal || 0; t.tds += l.tds || 0;
     t.pfEmployee += l.statutory.pfEmployee; t.pfEmployer += l.statutory.pfEmployer;
     t.esicEmployee += l.statutory.esicEmployee; t.esicEmployer += l.statutory.esicEmployer; t.pt += l.statutory.pt;
+    if (l.statutory.lwfEmployee || l.statutory.lwfEmployer) {
+      t.lwfEmployee = (t.lwfEmployee || 0) + (l.statutory.lwfEmployee || 0);
+      t.lwfEmployer = (t.lwfEmployer || 0) + (l.statutory.lwfEmployer || 0);
+    }
   }
   (Object.keys(t) as (keyof RunTotals)[]).forEach((k) => { t[k] = r2(t[k]); });
   return t;

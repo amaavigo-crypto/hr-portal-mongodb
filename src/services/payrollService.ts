@@ -39,6 +39,13 @@ export const payrollService = {
   markPaid: (month: string, paidOn?: string, ref?: string) => post('mark-paid', { month, paidOn, ref }),
   deleteRun: (month: string) => post('delete-run', { month }),
   exportRun: (month: string, kind: string) => get('export', { month, kind }),
+  // statutory filings
+  statutoryDues: (month: string) => get('statutory-dues', { month }),
+  statutoryFile: (month: string, kind: 'ecr' | 'esi' | 'lwf') => get('statutory-file', { month, kind }),
+  statutoryTds: (fy: string, quarter: number) => get('statutory-tds', { fy, quarter: String(quarter) }),
+  challans: () => get('challans'),
+  saveChallan: (b: unknown) => post('save-challan', b),
+  deleteChallan: (id: string) => post('delete-challan', { id }),
   // salary revisions
   revisions: (uid?: string) => get('revisions', { uid }),
   saveRevision: (b: unknown) => post('save-revision', b),

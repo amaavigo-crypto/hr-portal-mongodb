@@ -108,6 +108,7 @@ export async function loadPayrollSettings(cid: string): Promise<{ settings: Payr
     ...base, ...d,
     pf: { ...base.pf, ...(d.pf || {}) }, esic: { ...base.esic, ...(d.esic || {}) },
     pt: { ...base.pt, ...(d.pt || {}), states: { ...(d.pt?.states || {}) } },
+    lwf: { enabled: d.lwf?.enabled === true, states: { ...(d.lwf?.states || {}) } },
     company: { ...base.company, ...(d.company || {}) },
     gratuity: { ...base.gratuity, ...(d.gratuity || {}) },
     claims: { ...base.claims, ...(d.claims || {}) },
