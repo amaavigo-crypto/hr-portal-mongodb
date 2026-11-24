@@ -236,6 +236,8 @@ export async function createApplication(
     if (n.message) patch.message = n.message;
     if (n.mobile) patch.mobile = n.mobile;
     await same.ref.update(patch);
+    // Applying again still gives the hiring flow its chance (it does nothing if the applicant is already in it).
+    await afterApplication(companyId, same.id);
     return { id: same.id, duplicate: true };
   }
 
@@ -256,9 +258,17 @@ export async function createApplication(
     updatedAt: now,
   };
   await ref.set(clean(doc));
-  // A company's hiring flow (if it has published one) takes the new applicant from here. Never blocks or fails the application.
-  try { await (await import('./flowApi.js')).flowStartHook(companyId, ref.id); } catch { /* the daily job picks it up */ }
+  await afterApplication(companyId, ref.id);
   return { id: ref.id, duplicate: false };
+}
+
+/**
+ * What happens after someone applies (new or again): the candidate overview forgets its saved list so the person shows up
+ * at once, and the company's hiring flow (if it has published one) takes the applicant from here. Never blocks or fails the application.
+ */
+async function afterApplication(companyId: string, applicationId: string): Promise<void> {
+  try { (await import('./serverAiEvaluation.js')).clearEvaluationCache(companyId); } catch { /* the overview refreshes on its own within a minute */ }
+  try { await (await import('./flowApi.js')).flowStartHook(companyId, applicationId); } catch { /* the daily job picks it up */ }
 }
 
 export async function importApplications(

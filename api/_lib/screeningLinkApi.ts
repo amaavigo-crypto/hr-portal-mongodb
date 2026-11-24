@@ -8,6 +8,7 @@
  *
  * The page shows the company profile and the job description, so the candidate knows who is calling before they answer.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { randomBytes } from 'node:crypto';
 import { adminDb } from './firebaseAdmin.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
@@ -24,7 +25,7 @@ const fail = (status: number, error: string): Result => ({ status, json: { succe
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const NO_RESPONSE_DAYS = 3;
 const isHr = (ctx: AuthContext) => ctx.isCompanyAdmin || MANAGE_PERMS.some((p) => ctx.perms.includes(p));
-const link = (origin: string | undefined, token: string) => `${(process.env.APP_BASE_URL || origin || '').replace(/\/$/, '')}/?screen=${token}`;
+const link = (origin: string | undefined, token: string) => `${(configuredSiteUrl() || origin || '').replace(/\/$/, '')}/?screen=${token}`;
 
 async function create(ctx: AuthContext, b: any, origin?: string): Promise<Result> {
   const cid = ctx.companyId!;

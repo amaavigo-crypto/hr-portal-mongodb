@@ -13,6 +13,7 @@
  * Approval uses the existing founder permission (req.founder_decide). HR steps use the same permissions as the rest of the hiring pipeline.
  * Everything lives in hiringItems (kind offer / offerTpl / hcost) and carries a companyId.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { flowAdvanceHook } from './flowApi.js';
 import { randomBytes } from 'node:crypto';
 import { adminDb } from './firebaseAdmin.js';
@@ -46,7 +47,7 @@ const isFounder = (ctx: AuthContext) => ctx.isCompanyAdmin || ctx.perms.includes
 
 // ------------------------------------------------------------------ small helpers
 
-const baseUrl = (origin?: string) => (origin || process.env.APP_BASE_URL || '').replace(/\/$/, '');
+const baseUrl = (origin?: string) => (origin || configuredSiteUrl() || '').replace(/\/$/, '');
 const offerLink = (token: string, origin?: string) => `${baseUrl(origin)}/?offer=${token}`;
 
 async function mail(to: string, name: string, subject: string, body: string, fromName?: string): Promise<boolean> {

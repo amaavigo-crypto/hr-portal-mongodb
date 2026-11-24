@@ -24,10 +24,11 @@
  * Records live in hiringItems: kind flow, flowRun (one per applicant, id flowrun_<applicationId>), flowTask.
  * Every move is written once and re-checked inside a transaction, so running the engine twice never does a step twice.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { adminDb } from './firebaseAdmin.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
 import { designationKey, getApplication, listApplications, updateApplication, type ApplicationDoc } from './recruitmentData.js';
-import { MANAGE_PERMS, getItem, listItems, putItem, scoreFor, whoIs, type Item } from './pipelineApi.js';
+import { MANAGE_PERMS, getItem, listItems, putItem, scoreFor, storeResumeRead, whoIs, type Item } from './pipelineApi.js';
 import { dispatchLiveEmail } from './serverEmail.js';
 import { summarise, type Scorecard } from '../../shared/interviewEngine.js';
 import {
@@ -85,7 +86,8 @@ export interface RunDoc extends Item {
 
 const FINAL = ['HIRED', 'REJECTED', 'STOPPED'];
 /** When an applicant reached us. Website-feed applications carry an older applied-on date as createdAt, so receivedAt is used when there is one. */
-const arrivedAt = (a: ApplicationDoc) => a.receivedAt || a.createdAt;
+/** When the applicant last arrived: applying again for the same job counts as arriving again. */
+const arrivedAt = (a: ApplicationDoc) => (a as any).reappliedAt || a.receivedAt || a.createdAt;
 const runId = (applicationId: string) => `flowrun_${applicationId}`;
 const taskId = (rid: string, stepId: string) => `ftask_${rid}_${stepId}`;
 
@@ -483,9 +485,27 @@ async function sendTemplate(cid: string, a: ApplicationDoc, s: FlowStep, hr: str
   return mailer({ to: a.email, name: a.name, fromName: company, subject: renderText(String(s.settings.subject || ''), vars), body: renderText(String(s.settings.body || ''), vars) });
 }
 
+/**
+ * "Score the resume": reads the resume file (if there is one) and works out the score out of 100, the same score the
+ * Scoring tab shows. When no score can be worked out the flow still moves on, with the reason written down, because a later
+ * "check the score" step already knows what to do when the score is unknown. It never claims a score that does not exist.
+ */
+async function scoreStep(cid: string, a: ApplicationDoc): Promise<Seen> {
+  let readProblem = '';
+  if (a.resumeUrl) {
+    try { const r = await storeResumeRead(cid, a); if (!r.ok && !r.kept) readProblem = r.error || 'The resume could not be read.'; }
+    catch (e: any) { readProblem = String(e?.message || 'The resume could not be read.').slice(0, 160); }
+  } else readProblem = 'There is no resume link on the application.';
+  let score: number | null = null;
+  try { score = (await scoreFor(cid, a)).score?.normalised ?? null; } catch { /* unknown */ }
+  try { (await import('./serverAiEvaluation.js')).clearEvaluationCache(cid); } catch { /* the overview refreshes on its own within a minute */ }
+  if (score === null) return { kind: 'move', result: 'done', note: `Could not score this applicant yet.${readProblem ? ` ${readProblem}` : ''} A later score check will ask HR.` };
+  return { kind: 'move', result: 'done', note: `Resume scored ${Math.round(score)} out of 100${readProblem ? ` (${readProblem})` : ''}.` };
+}
+
 async function observe(cid: string, run: RunDoc, flow: FlowDoc, step: FlowStep, a: ApplicationDoc): Promise<Seen> {
   switch (step.type) {
-    case 'ai_score': return { kind: 'move', result: 'done', note: 'Resume scored.' };
+    case 'ai_score': return scoreStep(cid, a);
     case 'condition': {
       const facts = await gatherFacts(cid, a, run);
       const r = evalCondition(step.settings, facts);
@@ -551,7 +571,7 @@ async function observe(cid: string, run: RunDoc, flow: FlowDoc, step: FlowStep, 
       const o = latestOffer(await listFor(cid, 'offer', a.id), a.id);
       if (o && isAutoMode(step) && o.onboardingId && o.status !== 'JOINED') {
         const auto = await import('./joinerAuto.js');
-        const notes = await auto.runJoinerSetup(cid, o.id, step.settings, step.ownerUid || '', process.env.APP_BASE_URL || undefined);
+        const notes = await auto.runJoinerSetup(cid, o.id, step.settings, step.ownerUid || '', configuredSiteUrl() || undefined);
         notes.forEach((n) => log(run, step.id, n, 'Automation'));
         if (notes.length) return { kind: 'wait', why: 'The joiner was set up. Waiting for the joining checklist to finish or for the first day at work.' };
         const fresh = latestOffer(await listFor(cid, 'offer', a.id), a.id) || o;
@@ -749,13 +769,17 @@ export async function advanceRun(cid: string, id: string): Promise<RunDoc | null
 export async function flowStartHook(cid: string, applicationId: string): Promise<void> {
   try {
     const a = await getApplication(cid, applicationId);
-    if (!a) return;
+    if (!a || a.status === 'Rejected') return;
     const pick = pickFlow(await families(cid), await flows(cid), a.designation, (await jobFlows(cid)).familyFor(a));
     if (!pick || !pick.flow.steps.length) return;
     if (pick.flow.activatedAt && arrivedAt(a) < pick.flow.activatedAt) return;   // applicants from before the flow was published are not pulled in by surprise
     await enroll(cid, a, pick.flow, pick.name);
     await advanceRun(cid, runId(a.id));
-  } catch (e: any) { console.warn('[Flow] start hook failed:', e?.message || e); }
+  } catch (e: any) {
+    console.warn('[Flow] start hook failed:', e?.message || e);
+    // If the applicant is already in the flow, say so on their row so HR sees it and can press Retry (the daily check tries again too).
+    try { await mutateRun(runId(applicationId), (f) => { if (FINAL.includes(f.status)) return false; f.status = 'STUCK'; f.stuckReason = `The app hit an error while starting this applicant (${String(e?.message || 'unknown').slice(0, 120)}). Press Retry.`; }); } catch { /* nothing more to do */ }
+  }
 }
 
 export async function flowAdvanceHook(cid: string, applicationId: string): Promise<void> {

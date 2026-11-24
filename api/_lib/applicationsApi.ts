@@ -7,6 +7,7 @@
  *
  * Shared by server.ts (Express) and the Vercel handlers in api/applications and api/apply.
  */
+import { configuredSiteUrl } from './appUrl.js';
 import { AuthError, authErrorResponse, requirePermission, type AuthContext } from './authContext.js';
 import {
   APPLICATION_STAGES,
@@ -52,7 +53,7 @@ const s = (v: unknown) => (v === undefined || v === null ? '' : String(v)).trim(
 const MAX_IMPORT_ROWS = 500;
 
 function appBase(origin?: string): string {
-  return (process.env.APP_URL || origin || 'http://localhost:3000').replace(/\/+$/, '');
+  return (configuredSiteUrl() || origin || 'http://localhost:3000').replace(/\/+$/, '');
 }
 
 function header(headers: Record<string, any>, name: string): string {

@@ -19,6 +19,7 @@
  *   APP_BASE_URL                              public address of this app; the redirect address is <APP_BASE_URL>/api/recruitment/google-callback
  *                                             (or set GOOGLE_REDIRECT_URI to use another address, which must match Google exactly)
  */
+import { configuredSiteUrl } from './appUrl.js';
 import crypto from 'node:crypto';
 import { adminDb } from './firebaseAdmin.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
@@ -109,8 +110,8 @@ export async function googleStatus(cid: string): Promise<{ platformReady: boolea
   return { platformReady, connected: !!s && s.status === 'CONNECTED', needsReconnect: !!s && s.status === 'NEEDS_RECONNECT', email: s?.email || '', connectedAt: s?.connectedAt || '' };
 }
 
-const redirectUri = (origin?: string) => env('GOOGLE_REDIRECT_URI') || `${(env('APP_BASE_URL') || origin || '').replace(/\/+$/, '')}/api/recruitment/google-callback`;
-const homeUrl = (origin?: string) => `${(env('APP_BASE_URL') || origin || '').replace(/\/+$/, '')}/`;
+const redirectUri = (origin?: string) => env('GOOGLE_REDIRECT_URI') || `${(configuredSiteUrl() || origin || '').replace(/\/+$/, '')}/api/recruitment/google-callback`;
+const homeUrl = (origin?: string) => `${(configuredSiteUrl() || origin || '').replace(/\/+$/, '')}/`;
 
 async function accessToken(cid: string): Promise<{ token?: string; error?: string; notConnected?: boolean }> {
   const hit = tokenCache.get(cid);
