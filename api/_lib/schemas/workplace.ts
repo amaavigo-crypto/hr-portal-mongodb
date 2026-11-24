@@ -42,4 +42,33 @@ export const workplace = {
     'A request moving through an approval chain. Approvers are fixed per step when it is sent. Status PENDING, APPROVED, REJECTED, CANCELLED.',
     defineSchema({ ...tenant, id: String, chainId: String, chainName: String, kind: reqStr, title: reqStr, details: String, amount: Number, requesterUid: reqStr, requesterName: String, status: oneOf(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']), current: Number, steps: [Mixed], history: [Mixed], createdAt: String }),
   ),
+  psaClients: collection(
+    'A client the company bills for project work.',
+    defineSchema({ ...tenant, id: String, name: reqStr, contactName: String, email: String, address: String, gstin: String, active: Boolean, createdAt: String, updatedAt: String }),
+  ),
+  psaProjects: collection(
+    'A project for a client. Billing TM (time and material, billed from approved timesheets at `defaultRate` or the person\'s rate in `roleRates`) or FIXED (`fixedFee`, billed in amounts up to that fee).',
+    defineSchema({
+      ...tenant, id: String, clientId: reqStr, name: reqStr, code: String, billing: oneOf(['TM', 'FIXED']), billable: Boolean, defaultRate: Number, roleRates: Mixed,
+      fixedFee: Number, fixedBilled: Number, budgetHours: Number, managerUid: String, status: oneOf(['ACTIVE', 'CLOSED']), startDate: String, endDate: String, createdAt: String, updatedAt: String,
+    }),
+  ),
+  psaAllocations: collection(
+    'Planned hours per week for a person on a project over a date range.',
+    defineSchema({ ...tenant, id: String, projectId: reqStr, uid: reqStr, hoursPerWeek: reqNum, from: reqStr, to: reqStr, createdBy: String, createdAt: String }),
+  ),
+  psaTimesheets: collection(
+    'One person\'s week (weekStart is the Monday). Status DRAFT, SUBMITTED, APPROVED, REJECTED. `invoiced` maps projectId to the invoice that billed it.',
+    defineSchema({
+      ...tenant, id: String, uid: reqStr, name: String, weekStart: reqStr, status: oneOf(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED']), entries: [Mixed], invoiced: Mixed,
+      submittedAt: String, decidedBy: String, decidedByName: String, decidedAt: String, decisionNote: String, updatedAt: String,
+    }),
+  ),
+  psaInvoices: collection(
+    'An invoice to a client. Lines come from approved timesheets (sheetIds are locked to the invoice) or fixed-fee amounts. Status DRAFT, SENT, PAID, VOID.',
+    defineSchema({
+      ...tenant, id: String, number: reqStr, clientId: reqStr, clientName: String, from: String, to: String, lines: [Mixed], taxPct: Number, subtotal: Number, tax: Number, total: Number,
+      status: oneOf(['DRAFT', 'SENT', 'PAID', 'VOID']), issueDate: String, dueDate: String, notes: String, createdBy: String, createdAt: String, paidAt: String,
+    }),
+  ),
 };

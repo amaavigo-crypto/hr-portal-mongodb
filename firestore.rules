@@ -550,6 +550,11 @@ service cloud.firestore {
     match /savedReports/{id} { allow read, write: if false; }
     match /approvalChains/{id} { allow read, write: if false; }
     match /approvalRequests/{id} { allow read, write: if false; }
+    match /psaClients/{id} { allow read, write: if false; }
+    match /psaProjects/{id} { allow read, write: if false; }
+    match /psaAllocations/{id} { allow read, write: if false; }
+    match /psaTimesheets/{id} { allow read, write: if false; }
+    match /psaInvoices/{id} { allow read, write: if false; }
     match /wbConsent/{id} { allow read, write: if false; }
     match /wbSessions/{id} { allow read, write: if false; }
     match /wbDaily/{id} { allow read, write: if false; }

@@ -9,6 +9,7 @@ const ROUTERS: Record<string, () => Promise<(r: WorkReq) => Promise<Result>>> = 
   'config-': async () => (await import('./configApi.js')).routeConfig,
   'approvals-': async () => (await import('./approvalsApi.js')).routeApprovals,
   'assets-': async () => (await import('./assetApi.js')).routeAssets,
+  'psa-': async () => (await import('./psaApi.js')).routePsa,
   'engage-': async () => (await import('./engageApi.js')).routeEngage,
 };
 
