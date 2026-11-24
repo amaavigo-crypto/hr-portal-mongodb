@@ -3,15 +3,15 @@ import { __useFakeAdmin } from '../api/_lib/firebaseAdmin.ts';
 import { FakeFirestore } from './fakeFirestore.ts';
 import { routeLeave } from '../api/_lib/leaveApi.ts';
 import { routeAssistant } from '../api/_lib/assistantApi.ts';
-import { istToday } from '../shared/leaveEngine.ts';
+import { istToday, weekday } from '../shared/leaveEngine.ts';
 import {
-  LEAVE_AGENT_TOOLS, addDays, cleanRange, cleanUid, countBy, matchEmployees, mayUseTool, roleLine, summarizeAttendance, toolsFor,
+  LEAVE_AGENT_TOOLS, matchLeaveType, proposalLive, addDays, cleanRange, cleanUid, countBy, matchEmployees, mayUseTool, roleLine, summarizeAttendance, toolsFor,
 } from '../shared/leaveAgentTools.ts';
 
 // ------------------------------------------------------------------ pure parts
 
 const names = (w: any) => toolsFor(w).map((t) => t.name);
-assert.deepEqual(names({ perms: [] }), ['get_pending_approvals', 'get_team_calendar', 'get_attendance_summary'], 'an employee gets the everyone tools only');
+assert.deepEqual(names({ perms: [] }), ['get_pending_approvals', 'get_team_calendar', 'get_attendance_summary', 'propose_leave_decision', 'propose_attendance_decision', 'propose_apply_leave'], 'an employee gets the everyone tools only');
 assert.ok(!names({ perms: ['leave.report'] }).includes('find_employee'), 'report access does not unlock people look-up');
 assert.ok(names({ perms: ['leave.report'] }).includes('get_leave_exceptions'));
 assert.equal(names({ perms: ['leave.manage'] }).length, LEAVE_AGENT_TOOLS.length, 'HR gets every tool');
@@ -60,16 +60,17 @@ const tokenFor = (uid: string, perms: string[] = []) =>
   ({ authorization: `Bearer ${Buffer.from(JSON.stringify({ uid, email: `${uid}@acme.com`, cid: CID, cs: 'ACTIVE', perms, adm: false })).toString('base64')}` });
 const HR = tokenFor('u_hr', ['leave.manage', 'leave.report']);
 const EMP = tokenFor('u_emp');
+const MGR = tokenFor('u_mgr');
 const OTHER_CO = { authorization: `Bearer ${Buffer.from(JSON.stringify({ uid: 'u_x', email: 'x@other.com', cid: 'c2', cs: 'ACTIVE', perms: ['leave.manage'], adm: false })).toString('base64')}` };
 
 fdb.seed('companies', CID, { name: 'Acme Ltd' });
 fdb.seed('companies', 'c2', { name: 'Other Ltd' });
-for (const [uid, name, cid] of [['u_hr', 'Hema HR', CID], ['u_emp', 'Esha Employee', CID], ['u_other', 'Omar Other', CID], ['u_x', 'Xavier Outsider', 'c2']]) {
+for (const [uid, name, cid] of [['u_mgr', 'Manu Manager', CID], ['u_hr', 'Hema HR', CID], ['u_emp', 'Esha Employee', CID], ['u_other', 'Omar Other', CID], ['u_x', 'Xavier Outsider', 'c2']]) {
   fdb.seed('employees', uid, { companyId: cid, authUid: uid, name, email: `${uid}@acme.com`, active: true, createdAt: '2020-01-01T00:00:00Z', departmentName: 'Ops' });
 }
 const leave = async (headers: any, method: string, action: string, body: any = {}, query: any = {}) => routeLeave({ method, action, headers, body, query, ip: '1.2.3.4' });
 assert.equal((await leave(HR, 'POST', 'apply-starter', { yearStartMonth: 4 })).status, 200);
-await leave(HR, 'POST', 'save-profiles', { profiles: [{ uid: 'u_emp', joinDate: '2020-01-01' }, { uid: 'u_other', joinDate: '2020-01-01' }, { uid: 'u_hr', joinDate: '2020-01-01' }] });
+await leave(HR, 'POST', 'save-profiles', { profiles: [{ uid: 'u_emp', managerUid: 'u_mgr', joinDate: '2020-01-01' }, { uid: 'u_other', managerUid: 'u_mgr', joinDate: '2020-01-01' }, { uid: 'u_mgr', joinDate: '2020-01-01' }, { uid: 'u_hr', joinDate: '2020-01-01' }] });
 await leave(HR, 'POST', 'run-accrual');
 
 // A scripted "model": the first reply asks for the given tool calls, the next one answers with a fixed sentence.
@@ -77,23 +78,27 @@ process.env.OPENAI_API_KEY = 'test-key';
 const realFetch = globalThis.fetch;
 let seenTools: string[] = [];
 let toolReplies: any[] = [];
-const script = (calls: { name: string; args?: any }[]) => {
+type Call = { name: string; args?: any };
+/** `rounds[i]` gets the tool results so far and returns the next calls (or null to let the model answer). A plain array is one round. */
+const script = (rounds: Call[] | ((replies: any[]) => Call[] | null)[]) => {
   toolReplies = [];
+  const fns: ((replies: any[]) => Call[] | null)[] = Array.isArray(rounds) && typeof rounds[0] === 'function' ? (rounds as any) : [() => rounds as Call[]];
+  let round = 0;
   globalThis.fetch = (async (_url: any, init: any) => {
     const body = JSON.parse(init.body);
     seenTools = (body.tools || []).map((t: any) => t.function.name);
     const last = body.messages[body.messages.length - 1];
-    let message: any;
-    if (last.role === 'tool') {
-      toolReplies = body.messages.filter((m: any) => m.role === 'tool').map((m: any) => JSON.parse(m.content));
-      message = { role: 'assistant', content: 'Here is what I found.' };
-    } else {
-      message = { role: 'assistant', content: null, tool_calls: calls.map((c, i) => ({ id: `t${i}`, type: 'function', function: { name: c.name, arguments: JSON.stringify(c.args || {}) } })) };
-    }
+    if (last.role !== 'tool') round = 0;
+    toolReplies = body.messages.filter((m: any) => m.role === 'tool').map((m: any) => JSON.parse(m.content));
+    const next = round < fns.length ? fns[round++](toolReplies) : null;
+    const message = next && next.length
+      ? { role: 'assistant', content: null, tool_calls: next.map((c, i) => ({ id: `t${round}_${i}`, type: 'function', function: { name: c.name, arguments: JSON.stringify(c.args || {}) } })) }
+      : { role: 'assistant', content: 'Here is what I found.' };
     return new Response(JSON.stringify({ choices: [{ message }] }), { status: 200, headers: { 'content-type': 'application/json' } });
   }) as any;
 };
 const ask = async (headers: any, question: string) => routeAssistant({ method: 'POST', action: 'ask', headers, query: {}, body: { question } });
+const act = async (headers: any, action: 'confirm' | 'dismiss', id: string) => routeAssistant({ method: 'POST', action, headers, query: {}, body: { id } });
 
 // 1. an employee is only told about the everyone tools, and a forced call to an HR tool is refused by the server
 script([{ name: 'find_employee', args: { query: 'omar' } }, { name: 'get_employee_leave_ledger', args: { uid: 'u_other' } }]);
@@ -136,6 +141,94 @@ assert.match(toolReplies[1].error, /find_employee/, 'a malformed uid is rejected
 script([{ name: 'find_employee', args: { query: 'esha' } }]);
 r = await ask(OTHER_CO, 'Find Esha');
 assert.equal(toolReplies[0].matches?.length ?? 0, 0, 'no cross-company results');
+
+// ------------------------------------------------------------------ stage 2: propose, confirm, execute once
+
+const nextWed = (() => { let d = addDays(istToday(), 14); while (weekday(d) !== 3) d = addDays(d, 1); return d; })();
+const requestsOf = async (uid: string) => (await leave(HR, 'GET', 'all-requests', {}, { uid })).json.items as any[];
+
+// 7. an employee applies for leave through the agent: a card first, nothing saved until Confirm
+script([{ name: 'propose_apply_leave', args: { leaveType: 'casual', from: nextWed, to: nextWed, reason: 'Family function' } }]);
+r = await ask(EMP, `Apply casual leave on ${nextWed}`);
+assert.equal(r.json.proposals.length, 1, JSON.stringify(toolReplies));
+const applyCard = r.json.proposals[0];
+assert.match(applyCard.title, /Casual/i);
+assert.ok(applyCard.lines.some((l: string) => /Days: 1/.test(l)), `server works out the days: ${applyCard.lines}`);
+assert.equal((await requestsOf('u_emp')).length, 0, 'nothing is applied before Confirm');
+// someone else cannot confirm it
+assert.equal((await act(MGR, 'confirm', applyCard.id)).status, 404, 'only the person it was prepared for can confirm');
+assert.equal((await requestsOf('u_emp')).length, 0);
+// confirm runs it once, a second click does not apply again
+let c1 = await act(EMP, 'confirm', applyCard.id);
+assert.equal(c1.json.status, 'DONE', JSON.stringify(c1.json));
+const c2 = await act(EMP, 'confirm', applyCard.id);
+assert.equal(c2.json.status, 'DONE');
+const mine = await requestsOf('u_emp');
+assert.equal(mine.length, 1, 'confirming twice applies once');
+assert.equal(mine[0].status, 'PENDING');
+const leaveId = mine[0].id;
+
+// a bad leave type or date is refused with a reason, not guessed
+script([{ name: 'propose_apply_leave', args: { leaveType: 'sabbatical', from: nextWed } }, { name: 'propose_apply_leave', args: { leaveType: 'casual', from: 'tomorrow-ish' } }]);
+r = await ask(EMP, 'Apply sabbatical');
+assert.equal(r.json.proposals.length, 0);
+assert.ok(toolReplies[0].leaveTypes?.length > 0 && /leave type/i.test(toolReplies[0].error));
+assert.match(toolReplies[1].error, /dates/i);
+
+// 8. the manager sees it, and cannot be tricked into deciding something that is not theirs
+script([() => [{ name: 'get_pending_approvals' }]]);
+r = await ask(MGR, 'What is waiting for me?');
+assert.equal(toolReplies[0].leaveRequestsWaiting, 1);
+assert.equal(toolReplies[0].leaveRequests[0].requestId, leaveId);
+assert.equal(toolReplies[0].leaveRequests[0].employee, 'Esha Employee');
+
+script([{ name: 'propose_leave_decision', args: { requestId: leaveId, decision: 'APPROVE' } }]);
+r = await ask(EMP, 'Approve my own leave');
+assert.equal(r.json.proposals.length, 0, 'an employee cannot propose deciding their own request');
+assert.match(toolReplies[0].error, /not waiting/);
+
+script([{ name: 'propose_leave_decision', args: { requestId: 'made-up-id', decision: 'APPROVE' } }, { name: 'propose_leave_decision', args: { requestId: leaveId, decision: 'REJECT' } }]);
+r = await ask(MGR, 'Reject it');
+assert.equal(r.json.proposals.length, 0);
+assert.match(toolReplies[0].error, /not waiting/, 'an id that is not in the approvals list is refused');
+assert.match(toolReplies[1].error, /reason/i, 'a rejection needs a reason');
+
+// approve: card, then dismiss does nothing, a fresh card then confirms
+script([{ name: 'propose_leave_decision', args: { requestId: leaveId, decision: 'APPROVE', comment: 'Enjoy' } }]);
+r = await ask(MGR, 'Approve Esha\'s leave');
+const dec = r.json.proposals[0];
+assert.match(dec.title, /Approve/);
+assert.ok(dec.lines.some((l: string) => /Esha Employee/.test(l)));
+assert.equal((await requestsOf('u_emp'))[0].status, 'PENDING', 'still pending until the manager confirms');
+assert.equal((await act(MGR, 'dismiss', dec.id)).json.status, 'DISMISSED');
+assert.equal((await act(MGR, 'confirm', dec.id)).json.status, 'DISMISSED', 'a dismissed card cannot be confirmed');
+assert.equal((await requestsOf('u_emp'))[0].status, 'PENDING');
+
+script([{ name: 'propose_leave_decision', args: { requestId: leaveId, decision: 'APPROVE' } }]);
+r = await ask(MGR, 'Approve it');
+const dec2 = r.json.proposals[0];
+// an old card expires
+await fdb.collection('agentProposals').doc(dec2.id).update({ expiresAt: new Date(Date.now() - 1000).toISOString() });
+assert.equal((await act(MGR, 'confirm', dec2.id)).json.status, 'EXPIRED');
+assert.equal((await requestsOf('u_emp'))[0].status, 'PENDING', 'an expired card does nothing');
+
+script([{ name: 'propose_leave_decision', args: { requestId: leaveId, decision: 'APPROVE', comment: 'Enjoy' } }]);
+r = await ask(MGR, 'Approve it again');
+const dec3 = r.json.proposals[0];
+const ok3 = await act(MGR, 'confirm', dec3.id);
+assert.equal(ok3.json.status, 'DONE', JSON.stringify(ok3.json));
+const afterApprove = (await requestsOf('u_emp'))[0];
+const approvals = (afterApprove.events || []).filter((e: any) => /Approved/.test(e.message));
+assert.equal(approvals.length, 1, 'approved exactly once');
+assert.equal((await act(MGR, 'confirm', dec3.id)).json.status, 'DONE');
+assert.equal(((await requestsOf('u_emp'))[0].events || []).filter((e: any) => /Approved/.test(e.message)).length, 1, 'a second confirm does not approve again');
+assert.equal((await act(OTHER_CO, 'confirm', dec3.id)).status, 404, 'another company cannot touch it');
+
+// matchLeaveType and proposalLive on their own
+assert.equal(matchLeaveType([{ name: 'Casual leave', code: 'CL' }, { name: 'Sick leave', code: 'SL' }], 'cl')?.code, 'CL');
+assert.equal(matchLeaveType([{ name: 'Casual leave', code: 'CL' }, { name: 'Sick leave', code: 'SL' }], 'leave'), null, 'an ambiguous name matches nothing');
+assert.equal(proposalLive({ status: 'PENDING', expiresAt: new Date(Date.now() + 5000).toISOString() }), true);
+assert.equal(proposalLive({ status: 'DONE', expiresAt: new Date(Date.now() + 5000).toISOString() }), false);
 
 globalThis.fetch = realFetch;
 console.log('leave agent ok');

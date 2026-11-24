@@ -38,5 +38,6 @@ export const people = {
   wbAudit: collection('Audit of HR views of individual game results.', defineSchema({ ...tenant, at: String })),
 
   assistantLogs: collection('Ask HR questions and answers (for quality and cost review).', defineSchema({ ...tenant, uid: String, at: String })),
+  agentProposals: collection('Actions Ask HR prepared for a person to confirm (approve/reject, apply leave): status, params, result. Server-only.', defineSchema({ ...tenant, uid: reqStr, action: String, status: oneOf(['PENDING', 'EXECUTING', 'DONE', 'FAILED', 'DISMISSED']) })),
   assistantUsage: collection('Ask HR usage counters per company and month.', defineSchema({ ...tenant })),
 };

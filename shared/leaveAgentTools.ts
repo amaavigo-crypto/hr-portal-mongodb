@@ -2,8 +2,9 @@
  * Leave & Attendance agent: the tool registry and the number-crunching that must NOT be left to the model.
  * Pure code (no database, no network) so it is tested on its own (tests/leaveAgent.test.ts).
  *
- * Stage 1 is read-only: nothing here can change a record. Write tools (approve, reject, mark attendance ...) arrive
- * in a later stage and will only ever create a proposal that the person confirms with a separate click.
+ * Read tools look things up. Proposal tools (kind 'propose') never change a record either: they only create a
+ * proposal that the person confirms with a separate click on a card (see api/_lib/assistantApi.ts, `confirm`).
+ * The card's wording is built by the server from the real record, never from what the model says.
  *
  * `access` decides which tools the model is even told about for this person:
  *   all     every signed-in employee. The route behind the tool already limits the data to what that person may see
@@ -19,6 +20,7 @@ export type LeaveToolAccess = 'all' | 'report' | 'manage';
 
 export interface LeaveAgentTool {
   name: string;
+  kind: 'read' | 'propose';
   access: LeaveToolAccess;
   description: string;
   parameters: Record<string, any>;
@@ -30,39 +32,59 @@ const DATE = { type: 'string', description: 'YYYY-MM-DD' };
 
 export const LEAVE_AGENT_TOOLS: LeaveAgentTool[] = [
   {
-    name: 'get_pending_approvals', access: 'all',
+    name: 'get_pending_approvals', kind: 'read', access: 'all',
     description: 'Leave requests and attendance corrections waiting for a decision from THIS person (a manager sees their team, HR sees everyone). Each item: who, leave type, dates, days, how long it has waited and whether it is overdue. Empty if this person approves nobody.',
     parameters: none,
   },
   {
-    name: 'get_team_calendar', access: 'all',
+    name: 'get_team_calendar', kind: 'read', access: 'all',
     description: 'Who is on leave (approved or pending) in a date range, plus holidays. A manager sees their team, HR sees everyone, an employee sees their own team. Range is at most 31 days; without dates it covers today and the next 14 days.',
     parameters: obj({ from: DATE, to: DATE }),
   },
   {
-    name: 'get_attendance_summary', access: 'all',
+    name: 'get_attendance_summary', kind: 'read', access: 'all',
     description: 'Attendance counts (present, late, absent, half day, on leave, incomplete) per person for the people this person may see, for a range of at most 31 days, with the people who have the most late or absent days. Without dates it covers the last 7 days. Optional uid narrows it to one person (from find_employee).',
     parameters: obj({ from: DATE, to: DATE, uid: { type: 'string', description: 'Optional: one employee uid from find_employee.' } }),
   },
   {
-    name: 'get_leave_exceptions', access: 'report',
+    name: 'get_leave_exceptions', kind: 'read', access: 'report',
     description: 'Open leave and attendance exceptions and flags that HR needs to look at, most severe first, with the total number open.',
     parameters: none,
   },
   {
-    name: 'get_leave_requests_overview', access: 'report',
+    name: 'get_leave_requests_overview', kind: 'read', access: 'report',
     description: 'Company-wide leave requests for a date range, with counts per status and the most recent requests. Optional filters: status (PENDING, APPROVED, REJECTED, WITHDRAWN, CANCELLED, INFO_REQUESTED), uid, from, to.',
     parameters: obj({ status: { type: 'string' }, uid: { type: 'string' }, from: DATE, to: DATE }),
   },
   {
-    name: 'find_employee', access: 'manage',
+    name: 'find_employee', kind: 'read', access: 'manage',
     description: 'Finds employees by name, employee id, email or department. Returns uid, name, employee id, department and title. Use it first when another tool needs a person\'s uid.',
     parameters: obj({ query: { type: 'string' } }, ['query']),
   },
   {
-    name: 'get_employee_leave_ledger', access: 'manage',
+    name: 'get_employee_leave_ledger', kind: 'read', access: 'manage',
     description: 'The most recent leave balance entries (credits, usage, adjustments) for one employee. Needs the uid from find_employee.',
     parameters: obj({ uid: { type: 'string' } }, ['uid']),
+  },
+  {
+    name: 'propose_leave_decision', kind: 'propose', access: 'all',
+    description: 'Prepares approving or rejecting one leave request (or a cancellation request) that is waiting for THIS person. Needs the requestId from get_pending_approvals. A rejection needs a reason that the person gave you. This only shows a confirm card; nothing is decided until the person presses Confirm.',
+    parameters: obj({ requestId: { type: 'string' }, decision: { type: 'string', enum: ['APPROVE', 'REJECT'] }, comment: { type: 'string', description: 'Reason or note. Required for REJECT.' } }, ['requestId', 'decision']),
+  },
+  {
+    name: 'propose_attendance_decision', kind: 'propose', access: 'all',
+    description: 'Prepares approving or rejecting one attendance correction that is waiting for THIS person. Needs the correctionId from get_pending_approvals. A rejection needs a reason that the person gave you. This only shows a confirm card; nothing is decided until the person presses Confirm.',
+    parameters: obj({ correctionId: { type: 'string' }, decision: { type: 'string', enum: ['APPROVE', 'REJECT'] }, comment: { type: 'string', description: 'Reason or note. Required for REJECT.' } }, ['correctionId', 'decision']),
+  },
+  {
+    name: 'propose_apply_leave', kind: 'propose', access: 'all',
+    description: 'Prepares a leave application for the signed-in person themselves (never for someone else). The server checks the dates, notice and balance and works out the days. This only shows a confirm card; nothing is sent until the person presses Confirm. Use only when the person clearly asked to apply and gave the leave type and dates; ask for what is missing first.',
+    parameters: obj({
+      leaveType: { type: 'string', description: 'Leave type name or code as shown by get_leave_balances, e.g. Casual leave or CL.' },
+      from: DATE, to: { type: 'string', description: 'YYYY-MM-DD. Same as from for a single day.' },
+      halfDay: { type: 'string', enum: ['none', 'first_half', 'second_half'], description: 'Only for a single day.' },
+      reason: { type: 'string' },
+    }, ['leaveType', 'from']),
   },
 ];
 
@@ -175,4 +197,36 @@ export function matchEmployees<T extends { name?: string; empId?: string; email?
     .sort((a, b) => b.score - a.score || String(a.p.name).localeCompare(String(b.p.name)))
     .slice(0, limit)
     .map((x) => x.p);
+}
+
+// ------------------------------------------------------------------ proposals (the confirm cards)
+
+export type ProposalAction = 'leave_decision' | 'regularization_decision' | 'apply_leave';
+export const PROPOSAL_TTL_MS = 30 * 60_000;
+
+/** What the panel shows. Built by the server from the real record. */
+export interface ProposalCard {
+  id: string;
+  action: ProposalAction;
+  title: string;
+  lines: string[];
+  confirmLabel: string;
+  /** Rejections and the like get a red button. */
+  destructive?: boolean;
+}
+
+export const proposalLive = (p: { status?: string; expiresAt?: string }, now = Date.now()): boolean =>
+  p.status === 'PENDING' && !!p.expiresAt && Date.parse(p.expiresAt) > now;
+
+export const dateSpan = (from: string, to: string) => (from === to ? from : `${from} to ${to}`);
+export const dayWord = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
+
+/** Finds the leave type the person meant by code or name. Null when nothing, or more than one thing, fits. */
+export function matchLeaveType<T extends { name?: string; code?: string }>(types: T[], query: unknown): T | null {
+  const q = cleanText(query, 60).toLowerCase();
+  if (!q) return null;
+  const exact = types.filter((t) => String(t.code || '').toLowerCase() === q || String(t.name || '').toLowerCase() === q);
+  if (exact.length === 1) return exact[0];
+  const loose = types.filter((t) => String(t.name || '').toLowerCase().includes(q) || q.includes(String(t.name || '').toLowerCase()));
+  return loose.length === 1 ? loose[0] : null;
 }

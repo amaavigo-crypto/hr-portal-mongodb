@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database } from 'lucide-react';
-import { assistantService, type AssistantSource } from '../../services/assistantService';
+import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database, Check, Loader2 } from 'lucide-react';
+import { assistantService, type AssistantSource, type ProposalCard } from '../../services/assistantService';
 
-interface Msg { role: 'user' | 'assistant'; content: string; id?: string; sources?: AssistantSource[]; unsure?: boolean; rated?: boolean | null; sent?: string; question?: string }
+/** A prepared action shown as a card. `state` tracks the person's click; the server has the final say. */
+type CardState = ProposalCard & { state?: 'working' | 'DONE' | 'FAILED' | 'EXPIRED' | 'DISMISSED'; message?: string };
+interface Msg { role: 'user' | 'assistant'; content: string; id?: string; sources?: AssistantSource[]; unsure?: boolean; rated?: boolean | null; sent?: string; question?: string; proposals?: CardState[] }
 
 /** Other parts of the app (the Ctrl+K search) open the panel with a question by firing this event. */
 export const ASK_HR_EVENT = 'ask-hr:open';
@@ -22,7 +24,9 @@ const KEY = (uid: string) => `ask-hr-chat:${uid}`;
 export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isAdmin?: boolean }> = ({ userId, perms, isAdmin }) => {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>(() => {
-    try { const v = JSON.parse(localStorage.getItem(KEY(userId)) || '[]'); return Array.isArray(v) ? v.slice(-20) : []; } catch { return []; }
+    try { const v = JSON.parse(localStorage.getItem(KEY(userId)) || '[]');
+      // A card that was mid-click when the page closed goes back to a plain card; the server decides if it is still valid.
+      return Array.isArray(v) ? v.slice(-20).map((m: Msg) => (m.proposals ? { ...m, proposals: m.proposals.map((c) => (c.state === 'working' ? { ...c, state: undefined } : c)) } : m)) : []; } catch { return []; }
   });
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,7 +48,7 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
     setBusy(true);
     try {
       const r = await assistantService.ask(question, history);
-      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, id: r.id, sources: r.sources || [], unsure: r.unsure, question }]);
+      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, id: r.id, sources: r.sources || [], unsure: r.unsure, question, proposals: r.proposals || [] }]);
     } catch (e: any) {
       setMsgs((m) => [...m, { role: 'assistant', content: e?.message || 'Something went wrong. Please try again.', unsure: true, question }]);
     } finally { setBusy(false); }
@@ -59,6 +63,22 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
     window.addEventListener(ASK_HR_EVENT, h);
     return () => window.removeEventListener(ASK_HR_EVENT, h);
   });
+
+  const setCard = (i: number, cardId: string, patch: Partial<CardState>) =>
+    setMsgs((all) => all.map((x, j) => (j === i ? { ...x, proposals: (x.proposals || []).map((c) => (c.id === cardId ? { ...c, ...patch } : c)) } : x)));
+  const confirmCard = async (i: number, cardId: string) => {
+    setCard(i, cardId, { state: 'working' });
+    try {
+      const r = await assistantService.confirm(cardId);
+      setCard(i, cardId, { state: (r.status === 'DONE' ? 'DONE' : r.status === 'EXPIRED' ? 'EXPIRED' : r.status === 'DISMISSED' ? 'DISMISSED' : 'FAILED'), message: r.message });
+    } catch (e: any) {
+      setCard(i, cardId, { state: 'FAILED', message: e?.message || 'Could not complete this. Please try again.' });
+    }
+  };
+  const dismissCard = (i: number, cardId: string) => {
+    setCard(i, cardId, { state: 'DISMISSED', message: 'Dismissed. Nothing was changed.' });
+    void assistantService.dismiss(cardId).catch(() => undefined);
+  };
 
   const rate = (i: number, helpful: boolean) => {
     const m = msgs[i];
@@ -101,7 +121,7 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
           <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
             {msgs.length === 0 && (
               <div>
-                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, holidays, approvals, your team or company policies. I only show what your role can see, and I can't approve or change anything yet.</p>
+                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, holidays, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals and leave applications for you to confirm.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
                 </div>
@@ -112,6 +132,22 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
             ) : (
               <div key={i} className="max-w-[92%]">
                 <p className="whitespace-pre-wrap rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{m.content}</p>
+                {(m.proposals || []).map((c) => (
+                  <div key={c.id} className={`mt-2 rounded-xl border bg-white p-3 text-sm ${c.state === 'DONE' ? 'border-emerald-300' : c.state === 'FAILED' ? 'border-red-300' : 'border-orange-300'}`}>
+                    <p className="font-bold text-slate-900">{c.title}</p>
+                    <ul className="mt-1 space-y-0.5 text-xs text-slate-600">{c.lines.map((l, k) => <li key={k}>{l}</li>)}</ul>
+                    {!c.state || c.state === 'working' ? (
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <button type="button" disabled={c.state === 'working'} onClick={() => void confirmCard(i, c.id)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60 cursor-pointer ${c.destructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#FA7014] hover:bg-[#e5650f]'}`}>
+                          {c.state === 'working' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}{c.confirmLabel}
+                        </button>
+                        <button type="button" disabled={c.state === 'working'} onClick={() => dismissCard(i, c.id)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-60 cursor-pointer">Dismiss</button>
+                      </div>
+                    ) : (
+                      <p className={`mt-2 text-xs font-semibold ${c.state === 'DONE' ? 'text-emerald-700' : c.state === 'FAILED' ? 'text-red-700' : 'text-slate-500'}`}>{c.message || (c.state === 'DONE' ? 'Done.' : '')}</p>
+                    )}
+                  </div>
+                ))}
                 {m.sources && m.sources.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {m.sources.map((s, k) => (
