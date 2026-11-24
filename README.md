@@ -287,7 +287,7 @@ Short games for a break (3 to 8 minutes) that also give HR a skill picture for t
 
 A floating "Ask HR" button (all roles) opens a chat panel; Ctrl+K search also offers "Ask HR: ...". Read-only: it answers about the person's own leave, holidays, notice period, payslips and the published policies they may read. Code: `api/_lib/assistantApi.ts` (tools run as the caller through the existing routers), `shared/assistantEngine.ts`, `src/components/assistant/`. Logs in `assistantLogs`, daily counts in `assistantUsage` (server-only). Env: `OPENAI_ASSISTANT_MODEL` (optional), `ASSISTANT_DAILY_LIMIT` (per person, default 30); it also counts against `AI_MONTHLY_CALLS`. Test: `npx tsx tests/assistant.engine.test.ts`.
 
-### Leave & Attendance agent (stages 1 and 2)
+### Leave & Attendance agent (stages 1 and 2; stage 3 below)
 
 The same Ask HR panel also answers for managers and HR, with the tools their permissions unlock (registry and counting in `shared/leaveAgentTools.ts`, wiring in `assistantApi.ts`). Look-ups are read-only. Actions are propose-then-confirm (below).
 
@@ -319,6 +319,30 @@ Same Ask HR panel and the same propose-then-confirm flow as the Leave agent; the
 | `propose_exit_clearance` | everyone (only the department owner or HR; waive is HR only; dues need an amount and a note) | `exit-clear` on confirm |
 
 Resigning, withdrawing a resignation, issuing letters and identity approvals are deliberately not available to the agent. Test: `npx tsx tests/peopleAgent.test.ts`.
+
+### Leave stage 3: HR actions (HR and company admin only)
+
+Three more propose-then-confirm tools in `shared/leaveAgentTools.ts` (registry and checks) and `api/_lib/leaveAgentHr.ts` (runners). Only people with `leave.manage` (or a company admin) are told about them; the leave route re-checks that permission when the card is confirmed, so a person who lost it between card and click changes nothing.
+
+| Tool | Rules enforced before a card exists, and again at Confirm | Route behind it |
+|---|---|---|
+| `propose_mark_attendance` | one employee, one day (today back to 62 days), both times as HH:MM and a reason; refused for a payroll-locked month; the card shows what is recorded now | `mark-attendance` (plus an audit entry, `ATTENDANCE_MARKED_ASK_HR`) |
+| `propose_resolve_exception` | must be an open exception the person can act on (payroll flags stay with payroll managers); a resolution is required | `exception-resolve` |
+| `propose_adjust_balance` | one employee, one leave type that has a balance, whole or half days, at most 30 at a time, a reason; a deduction cannot take the balance below zero; the card shows balance before and after | `adjust` (audited as `BALANCE_ADJUSTED`; the ledger note starts with "Via Ask HR:") |
+
+Nobody can change their own attendance, balance or exceptions this way (checked at propose and at Confirm). Bigger jobs (more days, older attendance, locked months) stay on the screens. Test: `npx tsx tests/leaveAgentHr.test.ts`.
+
+### Daily watcher (the agent speaks first)
+
+`GET /api/assistant/daily?key=$CRON_SECRET` (or `Authorization: Bearer $CRON_SECRET`, or `x-cron-key`), once a day from cronjob.org like the other daily jobs. No AI model is used, so it costs nothing. It only reads records and sends messages; it never changes a record. Rules are in `shared/agentWatcher.ts`, delivery in `api/_lib/agentWatcher.ts`.
+
+| Who | What they are told about |
+|---|---|
+| Managers | leave requests waiting on them for more than 2 days (their own team, manager step only) |
+| HR (the emails listed as the HR mailbox in Leave setup, the same list the leave escalations use) | open attendance exceptions (late marks, missing check-outs, leave next to a check-in), exit clearance still pending when the last working day is within 7 days or has passed, overdue onboarding tasks |
+| Everyone | their own overdue onboarding tasks (tasks assigned to them) |
+
+One digest per person per day, delivered three ways: the bell in Leave, an email, and a card at the top of the Ask HR panel (the launcher shows a count) until they press "Got it". A person with nothing to look at gets nothing. Running it twice in a day sends nothing twice (`agentWatchLog`, one entry per person per day). Add `&dry=1` to see what would be sent without sending or saving anything. Suspended companies are skipped. The same stuck item is raised again each day until it is dealt with; schedule the job on weekdays only if you prefer. The older leave cron (`/api/leave/cron`) still sends its one reminder to a manager and its escalation to HR; the watcher is a daily summary on top of that, not a replacement. Test: `npx tsx tests/agentWatcher.test.ts`.
 
 ## Flags (payroll checks, late marks, leave patterns)
 

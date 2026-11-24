@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database, Check, Loader2 } from 'lucide-react';
-import { assistantService, type AssistantSource, type ProposalCard } from '../../services/assistantService';
+import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database, Check, Loader2, Bell } from 'lucide-react';
+import { assistantService, type AssistantSource, type Nudge, type ProposalCard } from '../../services/assistantService';
 
 /** A prepared action shown as a card. `state` tracks the person's click; the server has the final say. */
 type CardState = ProposalCard & { state?: 'working' | 'DONE' | 'FAILED' | 'EXPIRED' | 'DISMISSED'; message?: string };
@@ -30,6 +30,7 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
   });
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [nudge, setNudge] = useState<Nudge | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef(msgs);
@@ -38,6 +39,9 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
   useEffect(() => { try { localStorage.setItem(KEY(userId), JSON.stringify(msgs.slice(-20))); } catch { /* storage full or blocked */ } }, [msgs, userId]);
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [msgs, busy, open]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
+  // The agent speaks first: the daily summary prepared for this person, if there is one.
+  useEffect(() => { let live = true; void assistantService.nudge().then((r) => { if (live) setNudge(r.nudge || null); }).catch(() => undefined); return () => { live = false; }; }, [userId]);
+  const dismissNudge = () => { const id = nudge?.id; setNudge(null); if (id) void assistantService.nudgeSeen(id).catch(() => undefined); };
 
   const send = async (q: string) => {
     const question = q.trim();
@@ -103,6 +107,7 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
       {!open && (
         <button type="button" onClick={() => setOpen(true)} aria-label="Open Ask HR" className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#FA7014] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[#e5650f] cursor-pointer">
           <MessageCircle className="h-4 w-4" /> Ask HR
+          {nudge && <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-[#FA7014]" aria-label={`${nudge.count} things need your attention`}>{nudge.count}</span>}
         </button>
       )}
       {open && (
@@ -119,9 +124,22 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
+            {nudge && (
+              <div className="rounded-xl border border-orange-300 bg-orange-50 p-3 text-sm">
+                <p className="flex items-center gap-1.5 font-bold text-slate-900"><Bell className="h-4 w-4 text-[#FA7014]" /> {nudge.title.replace(/^Ask HR: /, '')}</p>
+                {nudge.sections.map((s, i) => (
+                  <div key={i} className="mt-2">
+                    <p className="text-xs font-semibold text-slate-800">{s.heading}</p>
+                    <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-xs text-slate-600">{s.lines.map((l, k) => <li key={k}>{l}</li>)}</ul>
+                  </div>
+                ))}
+                <p className="mt-2 text-[11px] text-slate-500">Ask me to open any of these, for example "show me what is waiting for my approval".</p>
+                <button type="button" onClick={dismissNudge} className="mt-2 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-orange-100 cursor-pointer">Got it</button>
+              </div>
+            )}
             {msgs.length === 0 && (
               <div>
-                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, onboarding tasks, exits, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals, leave applications and task updates for you to confirm.</p>
+                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, onboarding tasks, exits, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals, leave applications and task updates for you to confirm. HR can ask me to record attendance, adjust a leave balance or close an exception.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
                 </div>

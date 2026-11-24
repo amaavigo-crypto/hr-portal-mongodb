@@ -86,6 +86,22 @@ export const LEAVE_AGENT_TOOLS: LeaveAgentTool[] = [
       reason: { type: 'string' },
     }, ['leaveType', 'from']),
   },
+  // ---- stage 3: HR and company admin only (leave.manage). Same rule as the screens; the server checks it again.
+  {
+    name: 'propose_mark_attendance', kind: 'propose', access: 'manage',
+    description: 'HR only. Prepares recording ONE employee\'s attendance for one day: it replaces whatever is recorded for that day with the check-in and check-out times given. Needs the uid from find_employee, the date (today or up to 62 days back), BOTH times as HH:MM in 24-hour form, and a reason, all given by the person you are talking to; ask for whatever is missing and never guess times. Never for HR\'s own record. A month whose payroll is locked is refused. This only shows a confirm card; nothing is recorded until the person presses Confirm.',
+    parameters: obj({ uid: { type: 'string' }, date: DATE, checkIn: { type: 'string', description: 'HH:MM, 24-hour' }, checkOut: { type: 'string', description: 'HH:MM, 24-hour' }, reason: { type: 'string' } }, ['uid', 'date', 'checkIn', 'checkOut', 'reason']),
+  },
+  {
+    name: 'propose_resolve_exception', kind: 'propose', access: 'manage',
+    description: 'HR only. Prepares closing ONE open exception or flag (for example a missing check-out or a late mark) that get_leave_exceptions lists with canResolve true. Needs its exceptionId and a short resolution that says what was done or why it is fine, given by the person; ask if missing. Never for an exception about HR\'s own record. This only shows a confirm card; nothing is closed until the person presses Confirm.',
+    parameters: obj({ exceptionId: { type: 'string' }, resolution: { type: 'string' } }, ['exceptionId', 'resolution']),
+  },
+  {
+    name: 'propose_adjust_balance', kind: 'propose', access: 'manage',
+    description: 'HR only. Prepares adding or taking away leave days for ONE employee and ONE leave type (for example comp-off credit). Needs the uid from find_employee, the leave type, the number of days (positive adds, negative takes away; whole or half days; at most 30 at a time) and a reason, all given by the person; ask for whatever is missing. Never for HR\'s own balance. A deduction that would take the balance below zero is refused. The card shows the balance before and after. This only shows a confirm card; nothing changes until the person presses Confirm.',
+    parameters: obj({ uid: { type: 'string' }, leaveType: { type: 'string', description: 'Leave type name or code' }, days: { type: 'number', description: 'Positive to add, negative to deduct' }, reason: { type: 'string' } }, ['uid', 'leaveType', 'days', 'reason']),
+  },
 ];
 
 export interface AgentWho { perms?: string[] | null; isCompanyAdmin?: boolean }
@@ -201,7 +217,9 @@ export function matchEmployees<T extends { name?: string; empId?: string; email?
 
 // ------------------------------------------------------------------ proposals (the confirm cards)
 
-export type ProposalAction = 'leave_decision' | 'regularization_decision' | 'apply_leave' | 'task_done' | 'exit_decision' | 'exit_clearance';
+export type ProposalAction =
+  | 'leave_decision' | 'regularization_decision' | 'apply_leave' | 'task_done' | 'exit_decision' | 'exit_clearance'
+  | 'attendance_mark' | 'exception_resolve' | 'balance_adjust';
 export const PROPOSAL_TTL_MS = 30 * 60_000;
 
 /** What the panel shows. Built by the server from the real record. */
@@ -229,4 +247,39 @@ export function matchLeaveType<T extends { name?: string; code?: string }>(types
   if (exact.length === 1) return exact[0];
   const loose = types.filter((t) => String(t.name || '').toLowerCase().includes(q) || q.includes(String(t.name || '').toLowerCase()));
   return loose.length === 1 ? loose[0] : null;
+}
+
+
+// ------------------------------------------------------------------ stage 3 checks (HR actions that change records)
+
+/** How far back the agent may record attendance, and the most days one balance change may move. Bigger jobs use the screens. */
+export const ATTENDANCE_BACKFILL_DAYS = 62;
+export const BALANCE_MAX_DAYS = 30;
+
+/** "9:5" is not a time; "09:05" is. Returns HH:MM (24-hour, zero padded) or '' when it is not a real time. */
+export function cleanTime(v: unknown): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(v ?? '').trim());
+  if (!m) return '';
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  return h > 23 || min > 59 ? '' : `${String(h).padStart(2, '0')}:${m[2]}`;
+}
+
+/** The reason an attendance record cannot be proposed, or '' when it can. Times must already be through cleanTime. */
+export function attendanceProblem(a: { date: string; checkIn: string; checkOut: string }, today: string): string {
+  if (!isIsoDate(a.date)) return 'Ask for a valid date.';
+  if (a.date > today) return 'Attendance can be recorded only for today or an earlier day.';
+  if (a.date < addDays(today, -ATTENDANCE_BACKFILL_DAYS)) return `Attendance older than ${ATTENDANCE_BACKFILL_DAYS} days has to be changed on the Attendance screen.`;
+  if (!a.checkIn || !a.checkOut) return 'Ask for both the check-in and the check-out time, as HH:MM.';
+  if (a.checkOut <= a.checkIn) return 'The check-out must be after the check-in.';
+  return '';
+}
+
+/** The reason a balance change cannot be proposed, or '' when it can. `current` is null when the balance is not known. */
+export function balanceProblem(days: number, current: number | null): string {
+  if (!Number.isFinite(days) || days === 0) return 'Ask how many days to add or take away.';
+  if (Math.abs(days) > BALANCE_MAX_DAYS) return `The agent can move at most ${BALANCE_MAX_DAYS} days at a time. Use the Balances screen for more.`;
+  if (!Number.isInteger(days * 2)) return 'Use whole or half days.';
+  if (current !== null && days < 0 && current + days < 0) return `That would take the balance below zero (it is ${current} days now).`;
+  return '';
 }

@@ -4,6 +4,7 @@ import type { ProposalCard } from '../../shared/leaveAgentTools';
 export interface AssistantSource { kind: 'data' | 'policy'; label: string }
 export type { ProposalCard };
 export interface AssistantReply { success: boolean; id: string; answer: string; sources: AssistantSource[]; unsure: boolean; proposals?: ProposalCard[]; off?: boolean; limited?: boolean; error?: string }
+export interface Nudge { id: string; date: string; title: string; count: number; sections: { heading: string; lines: string[] }[] }
 export interface ProposalResult { success: boolean; status: 'DONE' | 'FAILED' | 'EXPIRED' | 'DISMISSED' | string; message?: string; error?: string }
 
 /** Ask HR calls. Server side: api/_lib/assistantApi.ts. */
@@ -14,4 +15,7 @@ export const assistantService = {
   /** The person's own click on a card: runs the prepared action once. */
   confirm: (id: string) => apiJson<ProposalResult>('/api/assistant/confirm', { id }),
   dismiss: (id: string) => apiJson<ProposalResult>('/api/assistant/dismiss', { id }),
+  /** The daily summary the watcher prepared for this person (today or yesterday), or null. */
+  nudge: () => apiJson<{ success: boolean; nudge: Nudge | null }>('/api/assistant/nudge', {}),
+  nudgeSeen: (id: string) => apiJson<{ success: boolean }>('/api/assistant/nudge-seen', { id }),
 };
