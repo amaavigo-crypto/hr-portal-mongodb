@@ -50,6 +50,18 @@ All data lives in MongoDB. Firebase is used only for **Authentication** (logins 
 - **Tests**: `TEST_DB=mongo npx tsx tests/<name>.test.ts` runs a test against the MongoDB adapter (on an in-memory stand-in
   for the driver); `tests/mongoFirestore.test.ts` and `tests/data.api.test.ts` cover the adapter and the browser gateway.
 
+### Database schema (Mongoose)
+
+The data model is written down in code: one schema per collection in `api/_lib/schemas/` (94 collections), and a readable copy in
+[`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) (generated, never edit by hand: `npm run schema:doc`; `tests/schema.doc.test.ts` fails if it is stale).
+
+- **What the schemas do:** document each collection, check writes inside the adapter, and define the non-unique indexes (`companyId` first) created the first time a collection is used.
+- **What they do not do:** read or query data. Queries and transactions still use the native driver through the Firestore-shaped adapter, and Mongoose is never connected.
+- **Strictness:** schemas name the fields that matter and allow everything else (`strict: false`). Mixed collections (`hiringItems`, `hrbpItems`) share a base schema (`id`, `companyId`, `kind`) plus extra rules for some kinds.
+- **`SCHEMA_VALIDATION`:** `warn` (default) saves the write and logs `[schema] <collection>/<id> <field>: <problem>` once per collection and field; `enforce` refuses a write that breaks a schema (error code `SCHEMA_INVALID`); `off` turns it off. Run in `warn` against real traffic, fix what the logs show, then move to `enforce`.
+- **Adding a collection or field:** edit the matching file in `api/_lib/schemas/`, run `npm run schema:doc`, commit both. `tests/schema.registry.test.ts` fails if the code uses a collection that has no schema.
+- **Fields are confirmed for** companies, employees, roles, departments, documents and versions, acknowledgments, announcements, leave, payroll runs and claims, requisitions and applications. Other collections list only their identity fields so far and are filled in as each module is touched.
+
 ### Migrating the existing single company
 
 `npx tsx scripts/migrate-to-multitenant.ts --company "Amaavigo Group" --admin admin@yourco.com`

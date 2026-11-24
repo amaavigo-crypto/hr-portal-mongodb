@@ -22,6 +22,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { MongoClient, type ClientSession, type Collection, type Db, type Document } from 'mongodb';
+import { checkWrite, indexesFor } from './schemas/index.js';
 
 type Doc = Record<string, any>;
 
@@ -80,15 +81,17 @@ async function getClient(): Promise<MongoClient> {
   return handle.client!;
 }
 
-/** Every record carries a companyId and nearly every query filters on it, so index it the first time a collection is used. */
+/** Every record carries a companyId and nearly every query filters on it, so index it the first time a collection is used, along with the other (non-unique) indexes its schema lists (api/_lib/schemas). */
 function ensureIndexes(col: Collection<Document>, name: string) {
   if (handle.indexed.has(name)) return;
   handle.indexed.add(name);
-  Promise.resolve()
-    .then(() => (col as any).createIndex?.({ companyId: 1 }, { name: 'companyId_1' }))
-    .catch(() => {
-      /* an index is a speed-up, never a reason to fail a request */
-    });
+  for (const [fields, options] of indexesFor(name)) {
+    Promise.resolve()
+      .then(() => (col as any).createIndex?.(fields, options))
+      .catch(() => {
+        /* an index is a speed-up, never a reason to fail a request */
+      });
+  }
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -224,6 +227,7 @@ export class MongoDocRef {
 
   async setIn(session: Sess, data: Doc, opts?: { merge?: boolean }) {
     const col = await this.fs.col(this.collectionName);
+    await checkWrite(this.collectionName, this.id, opts?.merge ? clean(data) : resolveForReplace(data), opts?.merge ? 'partial' : 'full');
     if (opts?.merge) {
       const ops = mergeOps(data);
       if (!Object.keys(ops).length) await col.updateOne({ _id: this.id as any }, { $setOnInsert: {} }, { upsert: true, session });
@@ -235,6 +239,7 @@ export class MongoDocRef {
 
   async updateIn(session: Sess, data: Doc) {
     const col = await this.fs.col(this.collectionName);
+    await checkWrite(this.collectionName, this.id, clean(data), 'partial');
     const ops = updateOps(data);
     if (!Object.keys(ops).length) {
       if ((await col.countDocuments({ _id: this.id as any }, { session, limit: 1 })) === 0) throw notFound();
@@ -246,8 +251,10 @@ export class MongoDocRef {
 
   async createIn(session: Sess, data: Doc) {
     const col = await this.fs.col(this.collectionName);
+    const body = resolveForReplace(data);
+    await checkWrite(this.collectionName, this.id, body, 'full');
     try {
-      await col.insertOne({ _id: this.id as any, ...resolveForReplace(data) }, { session });
+      await col.insertOne({ _id: this.id as any, ...body }, { session });
     } catch (err: any) {
       if (err?.code === 11000) throw Object.assign(new Error('6 ALREADY_EXISTS: Document already exists.'), { code: 6 });
       throw err;
