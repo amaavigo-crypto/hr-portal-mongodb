@@ -13,6 +13,7 @@ import { WeekoffReportPage } from './WeekoffReportPage';
 import { ExitClearanceReportPage } from './ExitClearanceReportPage';
 import { Employee360Page } from './Employee360Page';
 import { EmployeePicker } from './EmployeePicker';
+import { PreviousEmploymentCard } from './PreviousEmploymentCard';
 import type { HRAgentModule } from '../HRAgentShell';
 
 type ProfileTab = 'basic' | 'identity' | 'personal' | 'family' | 'qualification' | 'separation';
@@ -72,7 +73,7 @@ export const EmployeeModule: React.FC<{ currentUser: User; canPick?: boolean; on
               ))}
             </div>
             <div id="profile-panel" role="tabpanel" aria-labelledby={`profile-tab-${profileTab}`}>
-              {profileTab === 'basic' && <EmployeeProfilePage uid={pickedUid} />}
+              {profileTab === 'basic' && <><EmployeeProfilePage uid={pickedUid} />{canPick && <PreviousEmploymentCard uid={pickedUid} />}</>}
               {profileTab === 'identity' && <EmployeeIdentityPage uid={pickedUid} />}
               {profileTab === 'personal' && <PersonalInfoPage uid={pickedUid} />}
               {profileTab === 'family' && <FamilyDetailsPage uid={pickedUid} />}

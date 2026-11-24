@@ -324,10 +324,24 @@ async function previousEmployment(headers: Record<string, any>, body: any): Prom
   return ok({ uid, name: emp.data.name, employments });
 }
 
+/** What the transfer screen needs: the other organisations of this account, and this organisation's leave types. */
+async function siblingOrganisations(headers: Record<string, any>): Promise<OrgResult> {
+  const ctx = await requireActiveTenant(headers);
+  if (!canPropose(ctx.perms, ctx.isCompanyAdmin)) throw new AuthError(403, 'You do not have permission to transfer people.');
+  const me = await loadCompany(ctx.companyId!);
+  if (!me?.accountId) return ok({ direct: false, organisations: [], leaveTypes: [] });
+  const snap = await db().collection('companies').where('accountId', '==', me.accountId).get();
+  const organisations = snap.docs.map((d: any) => d.data() as any).filter((c: any) => c.id !== ctx.companyId)
+    .map((c: any) => ({ id: c.id, name: c.name, status: c.status })).sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
+  const { settings } = await loadSettings(ctx.companyId!);
+  return ok({ direct: !!ctx.isGroupAdmin, organisations, leaveTypes: settings.types.filter((t) => t.requiresBalance).map((t) => t.name) });
+}
+
 /** Returns null when the action is not a transfer action. */
 export async function routeTransferAction(method: string, action: string, headers: Record<string, any>, body: any, deps: OrgDeps): Promise<OrgResult | null> {
   if (method === 'POST' && action === 'transfer-people') return transferPeople(headers, body, deps);
   if (method === 'POST' && action === 'transfer-propose') return proposeTransfer(headers, body);
+  if (method === 'GET' && action === 'sibling-organisations') return siblingOrganisations(headers);
   if (method === 'GET' && action === 'transfer-requests') return listProposals(headers);
   if (method === 'POST' && action === 'transfer-decide') return decideProposal(headers, body, deps);
   if (method === 'POST' && action === 'previous-employment') return previousEmployment(headers, body);

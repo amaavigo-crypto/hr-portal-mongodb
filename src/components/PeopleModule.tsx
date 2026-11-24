@@ -3,6 +3,7 @@ import { User } from '../types';
 import { lifecycleService } from '../services/lifecycleService';
 import { Notice } from './leave/ui';
 import { DirectoryTab } from './lifecycle/DirectoryTab';
+import { TransferTab } from './lifecycle/TransferTab';
 import { ExitsTab, MyExit } from './lifecycle/ExitTabs';
 import { LettersTab, MyLetters } from './lifecycle/LettersTab';
 import { LifecycleSetup } from './lifecycle/LifecycleSetup';
@@ -70,6 +71,7 @@ export const PeopleModule: React.FC<{ currentUser: User; inlineNav?: boolean }> 
         {active === 'onboarding' && <OnboardingAdmin />}
         {active === 'exits' && <ExitsTab canManage={me.canManage} me={myUid} people={dir} />}
         {active === 'letters' && settings && <LettersTab people={dir} templates={settings.letters} />}
+        {active === 'transfer' && me.canManage && <TransferTab />}
         {active === 'setup' && <LifecycleSetup onSaved={reload} />}
       </div>
     </div>

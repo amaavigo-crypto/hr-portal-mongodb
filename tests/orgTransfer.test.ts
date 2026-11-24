@@ -208,4 +208,14 @@ const rej = await call('transfer-decide', GA(), { id: prop2.json.id, approve: fa
 assert.equal(rej.status, 200); assert.equal(rej.json.status, 'REJECTED');
 assert.equal(row('employees', 'q8').companyId, 'A', 'a rejected proposal moves nobody');
 
+// ---------------------------------------------------------------- what the transfer screen loads
+const sib = await routeTenant({ method: 'GET', action: 'sibling-organisations', headers: tokenFor('hr_a'), body: {} } as any);
+assert.equal(sib.status, 200);
+assert.deepEqual(sib.json.organisations.map((o: any) => o.id), ['B'], 'only the other organisations of the same account (not C)');
+assert.equal(sib.json.direct, false, 'HR proposes');
+assert.deepEqual(sib.json.leaveTypes, ['Casual Leave']);
+assert.equal((await routeTenant({ method: 'GET', action: 'sibling-organisations', headers: tokenFor('plain'), body: {} } as any)).status, 403);
+const sibGa = await routeTenant({ method: 'GET', action: 'sibling-organisations', headers: GA(), body: {} } as any);
+assert.equal(sibGa.json.direct, true, 'the group admin moves people directly');
+
 console.log('org transfer: ok');

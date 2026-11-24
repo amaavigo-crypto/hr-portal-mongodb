@@ -1,11 +1,11 @@
-import { DoorOpen, FileText, ListChecks, LogOut, Mail, Network, Settings, UserPlus } from 'lucide-react';
+import { ArrowRightLeft, DoorOpen, FileText, ListChecks, LogOut, Mail, Network, Settings, UserPlus } from 'lucide-react';
 import { createModuleNav, NavItem } from '../moduleNav';
 
-export const PEOPLE_SECTIONS = ['directory', 'tasks', 'exit', 'myletters', 'onboarding', 'exits', 'letters', 'setup'] as const;
+export const PEOPLE_SECTIONS = ['directory', 'tasks', 'exit', 'myletters', 'onboarding', 'exits', 'letters', 'transfer', 'setup'] as const;
 export type PeopleSection = (typeof PEOPLE_SECTIONS)[number];
 
 export const peopleNav = createModuleNav('amaavigo_people_tab', [...PEOPLE_SECTIONS], 'directory', {
-  directory: Network, tasks: ListChecks, exit: LogOut, myletters: Mail, onboarding: UserPlus, exits: DoorOpen, letters: FileText, setup: Settings,
+  directory: Network, tasks: ListChecks, exit: LogOut, myletters: Mail, onboarding: UserPlus, exits: DoorOpen, letters: FileText, transfer: ArrowRightLeft, setup: Settings,
 });
 
 /** Which sections this person gets. `me` is the response of lifecycleService.me(). */
@@ -19,6 +19,7 @@ export function peopleNavItems(me: any | null): NavItem[] {
     { key: 'onboarding', label: 'Onboarding', group: 'Manage people', show: !!me.canManage },
     { key: 'exits', label: 'Exits', group: 'Manage people', show: !!(me.canManage || me.isManager) },
     { key: 'letters', label: 'Letters', group: 'Manage people', show: !!me.canManage },
+    { key: 'transfer', label: 'Transfer people', group: 'Manage people', show: !!me.canManage },
     { key: 'setup', label: 'Setup', group: 'Manage people', show: !!me.canManage },
   ];
   return all.filter((i) => i.show).map(({ show: _s, ...i }) => i);
