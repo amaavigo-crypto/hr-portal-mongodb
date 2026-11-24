@@ -11,6 +11,10 @@ const post = <T = any>(action: string, body: unknown = {}) => apiJson<T>(`/api/l
 
 export const leaveService = {
   me: () => get('me'),
+  attendanceKeys: () => get('attendance-keys'),
+  createAttendanceKey: (label: string) => post('create-attendance-key', { label }),
+  revokeAttendanceKey: (id: string) => post('revoke-attendance-key', { id }),
+  attendanceImport: (csv: string) => post('attendance-import', { csv }),
   calc: (b: unknown) => post('calc', b),
   apply: (b: unknown) => post('apply', b),
   respond: (b: unknown) => post('respond', b),

@@ -39,6 +39,10 @@ export const payrollService = {
   markPaid: (month: string, paidOn?: string, ref?: string) => post('mark-paid', { month, paidOn, ref }),
   deleteRun: (month: string) => post('delete-run', { month }),
   exportRun: (month: string, kind: string) => get('export', { month, kind }),
+  // accounting export
+  accountingMapping: () => get('accounting-mapping'),
+  saveAccountingMapping: (b: unknown) => post('save-accounting-mapping', b),
+  accountingExport: (month: string, format: 'tally' | 'quickbooks' | 'preview', dateFormat?: string) => get('accounting-export', { month, format, dateFormat }),
   // statutory filings
   statutoryDues: (month: string) => get('statutory-dues', { month }),
   statutoryFile: (month: string, kind: 'ecr' | 'esi' | 'lwf') => get('statutory-file', { month, kind }),

@@ -32,6 +32,7 @@ import {
   money, needManage, needMonth, needOpenMonth, needView, num, ok, runId, runOf, slug, stripBank, structureId, whoIs,
   type InputRow, type LineDoc, type LoanDoc, type PayrollRequestIn, type Result, type RunDoc, type StructureDoc, type Who,
 } from './payrollKit.js';
+import { routeAccounting } from './accountingApi.js';
 import { routeStatutory } from './statutoryApi.js';
 import { payrollChecks } from './flagsApi.js';
 import { dueRevisionCount, isLineManager, loadApprovedClaims, routeExtras, settledMap } from './payrollExtras.js';
@@ -780,6 +781,8 @@ export async function routePayroll(r: PayrollRequestIn): Promise<Result> {
       default: {
         const stat = await routeStatutory(r.action, r.method, who, body, r.query);
         if (stat) return stat;
+        const acc = await routeAccounting(r.action, r.method, who, body, r.query);
+        if (acc) return acc;
         const extra = await routeExtras(r.action, r.method, who, body, r.query);
         if (extra) return extra;
         return fail(404, `Unknown payroll action '${r.action}'.`);
