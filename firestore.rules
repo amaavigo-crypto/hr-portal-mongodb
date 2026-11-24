@@ -545,6 +545,11 @@ service cloud.firestore {
     match /wallPosts/{id} { allow read, write: if false; }
     match /wallComments/{id} { allow read, write: if false; }
     match /assets/{id} { allow read, write: if false; }
+    match /customFieldDefs/{id} { allow read, write: if false; }
+    match /customFieldValues/{id} { allow read, write: if false; }
+    match /savedReports/{id} { allow read, write: if false; }
+    match /approvalChains/{id} { allow read, write: if false; }
+    match /approvalRequests/{id} { allow read, write: if false; }
     match /wbConsent/{id} { allow read, write: if false; }
     match /wbSessions/{id} { allow read, write: if false; }
     match /wbDaily/{id} { allow read, write: if false; }

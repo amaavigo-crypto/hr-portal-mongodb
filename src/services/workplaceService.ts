@@ -7,7 +7,7 @@ const call = <T = any>(prefix: string) => ({
   },
   post: (action: string, body: unknown = {}) => apiJson<T>(`/api/leave/${prefix}-${action}`, body),
 });
-const es = call('esign'), en = call('engage'), as = call('assets');
+const es = call('esign'), en = call('engage'), as = call('assets'), cf = call('config'), ap = call('approvals');
 
 export const workplaceService = {
   directory: () => en.get('directory'),
@@ -47,4 +47,26 @@ export const workplaceService = {
   assetAct: (b: unknown) => as.post('act', b),
   assetsPending: (uid: string) => as.get('pending', { uid }),
   assetSummary: () => as.get('summary'),
+  // custom fields
+  fields: () => cf.get('fields'),
+  saveFields: (fields: unknown[]) => cf.post('save-fields', { fields }),
+  fieldValues: (uid?: string) => cf.get('field-values', { uid }),
+  saveFieldValues: (uid: string | undefined, values: unknown) => cf.post('save-field-values', { uid, values }),
+  // reports
+  reportDatasets: () => cf.get('report-datasets'),
+  reportRun: (b: unknown) => cf.post('report-run', b),
+  reports: () => cf.get('reports'),
+  saveReport: (b: unknown) => cf.post('save-report', b),
+  deleteReport: (id: string) => cf.post('delete-report', { id }),
+  // approvals
+  approvalKinds: () => ap.get('kinds'),
+  approvalChains: () => ap.get('chains'),
+  saveChain: (b: unknown) => ap.post('save-chain', b),
+  deleteChain: (id: string) => ap.post('delete-chain', { id }),
+  submitRequest: (b: unknown) => ap.post('submit', b),
+  myRequests: () => ap.get('mine'),
+  approvalInbox: () => ap.get('inbox'),
+  requestDetail: (id: string) => ap.get('get', { id }),
+  decideRequest: (id: string, approve: boolean, note?: string) => ap.post('decide', { id, approve, note }),
+  cancelRequest: (id: string) => ap.post('cancel', { id }),
 };

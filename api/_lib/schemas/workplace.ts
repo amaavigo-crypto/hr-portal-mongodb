@@ -34,4 +34,12 @@ export const workplace = {
       history: [Mixed], createdAt: String, createdBy: String, updatedAt: String,
     }),
   ),
+  customFieldDefs: collection('The custom fields a company defines on employee profiles. Document id = companyId. Shape: shared/customFields.ts.', defineSchema({ ...tenant, defs: [Mixed], updatedBy: String, updatedAt: String })),
+  customFieldValues: collection('One person\'s custom field values. Document id = companyId__uid.', defineSchema({ ...tenant, uid: reqStr, values: Mixed, updatedBy: String, updatedAt: String })),
+  savedReports: collection('A saved report definition (dataset, columns, filters, sort, grouping). Shape: shared/reportBuilder.ts.', defineSchema({ ...tenant, id: String, name: reqStr, def: Mixed, shared: Boolean, createdBy: String, createdByName: String, createdAt: String, updatedAt: String })),
+  approvalChains: collection('An approval chain for a kind of request: ordered steps (manager, skip-level or named people), an optional minimum amount, fallback approvers.', defineSchema({ ...tenant, id: String, name: reqStr, kind: reqStr, minAmount: Number, active: Boolean, steps: [Mixed], fallbackUids: [String], updatedAt: String, updatedBy: String })),
+  approvalRequests: collection(
+    'A request moving through an approval chain. Approvers are fixed per step when it is sent. Status PENDING, APPROVED, REJECTED, CANCELLED.',
+    defineSchema({ ...tenant, id: String, chainId: String, chainName: String, kind: reqStr, title: reqStr, details: String, amount: Number, requesterUid: reqStr, requesterName: String, status: oneOf(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']), current: Number, steps: [Mixed], history: [Mixed], createdAt: String }),
+  ),
 };

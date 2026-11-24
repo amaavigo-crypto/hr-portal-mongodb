@@ -6,6 +6,8 @@ import type { WorkReq, Result } from './workKit.js';
 
 const ROUTERS: Record<string, () => Promise<(r: WorkReq) => Promise<Result>>> = {
   'esign-': async () => (await import('./esignApi.js')).routeEsign,
+  'config-': async () => (await import('./configApi.js')).routeConfig,
+  'approvals-': async () => (await import('./approvalsApi.js')).routeApprovals,
   'assets-': async () => (await import('./assetApi.js')).routeAssets,
   'engage-': async () => (await import('./engageApi.js')).routeEngage,
 };
