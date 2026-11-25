@@ -855,6 +855,15 @@ async function profileSave(w: Who, body: any): Promise<Result> {
   const ref = db().collection('employeeProfiles').doc(profileDocId(w.cid, uid));
   const cur = await ref.get();
   await ref.set(clean({ ...(cur.exists ? cur.data() : {}), ...next, uid, companyId: w.cid, updatedAt: nowIso(), updatedBy: w.uid }));
+  if (f.joinDate !== undefined) {
+    // The joining date lives on the leave profile (it drives leave accrual and probation), so it is written there.
+    const jd = str(f.joinDate, 10);
+    if (!jd || !isDate(jd) || jd < '1950-01-01') return fail(400, 'Use a valid joining date.');
+    const lref = db().collection('leaveProfiles').doc(profileId(w.cid, uid));
+    const lcur = await lref.get();
+    await lref.set(clean({ ...(lcur.exists ? lcur.data() : {}), uid, joinDate: jd, companyId: w.cid, updatedAt: nowIso() }));
+    await audit(w.cid, 'employee', uid, 'JOIN_DATE_CHANGED', { name: await actorOf(w), uid: w.uid }, String((lcur.exists ? (lcur.data() as any).joinDate : '') || ''), jd);
+  }
   if (f.dob !== undefined) {
     const dob = str(f.dob, 10);
     if (dob && (!isDate(dob) || dob < '1900-01-01' || dob > istToday())) return fail(400, 'Use a valid date of birth.');
