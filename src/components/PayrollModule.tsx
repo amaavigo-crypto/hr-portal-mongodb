@@ -11,6 +11,9 @@ import { InputsTab } from './payroll/InputsTab';
 import { MyPayslips } from './payroll/MyPayslips';
 import { PayrollSetup } from './payroll/PayrollSetup';
 import { RunTab } from './payroll/RunTab';
+import { StatutoryTab } from './payroll/StatutoryTab';
+import { PaymentsTab } from './payroll/PaymentsTab';
+import { ControlsTab } from './payroll/ControlsTab';
 import { Salaries } from './payroll/Salaries';
 import { ModuleSubNav } from './moduleNav';
 import { payrollNav, payrollNavItems } from './payroll/payrollNav';
@@ -71,6 +74,9 @@ export const PayrollModule: React.FC<{ currentUser: User; inlineNav?: boolean }>
         {active === 'approvals' && <ClaimApprovals canManage={me.canManage} />}
         {active === 'settlements' && <SettlementsTab canManage={me.canManage} />}
         {active === 'taxadmin' && <TaxAdmin canManage={me.canManage} />}
+        {active === 'statutory' && <StatutoryTab canManage={me.canManage} />}
+        {active === 'payments' && <PaymentsTab canManage={me.canManage} />}
+        {active === 'controls' && <ControlsTab canManage={me.canManage} isAdmin={!!me.isCompanyAdmin} />}
         {active === 'setup' && <PayrollSetup canManage={me.canManage} onChanged={reload} />}
       </div>
     </div>

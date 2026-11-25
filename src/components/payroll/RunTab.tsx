@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { downloadCsv } from '../../services/leaveService';
 import { inr, monthLabel, payrollService, previousMonth, shiftMonth } from '../../services/payrollService';
+import { ApprovalPanel } from './ApprovalPanel';
 import { Card, Field, Notice, btnDanger, btnGhost, btnPrimary, input, useRunner } from '../leave/ui';
 import { PayslipViewer } from './MyPayslips';
 
@@ -21,6 +22,7 @@ export const RunTab: React.FC<{ canManage: boolean }> = ({ canManage }) => {
   const [ov, setOv] = useState<{ uid: string; delta: string; note: string } | null>(null);
   const [paidOn, setPaidOn] = useState('');
   const [ref, setRef] = useState('');
+  const [chainOn, setChainOn] = useState(false);
   const { busy, note, setNote, run: runner } = useRunner();
 
   const reload = useCallback(async () => {
@@ -77,6 +79,8 @@ export const RunTab: React.FC<{ canManage: boolean }> = ({ canManage }) => {
       </div>
       {note && <Notice tone={note.tone === 'ok' ? 'ok' : 'error'}>{note.text}</Notice>}
 
+      {rundoc && <ApprovalPanel month={month} status={status} canManage={canManage} reloadKey={rundoc.contentHash || rundoc.calculatedAt} onChanged={reload} onChain={setChainOn} />}
+
       <Card title="Payroll run">
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
           {STEPS.map(([k, label], i) => {
@@ -94,7 +98,7 @@ export const RunTab: React.FC<{ canManage: boolean }> = ({ canManage }) => {
         {canManage && (
           <div className="flex flex-wrap items-center gap-2">
             {(status === 'NONE' || draft) && <button className={btnPrimary} disabled={busy} onClick={calculate}>{draft ? 'Recalculate' : 'Calculate payroll'}</button>}
-            {draft && lines.length > 0 && <button className={btnPrimary} disabled={busy} onClick={approve}>Approve</button>}
+            {draft && lines.length > 0 && !chainOn && <button className={btnPrimary} disabled={busy} onClick={approve}>Approve</button>}
             {draft && <button className={btnDanger} disabled={busy} onClick={() => step(() => payrollService.deleteRun(month), 'Draft deleted.', 'Delete this draft? Nothing has been paid or released.')}>Delete draft</button>}
             {status === 'APPROVED' && <>
               <button className={btnPrimary} disabled={busy} onClick={() => step(() => payrollService.lock(month), 'Locked. Payslips are now visible to employees.', 'Lock payroll? Employees will see their payslips and this month can no longer be changed.')}>Lock and release payslips</button>

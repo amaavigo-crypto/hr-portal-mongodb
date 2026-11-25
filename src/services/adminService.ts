@@ -57,6 +57,8 @@ export const adminApi = {
   updateUser: (input: { userId: string; name?: string; email?: string; title?: string; departmentId?: string; roleIds?: string[]; active?: boolean }) =>
     apiJson<{ success: true; emailChanged: boolean; invite?: { emailed: boolean; inviteLink?: string } }>('/api/tenant/update-user', input),
 
+  setExtraPermissions: (userId: string, permissions: string[]) => apiJson<{ success: true; changed: boolean }>('/api/tenant/set-extra-permissions', { userId, permissions }),
+
   resendInvite: (userId: string) => apiJson<{ emailed: boolean; inviteLink?: string }>('/api/tenant/resend-invite', { userId }),
 
   saveDepartment: (input: { departmentId?: string; name: string; headUserId?: string }) => apiJson('/api/tenant/save-department', input),

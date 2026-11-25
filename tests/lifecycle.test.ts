@@ -218,6 +218,24 @@ assert.equal(hrView.profile.dob, '2000-03-14');
 assert.equal(hrView.canEdit, true);
 assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { dob: '2999-01-01' } })).status, 400);
 assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { gender: 'x' } })).status, 400);
+// joining date: HR only, must be a real date, and lands on the leave profile
+assert.equal((await call(EMP, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: '2022-01-10' } })).status, 403);
+assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: 'nope' } })).status, 400);
+assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: '' } })).status, 400);
+await ok(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: '2022-01-10' } });
+assert.equal((await call(HR, 'GET', 'profile', {}, { uid: 'u_emp' })).json.profile.joinDate, '2022-01-10', 'joining date saved');
+// profile photo: self or HR may set it, others may not; only a small real JPEG is accepted
+const JPEG = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1]).toString('base64');
+assert.equal((await call(EMP, 'GET', 'profile')).json.canPhoto, true, 'own profile: can set photo');
+await ok(EMP, 'POST', 'profile-photo-save', { dataUrl: JPEG });
+assert.equal((await call(EMP, 'GET', 'profile')).json.profile.photo, JPEG);
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { uid: 'u_mgr', dataUrl: JPEG })).status, 403, 'cannot set someone else\'s photo');
+await ok(HR, 'POST', 'profile-photo-save', { uid: 'u_emp', dataUrl: JPEG });
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { dataUrl: 'data:image/png;base64,iVBORw0KGgo=' })).status, 400, 'only JPEG');
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(200000) })).status, 400, 'too large');
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { dataUrl: 'data:image/jpeg;base64,AAAAAAAAAAAA' })).status, 400, 'not a real JPEG');
+await ok(EMP, 'POST', 'profile-photo-save', { dataUrl: '' });
+assert.equal((await call(EMP, 'GET', 'profile')).json.profile.photo, '', 'photo removed');
 assert.equal((await call(FOREIGN, 'GET', 'profile', {}, { uid: 'u_emp' })).status, 404, 'another company cannot read it');
 
 // ---- employee identity
@@ -336,6 +354,19 @@ assert.equal((await call(FOREIGN, 'GET', 'profile', {}, { uid: 'u_emp' })).statu
   await ok(EMP, 'POST', 'identity-file-delete', { id: a.id });
   assert.equal((await files(EMP)).length, 1);
   assert.equal((await call(EMP, 'GET', 'identity-file', {}, { id: a.id })).status, 404, 'gone for good');
+  // a PDF is accepted too, but only a real one
+  const pdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n').toString('base64');
+  assert.equal((await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: 'data:application/pdf;base64,' + Buffer.from('definitely not a pdf').toString('base64') })).status, 400, 'PDF bytes are checked');
+  assert.equal((await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: pdf + 'A'.repeat(950000) })).status, 400, 'PDF too large');
+  assert.equal((await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: 'data:text/html;base64,PGI+aGk8L2I+' })).status, 400, 'other types still refused');
+  const p1 = (await call(EMP, 'POST', 'identity-file-add', { type: 'AADHAAR', dataUrl: pdf })).json;
+  assert.ok(p1.id, 'PDF added');
+  assert.equal((await call(EMP, 'GET', 'identity-file', {}, { id: p1.id })).json.dataUrl, pdf);
+  assert.equal((await call(HR, 'GET', 'identity-file', {}, { id: p1.id, uid: 'u_emp' })).json.dataUrl, pdf, 'HR can open the PDF');
+  await ok(EMP, 'POST', 'identity-file-replace', { id: p1.id, dataUrl: jpeg });
+  await ok(EMP, 'POST', 'identity-file-replace', { id: p1.id, dataUrl: pdf });
+  assert.equal((await call(EMP, 'POST', 'identity-file-replace', { id: p1.id, dataUrl: 'data:application/pdf;base64,AAAA' })).status, 400);
+  await ok(EMP, 'POST', 'identity-file-delete', { id: p1.id });
 }
 
 // ---- employee qualifications
@@ -367,6 +398,10 @@ assert.equal((await call(FOREIGN, 'GET', 'profile', {}, { uid: 'u_emp' })).statu
   assert.equal((await call(FOREIGN, 'GET', 'qualifications', {}, { uid: 'u_emp' })).status, 404);
   // certificate photo
   assert.equal((await call(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: 'data:image/png;base64,AAAA' })).status, 400);
+  const qpdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n').toString('base64');
+  assert.equal((await call(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: 'data:application/pdf;base64,' + Buffer.from('nope nope').toString('base64') })).status, 400, 'PDF bytes are checked');
+  await ok(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: qpdf });
+  assert.equal((await call(HR, 'GET', 'qualification-doc', {}, { id: bach.id, uid: 'u_emp' })).json.dataUrl, qpdf, 'a certificate can be a PDF');
   await ok(EMP, 'POST', 'qualification-doc-set', { id: bach.id, dataUrl: jpeg });
   assert.equal((await list(EMP)).find((r: any) => r.id === bach.id).hasDocument, true);
   assert.ok(!JSON.stringify(await list(EMP)).includes('base64'), 'listing never carries the pictures');

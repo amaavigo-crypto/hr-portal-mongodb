@@ -646,6 +646,12 @@ async function loginSummary(w: Who, q: any): Promise<Result> {
 
 // ------------------------------------------------------------------ router
 
+/** The bell's list. Loaded on demand: it reaches into every module, and Home itself must not depend on them. */
+async function attentionResult(headers: Record<string, any>): Promise<Result> {
+  const { attentionFor } = await import('./attentionApi.js');
+  return ok(await attentionFor(headers) as any);
+}
+
 export async function routeHome(r: HomeRequestIn): Promise<Result> {
   try {
     const w = await whoIs(r.headers);
@@ -665,6 +671,7 @@ export async function routeHome(r: HomeRequestIn): Promise<Result> {
       case 'save-people-dates': if (POST) return await savePeopleDates(w, body); break;
       case 'files': if (GET) return await files(w, r.query); break;
       case 'acks': if (GET) return await acks(w); break;
+      case 'attention': if (GET) { const { status, json } = await attentionResult(r.headers); return { status, json }; } break;
       case 'announcements': if (GET) return await announcements(w, r.query); break;
       case 'announcements-all': if (GET) return await announcementsAll(w, r.query); break;
       case 'save-announcement': if (POST) return await saveAnnouncement(w, body); break;

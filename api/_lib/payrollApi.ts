@@ -24,7 +24,7 @@ import { markCorrectionsApplied } from './leavePayroll.js';
 import { isIsoDate, istToday } from '../../shared/leaveEngine.js';
 import {
   INDIAN_STATES, calculateLine, isTdsComponent, lineFacts, maskAccount, r2, splitCtc, starterPayrollSettings, totalsOf,
-  type Adjustment, type CtcTemplateRow, type PayComponent, type PayrollSettings, type PtSlab,
+  type Adjustment, type CtcTemplateRow, type LwfRule, type PayComponent, type PayrollSettings, type PtSlab,
 } from '../../shared/payrollEngine.js';
 import { fyStartYear, sanitizeTaxSettings } from '../../shared/taxEngine.js';
 import {
@@ -32,6 +32,9 @@ import {
   money, needManage, needMonth, needOpenMonth, needView, num, ok, runId, runOf, slug, stripBank, structureId, whoIs,
   type InputRow, type LineDoc, type LoanDoc, type PayrollRequestIn, type Result, type RunDoc, type StructureDoc, type Who,
 } from './payrollKit.js';
+import { routeAccounting } from './accountingApi.js';
+import { approveProblem, guardFrozen, loadControls, noteChange, paymentBlocksPaid, recordVersion, releaseProblem, routeControls, runHash } from './payrollControlsApi.js';
+import { routeStatutory } from './statutoryApi.js';
 import { payrollChecks } from './flagsApi.js';
 import { dueRevisionCount, isLineManager, loadApprovedClaims, routeExtras, settledMap } from './payrollExtras.js';
 import {
@@ -97,6 +100,13 @@ export function sanitizePayrollSettings(input: any): PayrollSettings {
   }
   const defaultState = INDIAN_STATES.includes(str(input.pt?.defaultState, 60)) ? str(input.pt.defaultState, 60) : '';
 
+  const lwfStates: Record<string, LwfRule> = {};
+  for (const [state, rule] of Object.entries<any>(input.lwf?.states || {})) {
+    if (!INDIAN_STATES.includes(state) || !rule || typeof rule !== 'object') continue;
+    const months = Array.from(new Set((Array.isArray(rule.months) ? rule.months : []).map((m: any) => Math.trunc(Number(m))).filter((m: number) => m >= 1 && m <= 12))).sort((a: any, b: any) => a - b) as number[];
+    lwfStates[state] = { months, employee: num(rule.employee, 0, 100_000, 0), employer: num(rule.employer, 0, 100_000, 0) };
+  }
+
   return {
     daysBasis: input.daysBasis === 'FIXED_30' ? 'FIXED_30' : 'CALENDAR',
     attendanceMode: input.attendanceMode === 'ATTENDANCE' ? 'ATTENDANCE' : 'LEAVE_ONLY',
@@ -115,6 +125,7 @@ export function sanitizePayrollSettings(input: any): PayrollSettings {
       wageCeiling: num(input.esic?.wageCeiling, 0, 100_000_000, 21000),
     },
     pt: { enabled: input.pt?.enabled !== false, defaultState, states },
+    lwf: { enabled: input.lwf?.enabled === true, states: lwfStates },
     company: {
       legalName: str(input.company?.legalName, 120), address: str(input.company?.address, 300),
       tan: str(input.company?.tan, 12).toUpperCase(), pan: str(input.company?.pan, 12).toUpperCase(),
@@ -209,7 +220,9 @@ export async function createStructureFromOffer(cid: string, uid: string, ctcLpa:
     if (!Number.isFinite(annual) || annual <= 0) return { done: false, note: 'The offer has no CTC, so no salary structure was created.' };
     const split = splitCtc(annual, settings.ctcTemplate, settings.components);
     if (split.warnings.length) return { done: false, note: `Salary structure not created: ${split.warnings[0]} Set it up in Payroll > Salary structures.` };
-    await ref.set(buildStructure(cid, uid, { amounts: split.amounts, annualCtc: annual }, settings, undefined, by));
+    const built = buildStructure(cid, uid, { amounts: split.amounts, annualCtc: annual }, settings, undefined, by);
+    await ref.set(built);
+    await recordVersion(cid, uid, { effectiveFrom: istToday(), amounts: built.amounts, annualCtc: built.annualCtc, source: 'OFFER', by });
     return { done: true, note: `Salary structure created from the offer (${ctcLpa} LPA). Bank and PAN details are still to be added.` };
   } catch (e: any) {
     return { done: false, note: `Salary structure not created: ${e?.message || 'unknown problem'}.` };
@@ -249,7 +262,12 @@ async function saveStructure(who: Who, body: any): Promise<Result> {
   const prev = await ref.get();
   const doc = buildStructure(who.cid, uid, body, settings, prev.exists ? (prev.data() as StructureDoc) : undefined, await actorName(who));
   if (Object.keys(doc.amounts).length === 0) throw new PayrollError(400, 'Enter at least one salary component.');
+  doc.updatedByUid = who.ctx.uid;
   await ref.set(doc);
+  const before = prev.exists ? (prev.data() as StructureDoc) : undefined;
+  if (!before || JSON.stringify(before.amounts) !== JSON.stringify(doc.amounts) || before.annualCtc !== doc.annualCtc) {
+    await recordVersion(who.cid, uid, { effectiveFrom: isIsoDate(body?.effectiveFrom) ? body.effectiveFrom : istToday(), amounts: doc.amounts, annualCtc: doc.annualCtc, source: 'EDIT', by: doc.updatedBy, note: str(body?.versionNote, 200) });
+  }
   return ok({});
 }
 
@@ -268,6 +286,7 @@ async function importStructures(who: Who, body: any): Promise<Result> {
   const [people, existing, by] = await Promise.all([loadPeople(who.cid), loadStructures(who.cid), actorName(who)]);
   const errors: { row: number; error: string }[] = [];
   const ops: { ref: any; data: any }[] = [];
+  const versions: { uid: string; amounts: Record<string, number>; annualCtc: number }[] = [];
   const seen = new Set<string>();
   rows.forEach((raw, i) => {
     const r: Record<string, string> = {};
@@ -298,12 +317,17 @@ async function importStructures(who: Who, body: any): Promise<Result> {
         bankName: r.bankname || undefined, bankAccount: r.bankaccount || undefined, ifsc: r.ifsc || undefined,
         pfApplicable: yes(r.pf, prev?.pfApplicable ?? true), esicApplicable: yes(r.esic, prev?.esicApplicable ?? true),
       }, settings, prev, by);
+      doc.updatedByUid = who.ctx.uid;
       ops.push({ ref: db().collection('payrollStructures').doc(structureId(who.cid, person.uid)), data: doc });
+      if (!prev || JSON.stringify(prev.amounts) !== JSON.stringify(doc.amounts) || prev.annualCtc !== doc.annualCtc) {
+        versions.push({ uid: person.uid, amounts: doc.amounts, annualCtc: doc.annualCtc });
+      }
     } catch (e: any) {
       errors.push({ row: i + 2, error: e?.message || 'Invalid row' });
     }
   });
   await commitChunks(ops);
+  for (const v of versions) await recordVersion(who.cid, v.uid, { effectiveFrom: istToday(), amounts: v.amounts, annualCtc: v.annualCtc, source: 'IMPORT', by });
   return ok({ saved: ops.length, errors });
 }
 
@@ -354,11 +378,13 @@ async function saveAdjustment(who: Who, body: any): Promise<Result> {
   const amount = money(body?.amount, 'Amount');
   if (amount <= 0) return fail(400, 'Enter an amount above zero.');
   await needOpenMonth(who.cid, month);
+  await guardFrozen(who.cid, month);
   const id = db().collection('payrollAdjustments').doc().id;
   await db().collection('payrollAdjustments').doc(id).set({
     companyId: who.cid, uid: person.uid, month, kind: body?.kind === 'DEDUCTION' ? 'DEDUCTION' : 'EARNING', label, amount,
     note: str(body?.note, 300), by: await actorName(who), createdAt: nowIso(),
   });
+  await noteChange(who, month, 'An adjustment was added');
   return ok({ id });
 }
 
@@ -368,7 +394,9 @@ async function deleteAdjustment(who: Who, body: any): Promise<Result> {
   const snap = await ref.get();
   if (!snap.exists || snap.get('companyId') !== who.cid) return fail(404, 'Adjustment not found.');
   await needOpenMonth(who.cid, String(snap.get('month')));
+  await guardFrozen(who.cid, String(snap.get('month')));
   await ref.delete();
+  await noteChange(who, String(snap.get('month')), 'An adjustment was removed');
   return ok({});
 }
 
@@ -496,10 +524,19 @@ async function calculateRun(who: Who, month: string): Promise<{ run: RunDoc; lin
   lines.forEach((l) => ops.push({ ref: db().collection('payrollRunLines').doc(lineId(who.cid, month, l.uid)), data: l }));
   await commitChunks(ops);
 
+  // Approvals stand only while the figures they approved are unchanged.
+  const contentHash = runHash(month, lines);
+  const keepApprovals = !!existing?.approvals && existing.contentHash === contentHash;
+  const dropped = !!existing?.approvals && Object.keys(existing.approvals).length > 0 && !keepApprovals;
   const run: RunDoc = {
     companyId: who.cid, month, status: 'DRAFT', totals: totalsOf(lines.map((l) => l.line)), warnings, skipped, overrides,
-    calculatedAt: now, calculatedBy: by,
-    events: [...(existing?.events || []), { at: now, by, action: 'CALCULATED', note: `${lines.length} people, net ${totalsOf(lines.map((l) => l.line)).net}` }].slice(-100),
+    calculatedAt: now, calculatedBy: by, calculatedByUid: who.ctx.uid, touchedBy: [...new Set([...(existing?.touchedBy || []), who.ctx.uid])],
+    contentHash, ...(keepApprovals ? { approvals: existing!.approvals } : {}),
+    events: [
+      ...(existing?.events || []),
+      { at: now, by, action: 'CALCULATED', note: `${lines.length} people, net ${totalsOf(lines.map((l) => l.line)).net}` },
+      ...(dropped ? [{ at: now, by, action: 'APPROVALS_CLEARED', note: 'The figures changed after approval' }] : []),
+    ].slice(-100),
   };
   await db().collection('payrollRuns').doc(runId(who.cid, month)).set(run);
   // Compare with last month and raise flags for HR to review. A problem here never stops the run.
@@ -536,6 +573,7 @@ async function setOverride(who: Who, body: any): Promise<Result> {
   const run = await runOf(who.cid, month);
   if (!run) throw new PayrollError(409, 'Calculate the run first.');
   if (run.status !== 'DRAFT') throw new PayrollError(409, 'Reopen the run before changing it.');
+  await guardFrozen(who.cid, month);
   const uid = str(body?.uid, 128);
   const delta = num(body?.lopDelta, -31, 31, 0);
   const note = str(body?.note, 200);
@@ -562,6 +600,8 @@ async function approve(who: Who, body: any): Promise<Result> {
   const run = await runOf(who.cid, month);
   if (!run) throw new PayrollError(409, 'Calculate the run first.');
   if (run.status !== 'DRAFT') throw new PayrollError(409, `This run is already ${run.status.toLowerCase()}.`);
+  const duty = await approveProblem(who, run, month);
+  if (duty) throw new PayrollError(409, duty);
   if (body?.expectedNet === undefined || !Number.isFinite(Number(body.expectedNet))) throw new PayrollError(400, 'Send the net pay total you reviewed.');
   // recalculate so that what is approved is exactly what is stored now
   const { run: fresh, lines } = await calculateRun(who, month);
@@ -574,7 +614,7 @@ async function approve(who: Who, body: any): Promise<Result> {
   if (!(body?.force === true) && istToday() <= monthRange(month).to) {
     throw new PayrollError(409, `${month} has not ended yet. Approve anyway only if you are sure the remaining days are paid.`);
   }
-  const { next } = await pushEvent(who, month, { status: 'APPROVED', approvedAt: nowIso(), approvedBy: await actorName(who) }, 'APPROVED', body?.force === true ? 'before month end' : '');
+  const { next } = await pushEvent(who, month, { status: 'APPROVED', approvedAt: nowIso(), approvedBy: await actorName(who), approvedByUid: who.ctx.uid }, 'APPROVED', body?.force === true ? 'before month end' : '');
   return ok({ run: next });
 }
 
@@ -584,7 +624,7 @@ async function reopen(who: Who, body: any): Promise<Result> {
   const run = await runOf(who.cid, month);
   if (!run) throw new PayrollError(409, 'Nothing to reopen.');
   if (run.status !== 'APPROVED') throw new PayrollError(409, run.status === 'DRAFT' ? 'This run is already a draft.' : `A ${run.status.toLowerCase()} run cannot be reopened.`);
-  const { next } = await pushEvent(who, month, { status: 'DRAFT', approvedAt: undefined, approvedBy: undefined }, 'REOPENED');
+  const { next } = await pushEvent(who, month, { status: 'DRAFT', approvedAt: undefined, approvedBy: undefined, approvedByUid: undefined, approvals: undefined }, 'REOPENED');
   return ok({ run: next });
 }
 
@@ -621,6 +661,9 @@ async function markPaid(who: Who, body: any): Promise<Result> {
   const month = needMonth(body?.month);
   const run = await runOf(who.cid, month);
   if (!run || run.status !== 'LOCKED') throw new PayrollError(409, 'Lock the run before marking it paid.');
+  if (await paymentBlocksPaid(who.cid, month)) throw new PayrollError(409, 'A bank payment batch is open for this month. Reconcile and close it in Payments; the run is marked paid when every payment is confirmed.');
+  const release = await releaseProblem(who, run, month);
+  if (release) throw new PayrollError(409, release);
   const paidOn = isIsoDate(body?.paidOn) ? body.paidOn : istToday();
   const { next } = await pushEvent(who, month, { status: 'PAID', paidAt: nowIso(), paidBy: await actorName(who), paidOn, paidRef: str(body?.ref, 80) }, 'PAID', `on ${paidOn}`);
   return ok({ run: next });
@@ -641,7 +684,7 @@ async function deleteRun(who: Who, body: any): Promise<Result> {
 
 async function me(who: Who): Promise<Result> {
   const [{ configured, settings }, isManager] = await Promise.all([loadPayrollSettings(who.cid), isLineManager(who.cid, who.ctx.uid)]);
-  return ok({ configured, canManage: who.canManage, canView: who.canView, isManager, taxMode: settings.tax.mode });
+  return ok({ configured, canManage: who.canManage, canView: who.canView, isCompanyAdmin: !!who.ctx.isCompanyAdmin, isManager, taxMode: settings.tax.mode });
 }
 
 async function myPayslips(who: Who): Promise<Result> {
@@ -669,7 +712,9 @@ async function payslip(who: Who, q: any): Promise<Result> {
   if (!lineSnap.exists || !run) return fail(404, 'No payslip for that month.');
   if (own && !who.canView && !['LOCKED', 'PAID'].includes(run.status)) return fail(404, 'No payslip for that month.');
   const l = lineSnap.data() as LineDoc;
-  return ok({ month, status: run.status, paidOn: run.paidOn || '', company: settings.company, employee: l.employee, inputs: l.inputs, line: l.line, tax: l.tax || null });
+  const ctl = await loadControls(who.cid);
+  const { pfRegNo, esiRegNo, ptRegNo, lwfRegNo } = ctl.entity;
+  return ok({ month, status: run.status, paidOn: run.paidOn || '', company: { ...settings.company, pfRegNo, esiRegNo, ptRegNo, lwfRegNo }, employee: l.employee, inputs: l.inputs, line: l.line, tax: l.tax || null });
 }
 
 async function exportRun(who: Who, q: any): Promise<Result> {
@@ -769,6 +814,12 @@ export async function routePayroll(r: PayrollRequestIn): Promise<Result> {
       case 'tax-statement': if (GET) return await taxStatement(who, r.query); break;
       case 'tds-register': if (GET) return await tdsRegister(who, r.query); break;
       default: {
+        const ctl = await routeControls(r.action, r.method, who, body, r.query, { calculateRun });
+        if (ctl) return ctl;
+        const stat = await routeStatutory(r.action, r.method, who, body, r.query);
+        if (stat) return stat;
+        const acc = await routeAccounting(r.action, r.method, who, body, r.query);
+        if (acc) return acc;
         const extra = await routeExtras(r.action, r.method, who, body, r.query);
         if (extra) return extra;
         return fail(404, `Unknown payroll action '${r.action}'.`);

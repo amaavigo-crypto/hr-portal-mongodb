@@ -1194,7 +1194,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
           </main>
         </div>
       </div>
-      <AskHrPanel userId={currentUser.authUid || currentUser.id} />
+      <AskHrPanel userId={currentUser.authUid || currentUser.id} perms={currentUser.perms} isAdmin={!!currentUser.isCompanyAdmin} />
 
     </div>
   );

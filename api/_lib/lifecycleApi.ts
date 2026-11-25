@@ -14,7 +14,8 @@ import { hasPerm } from '../../shared/permissions.js';
 import {
   audit, db, loadPeople, loadProfiles, notify, nowIso, personByUid, profileId, profileOf, str, companyLabel, type Person, type Profile,
 } from './leaveCore.js';
-import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, checkIdentityImage, identityProblem, identityTypeKeys, normalizeIdentity } from '../../shared/employeeIdentity.js';
+import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, identityProblem, identityTypeKeys, maskIdentity, normalizeIdentity } from '../../shared/employeeIdentity.js';
+import type { PersonRow } from '../../shared/employeeAgentTools.js';
 import { PERSONAL_FIELDS, checkPersonalField } from '../../shared/employeePersonal.js';
 import { MAX_QUALIFICATIONS, cleanQualification } from '../../shared/employeeQualification.js';
 import { MAX_FAMILY_MEMBERS, cleanFamilyMember } from '../../shared/employeeFamily.js';
@@ -820,8 +821,9 @@ async function profileGet(w: Who, q: any): Promise<Result> {
   const left = exit && exit.status === 'COMPLETED' ? exit.lastWorkingDay : exit && ['APPROVED', 'MANAGER_APPROVED', 'SUBMITTED'].includes(exit.status) ? exit.lastWorkingDay || exit.requestedLastDay : '';
   return ok({
     canEdit: w.canManage,
+    canPhoto: w.canManage || uid === w.uid,
     profile: {
-      uid, name: person.name, email: person.email, empId: person.empId, department: person.department, title: person.title, active: person.active,
+      uid, photo: typeof x.photo === 'string' ? x.photo : '', name: person.name, email: person.email, empId: person.empId, department: person.department, title: person.title, active: person.active,
       salutation: x.salutation || '', firstName: x.firstName || fallbackFirst, middleName: x.middleName ?? fallbackMiddle, lastName: x.lastName || fallbackLast,
       shortName: x.shortName || '', nameInLocal: x.nameInLocal || '', machineCode: x.machineCode || '', oldCode: x.oldCode || '', mobile: x.mobile || '',
       gender: x.gender || (pr?.gender === 'M' ? 'Male' : pr?.gender === 'F' ? 'Female' : pr?.gender === 'O' ? 'Other' : ''),
@@ -854,6 +856,15 @@ async function profileSave(w: Who, body: any): Promise<Result> {
   const ref = db().collection('employeeProfiles').doc(profileDocId(w.cid, uid));
   const cur = await ref.get();
   await ref.set(clean({ ...(cur.exists ? cur.data() : {}), ...next, uid, companyId: w.cid, updatedAt: nowIso(), updatedBy: w.uid }));
+  if (f.joinDate !== undefined) {
+    // The joining date lives on the leave profile (it drives leave accrual and probation), so it is written there.
+    const jd = str(f.joinDate, 10);
+    if (!jd || !isDate(jd) || jd < '1950-01-01') return fail(400, 'Use a valid joining date.');
+    const lref = db().collection('leaveProfiles').doc(profileId(w.cid, uid));
+    const lcur = await lref.get();
+    await lref.set(clean({ ...(lcur.exists ? lcur.data() : {}), uid, joinDate: jd, companyId: w.cid, updatedAt: nowIso() }));
+    await audit(w.cid, 'employee', uid, 'JOIN_DATE_CHANGED', { name: await actorOf(w), uid: w.uid }, String((lcur.exists ? (lcur.data() as any).joinDate : '') || ''), jd);
+  }
   if (f.dob !== undefined) {
     const dob = str(f.dob, 10);
     if (dob && (!isDate(dob) || dob < '1900-01-01' || dob > istToday())) return fail(400, 'Use a valid date of birth.');
@@ -862,6 +873,27 @@ async function profileSave(w: Who, body: any): Promise<Result> {
     const d: any = dcur.exists ? dcur.data() : {};
     await dref.set(clean({ showCelebrations: true, showMarriage: false, marriageDate: '', ...d, companyId: w.cid, uid, dob, updatedAt: nowIso(), updatedBy: w.uid }));
   }
+  return ok({});
+}
+
+// Profile photo: a small square JPEG (the browser crops and shrinks it) kept on the employeeProfiles document.
+// The person themselves or HR can change it. An empty dataUrl removes it.
+const MAX_PHOTO_CHARS = 150_000;
+async function profilePhotoSave(w: Who, body: any): Promise<Result> {
+  const uid = str(body?.uid, 128) || w.uid;
+  if (uid !== w.uid && !w.canManage) return fail(403, 'Only HR can change someone else\'s photo.');
+  if (!(await personByUid(w.cid, uid))) return fail(404, 'Employee not found.');
+  const dataUrl = typeof body?.dataUrl === 'string' ? body.dataUrl : '';
+  if (dataUrl) {
+    const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+    if (!m) return fail(400, 'Choose a JPG or PNG photo.');
+    if (dataUrl.length > MAX_PHOTO_CHARS) return fail(400, 'That photo is too large. Try a smaller one.');
+    const head = Buffer.from(m[1].slice(0, 8), 'base64');
+    if (!(head[0] === 0xff && head[1] === 0xd8)) return fail(400, 'That file is not a valid photo.');
+  }
+  const ref = db().collection('employeeProfiles').doc(profileDocId(w.cid, uid));
+  const cur = await ref.get();
+  await ref.set(clean({ ...(cur.exists ? cur.data() : {}), photo: dataUrl, uid, companyId: w.cid, updatedAt: nowIso(), updatedBy: w.uid }));
   return ok({});
 }
 
@@ -899,6 +931,42 @@ async function identityGet(w: Who, q: any): Promise<Result> {
       return { type: t.key, label: t.label, hint: t.hint, number: d?.number || '', pendingNumber: d?.pendingNumber || '', status: d?.status || '', note: d?.note || '', updatedAt: d?.updatedAt || '', files: (filesBy.get(t.key) || []).sort((a, b) => a.at.localeCompare(b.at)) };
     }),
   });
+}
+
+/**
+ * One row per active employee for the Ask HR agent and the daily watcher: what is on file and what is missing. Numbers are
+ * masked here, so a full Aadhaar or PAN never leaves this function. HR gets everyone; `self=1` (or anyone without
+ * lifecycle.manage) gets only their own row.
+ */
+export async function peopleRows(cid: string, only?: string): Promise<PersonRow[]> {
+  const eq = (c: string) => db().collection(c).where('companyId', '==', cid).get();
+  const [people, profiles, idSnap, qSnap, fSnap, perSnap, extSnap] = await Promise.all([
+    loadPeople(cid), loadProfiles(cid), eq('employeeIdentities'), eq('employeeQualifications'), eq('employeeFamily'), eq('employeePersonal'), eq('employeeProfiles'),
+  ]);
+  const count = (snap: any) => { const m = new Map<string, number>(); snap.docs.forEach((d: any) => m.set(String(d.data().uid), (m.get(String(d.data().uid)) || 0) + 1)); return m; };
+  const quals = count(qSnap);
+  const fam = count(fSnap);
+  const personal = new Set<string>(perSnap.docs.filter((d: any) => Object.keys(d.data()).some((k) => !['companyId', 'uid', 'updatedAt', 'updatedBy'].includes(k))).map((d: any) => String(d.data().uid)));
+  const mobile = new Map<string, string>(extSnap.docs.map((d: any) => [String(d.data().uid), String(d.data().mobile || '')]));
+  const ids = new Map<string, Record<string, any>>();
+  idSnap.docs.forEach((d: any) => {
+    const x = d.data() as IdentityDoc;
+    const mine = ids.get(x.uid) || {};
+    mine[x.type] = {
+      status: x.status || '', hasNumber: !!x.number, numberMasked: x.number ? maskIdentity(x.number) : undefined,
+      pendingMasked: x.pendingNumber ? maskIdentity(x.pendingNumber) : undefined, pendingSince: x.status === 'PENDING' ? String(x.updatedAt || '').slice(0, 10) : undefined, note: x.note || '',
+    };
+    ids.set(x.uid, mine);
+  });
+  return people.filter((p) => p.active && (!only || p.uid === only) && !profiles.get(p.uid)?.hidden).map((p) => ({
+    uid: p.uid, name: p.name, empId: p.empId, department: p.department, title: p.title, joinDate: profiles.get(p.uid)?.joinDate || '',
+    mobile: mobile.get(p.uid) || '', identity: ids.get(p.uid) || {}, qualifications: quals.get(p.uid) || 0, family: fam.get(p.uid) || 0, personal: personal.has(p.uid),
+  }));
+}
+
+async function peopleReview(w: Who, q: any): Promise<Result> {
+  const self = q?.self === '1' || q?.self === 1 || !w.canManage;
+  return ok({ scope: self ? 'self' : 'company', rows: await peopleRows(w.cid, self ? w.uid : undefined) });
 }
 
 async function identitySave(w: Who, body: any): Promise<Result> {
@@ -957,7 +1025,7 @@ async function identityFileAdd(w: Who, body: any): Promise<Result> {
   const uid = await identityFileAccess(w, body?.uid);
   const type = str(body?.type, 40);
   if (!identityTypeKeys.includes(type)) return fail(400, 'Unknown identity type.');
-  const problem = checkIdentityImage(body?.dataUrl);
+  const problem = checkAttachment(body?.dataUrl);
   if (problem) return fail(400, problem);
   const have = await db().collection('employeeIdentityFiles').where('companyId', '==', w.cid).where('uid', '==', uid).where('type', '==', type).get();
   if (have.size >= MAX_IDENTITY_FILES) return fail(400, `You can keep up to ${MAX_IDENTITY_FILES} photos for each document. Remove one first.`);
@@ -974,7 +1042,7 @@ async function identityFileReplace(w: Who, body: any): Promise<Result> {
   const meta = await db().collection('employeeIdentityFiles').doc(id).get();
   const m: any = meta.exists ? meta.data() : null;
   if (!m || m.companyId !== w.cid || m.uid !== uid) return fail(404, 'Photo not found.');
-  const problem = checkIdentityImage(body?.dataUrl);
+  const problem = checkAttachment(body?.dataUrl);
   if (problem) return fail(400, problem);
   const dataUrl = body.dataUrl as string;
   await db().collection('employeeIdentityData').doc(id).set({ companyId: w.cid, uid, dataUrl });
@@ -1167,7 +1235,7 @@ async function qualDocSet(w: Who, body: any): Promise<Result> {
   const id = str(body?.id, 128);
   const d = await qualOwn(w, uid, id);
   if (!d) return fail(404, 'That qualification was not found.');
-  const problem = checkIdentityImage(body?.dataUrl);
+  const problem = checkAttachment(body?.dataUrl);
   if (problem) return fail(400, problem);
   const dataUrl = body.dataUrl as string;
   await db().collection('employeeQualificationData').doc(id).set({ companyId: w.cid, uid, dataUrl });
@@ -1330,6 +1398,7 @@ export async function routeLifecycle(r: LifecycleRequestIn): Promise<Result> {
       case 'letters': return GET ? await lettersList(w, r.query) : wrong;
       case 'my-letters': return GET ? await myLetters(w) : wrong;
       case 'letter': return GET ? await letterGet(w, r.query) : wrong;
+      case 'people-review': return GET ? await peopleReview(w, r.query) : wrong;
       case 'identity': return GET ? await identityGet(w, r.query) : wrong;
       case 'identity-save': return POST ? await identitySave(w, body) : wrong;
       case 'identity-file-add': return POST ? await identityFileAdd(w, body) : wrong;
@@ -1350,6 +1419,7 @@ export async function routeLifecycle(r: LifecycleRequestIn): Promise<Result> {
       case 'family-delete': return POST ? await familyDelete(w, body) : wrong;
       case 'profile': return GET ? await profileGet(w, r.query) : wrong;
       case 'profile-save': return POST ? await profileSave(w, body) : wrong;
+      case 'profile-photo-save': return POST ? await profilePhotoSave(w, body) : wrong;
       case 'directory': return GET ? await directory(w, r.query) : wrong;
       case 'set-manager': return POST ? await setManager(w, body) : wrong;
       case 'set-emp-id': return POST ? await setEmpId(w, body) : wrong;

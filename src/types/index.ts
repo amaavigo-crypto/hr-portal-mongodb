@@ -97,6 +97,9 @@ export interface User {
   /** Ids and names of the company roles assigned to this user. */
   roleIds?: string[];
   roleNames?: string[];
+  /** Permissions granted to this person personally, on top of their roles. */
+  extraPermissions?: string[];
+  permissionHistory?: { at: string; by: string; added: string[]; removed: string[] }[];
   /** Effective permission keys (see shared/permissions.ts). The token claims are the source of truth. */
   perms?: string[];
   /** True when the user holds the Company Admin role (full access, from the sign-in token). */

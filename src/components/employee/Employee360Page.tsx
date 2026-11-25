@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { FilePreview } from './FilePreview';
 import { ArrowLeft, Download, Eye, EyeOff, Image as ImageIcon, Search } from 'lucide-react';
 import { lifecycleService } from '../../services/lifecycleService';
 import { maskIdentity } from '../../../shared/employeeIdentity';
@@ -131,7 +132,7 @@ const Detail: React.FC<{ person: Person; onBack: () => void }> = ({ person, onBa
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" role="dialog" aria-label={viewing.title} onClick={() => setViewing(null)}>
           <div className="bg-white rounded-xl p-3 max-w-3xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2"><strong className="text-sm">{viewing.title}</strong><button type="button" className={btnGhost} onClick={() => setViewing(null)}>Close</button></div>
-            {viewing.src ? <img src={viewing.src} alt={viewing.title} className="w-full h-auto" /> : <p className="text-sm text-slate-500 p-6 text-center">Loading…</p>}
+            {viewing.src ? <FilePreview src={viewing.src} title={viewing.title} /> : <p className="text-sm text-slate-500 p-6 text-center">Loading…</p>}
           </div>
         </div>
       )}

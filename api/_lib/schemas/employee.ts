@@ -4,7 +4,7 @@ import { collection, defineSchema, tenant, reqStr, Mixed } from './helpers.js';
 const byUid = [[{ companyId: 1, uid: 1 }]] as [Record<string, 1>][];
 
 export const employee = {
-  employeeProfiles: collection('Employment details of a person (joining, designation, reporting, status). Document id = employee uid.', defineSchema({ ...tenant, uid: String, updatedAt: String, updatedBy: String }, byUid)),
+  employeeProfiles: collection('Employment details of a person (joining, designation, reporting, status). Document id = employee uid.', defineSchema({ ...tenant, uid: String, photo: String, updatedAt: String, updatedBy: String }, byUid)),
   employeePersonal: collection('Personal information fields (general, contact, emergency); the field list is in shared/employeePersonal.ts.', defineSchema({ ...tenant, uid: String, updatedAt: String }, byUid)),
   employeeIdentities: collection('Identity document numbers (PAN, Aadhaar, passport ...), masked until revealed.', defineSchema({ ...tenant, uid: reqStr, updatedAt: String }, byUid)),
   employeeIdentityData: collection('Image data of identity documents (kept apart from the numbers).', defineSchema({ ...tenant, uid: String, dataUrl: String })),

@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Eye, EyeOff, FileBadge, ImagePlus, Image as ImageIcon, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Check, Eye, EyeOff, FileBadge, FileText, ImagePlus, Image as ImageIcon, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
 import { lifecycleService } from '../../services/lifecycleService';
 import { maskIdentity } from '../../../shared/employeeIdentity';
-import { shrinkImage } from './shrinkImage';
+import { prepareAttachment } from './shrinkImage';
+import { FilePreview, isPdfUrl } from './FilePreview';
 import { Field, Notice, btnGhost, btnPrimary, input, useRunner } from '../leave/ui';
 
 interface Item { type: string; label: string; hint: string; number: string; pendingNumber: string; status: '' | 'APPROVED' | 'PENDING' | 'REJECTED'; note: string; files: { id: string; at: string; kb: number }[] }
@@ -17,10 +18,22 @@ const PILL: Record<string, { text: string; cls: string }> = {
 const EditPopover: React.FC<{ item: Item; uid?: string; byHr: boolean; onClose: () => void; onSaved: () => void }> = ({ item, uid, byHr, onClose, onSaved }) => {
   const [number, setNumber] = useState(item.pendingNumber || item.number);
   const { busy, note, run } = useRunner();
+  // Opens below the pencil; if that would run off the bottom of the screen (the last cards), opens above it instead.
+  const box = useRef<HTMLDivElement>(null);
+  const [up, setUp] = useState(false);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.bottom <= window.innerHeight - 8) return;
+    const anchorTop = r.top - 4; // the box starts 4px under the pencil
+    if (anchorTop - r.height - 8 >= 0) setUp(true);
+    else el.scrollIntoView({ block: 'nearest' });
+  }, []);
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} aria-hidden />
-      <div role="dialog" aria-label={`Edit ${item.label}`} className="absolute right-0 top-full mt-1 z-20 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-lg space-y-2.5">
+      <div ref={box} role="dialog" aria-label={`Edit ${item.label}`} className={`absolute right-0 ${up ? 'bottom-full mb-1' : 'top-full mt-1'} z-20 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-lg space-y-2.5`}>
         <Field label="Number" hint={item.hint}><input className={input} value={number} onChange={(e) => setNumber(e.target.value)} autoComplete="off" autoFocus /></Field>
         <p className="text-[11px] text-slate-400">{byHr ? 'Saved straight away. Leave it empty to remove this number.' : 'HR will check this before it is approved.'}</p>
         {note && <Notice tone={note.tone}>{note.text}</Notice>}
@@ -73,13 +86,13 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
     setUploading(replaceId || type);
     try {
       await run(async () => {
-        const dataUrl = await shrinkImage(file);
+        const dataUrl = await prepareAttachment(file);
         if (replaceId) {
           await lifecycleService.replaceIdentityFile({ uid, id: replaceId, dataUrl });
           asked.current.delete(replaceId);
           setThumbs((t) => { const n = { ...t }; delete n[replaceId]; return n; });
         } else await lifecycleService.addIdentityFile({ uid, type, dataUrl });
-      }, replaceId ? 'Photo replaced' : 'Photo added');
+      }, replaceId ? 'File replaced' : 'File added');
     } finally {
       // Always re-read: whatever happened, the card should show what is actually saved.
       await load();
@@ -90,7 +103,7 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
     setViewing({ title, src: null });
     try { setViewing({ title, src: (await lifecycleService.identityFile(id, uid)).dataUrl }); } catch { setViewing(null); }
   };
-  const removeFile = (id: string) => run(async () => { await lifecycleService.deleteIdentityFile({ uid, id }); await load(); }, 'Photo removed').finally(() => void load());
+  const removeFile = (id: string) => run(async () => { await lifecycleService.deleteIdentityFile({ uid, id }); await load(); }, 'File removed').finally(() => void load());
   const decide = (i: Item, approve: boolean, why?: string) => run(async () => { await lifecycleService.decideIdentity({ uid: uid || '', type: i.type, approve, note: why }); setRejecting(null); setReason(''); await load(); }, approve ? 'Approved' : 'Sent back');
 
   return (
@@ -112,7 +125,7 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-slate-800">{i.label}</div>
                   <div className="text-xs text-slate-600 font-mono tracking-wide">{value ? (visible ? value : maskIdentity(value)) : <span className="font-sans text-slate-400">{i.files.length ? 'Number not added' : 'Not added'}</span>}</div>
-                  {i.files.length > 0 && <div className="text-[11px] text-slate-500">{i.files.length} {i.files.length === 1 ? 'photo' : 'photos'} uploaded</div>}
+                  {i.files.length > 0 && <div className="text-[11px] text-slate-500">{i.files.length} {i.files.length === 1 ? 'file' : 'files'} uploaded</div>}
                 </div>
                 {pill && <span className={`hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full border ${pill.cls}`}>{pill.text}</span>}
                 <div className="flex items-center gap-0.5 relative">
@@ -125,7 +138,7 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
                 {i.files.map((f, n) => (
                   <div key={f.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
                     <button type="button" className="w-14 h-14 rounded-md bg-white border border-slate-200 overflow-hidden flex items-center justify-center text-slate-300 hover:border-[#FA7014]" onClick={() => void open(`${i.label} photo ${n + 1}`, f.id)} aria-label={`View ${i.label} photo ${n + 1}`}>
-                      {thumbs[f.id] ? <img src={thumbs[f.id]} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5" />}
+                      {isPdfUrl(thumbs[f.id]) ? <span className="flex flex-col items-center text-rose-500"><FileText className="w-5 h-5" /><span className="text-[9px] font-black">PDF</span></span> : thumbs[f.id] ? <img src={thumbs[f.id]} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5" />}
                     </button>
                     <div className="text-xs text-slate-700">
                       <div className="font-bold">Photo {n + 1} <span className="font-normal text-slate-400">{f.kb} KB</span></div>
@@ -139,7 +152,7 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
                 ))}
                 {i.files.length < data.maxFiles && (
                   <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FA7014] px-2 py-1 rounded-lg hover:bg-orange-50 disabled:opacity-50" disabled={busy} onClick={() => pick(i.type)}>
-                    <ImagePlus className="w-3.5 h-3.5" />{uploading === i.type ? 'Uploading…' : i.files.length ? 'Add back side' : 'Add photo'}
+                    <ImagePlus className="w-3.5 h-3.5" />{uploading === i.type ? 'Uploading…' : i.files.length ? 'Add back side' : 'Add photo or PDF'}
                   </button>
                 )}
               </div>
@@ -164,12 +177,12 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
           );
         })}
       </ul>
-      <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e)} aria-label="Choose a photo" />
+      <input ref={fileInput} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => void onFile(e)} aria-label="Choose a photo or PDF" />
       {viewing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" role="dialog" aria-label={viewing.title} onClick={() => setViewing(null)}>
           <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
             <button type="button" aria-label="Close" className="absolute -top-3 -right-3 bg-white rounded-full p-1.5 shadow" onClick={() => setViewing(null)}><X className="w-4 h-4" /></button>
-            {viewing.src ? <img src={viewing.src} alt={viewing.title} className="w-full max-h-[85vh] object-contain rounded-lg bg-white" /> : <div className="bg-white rounded-lg p-10 text-center text-sm text-slate-500">Loading…</div>}
+            {viewing.src ? <FilePreview src={viewing.src} title={viewing.title} /> : <div className="bg-white rounded-lg p-10 text-center text-sm text-slate-500">Loading…</div>}
           </div>
         </div>
       )}

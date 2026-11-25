@@ -120,6 +120,11 @@ export const leave = {
     ),
   ),
 
+  attendanceApiKeys: collection(
+    'API keys that let a biometric device or script post punches. Document id = SHA-256 of the key (the key itself is never stored).',
+    defineSchema({ ...tenant, label: reqStr, prefix: String, active: Boolean, createdBy: String, createdAt: String, lastUsedAt: String, revokedAt: String }),
+  ),
+
   leaveRegularizations: collection(
     'Missed-punch corrections and attendance applications (AA-... numbers), approved by the manager or HR.',
     defineSchema({ id: String, ...tenant, uid: reqStr, status: String, createdAt: String }, [[{ companyId: 1, uid: 1 }], [{ companyId: 1, status: 1 }]]),

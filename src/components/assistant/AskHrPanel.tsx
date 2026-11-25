@@ -1,23 +1,36 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database } from 'lucide-react';
-import { assistantService, type AssistantSource } from '../../services/assistantService';
+import { MessageCircle, X, Send, ThumbsUp, ThumbsDown, RotateCcw, Mail, FileText, Database, Check, Loader2, Bell } from 'lucide-react';
+import { assistantService, type AssistantSource, type Nudge, type ProposalCard } from '../../services/assistantService';
 
-interface Msg { role: 'user' | 'assistant'; content: string; id?: string; sources?: AssistantSource[]; unsure?: boolean; rated?: boolean | null; sent?: string; question?: string }
+/** A prepared action shown as a card. `state` tracks the person's click; the server has the final say. */
+type CardState = ProposalCard & { state?: 'working' | 'DONE' | 'FAILED' | 'EXPIRED' | 'DISMISSED'; message?: string };
+interface Msg { role: 'user' | 'assistant'; content: string; id?: string; sources?: AssistantSource[]; unsure?: boolean; rated?: boolean | null; sent?: string; question?: string; proposals?: CardState[] }
 
 /** Other parts of the app (the Ctrl+K search) open the panel with a question by firing this event. */
 export const ASK_HR_EVENT = 'ask-hr:open';
 export const openAskHr = (question?: string) => window.dispatchEvent(new CustomEvent(ASK_HR_EVENT, { detail: { question } }));
 
-const SUGGESTIONS = ['How many casual leaves do I have?', 'What is the notice period?', 'What are the upcoming holidays?', 'What is the leave carry forward rule?'];
+const EMPLOYEE_SUGGESTIONS = ['How many casual leaves do I have?', 'What is the notice period?', 'What are the upcoming holidays?', 'What is the leave carry forward rule?'];
+const MANAGER_SUGGESTIONS = ['What is waiting for my approval?', 'Who in my team is on leave next week?', 'How was my team\'s attendance this week?', 'Does anyone in my team have an open resignation?'];
+const HR_SUGGESTIONS = ['What leave and attendance approvals are pending, and which are overdue?', 'Who is on leave in the next 7 days?', 'Which joiners have overdue onboarding tasks?', 'Who is serving notice and what clearance is pending?', 'Show open leave exceptions'];
+
+/** Which starter questions to show: HR gets company-wide ones, everyone else gets their own plus approvals for a manager. */
+export const suggestionsFor = (perms?: string[] | null, isAdmin?: boolean): string[] => {
+  if (isAdmin || (perms || []).some((p) => ['leave.manage', 'leave.report', 'lifecycle.manage'].includes(p))) return [...HR_SUGGESTIONS, EMPLOYEE_SUGGESTIONS[0]];
+  return [...EMPLOYEE_SUGGESTIONS.slice(0, 2), ...MANAGER_SUGGESTIONS.slice(0, 1), EMPLOYEE_SUGGESTIONS[2]];
+};
 const KEY = (uid: string) => `ask-hr-chat:${uid}`;
 
-export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
+export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isAdmin?: boolean }> = ({ userId, perms, isAdmin }) => {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>(() => {
-    try { const v = JSON.parse(localStorage.getItem(KEY(userId)) || '[]'); return Array.isArray(v) ? v.slice(-20) : []; } catch { return []; }
+    try { const v = JSON.parse(localStorage.getItem(KEY(userId)) || '[]');
+      // A card that was mid-click when the page closed goes back to a plain card; the server decides if it is still valid.
+      return Array.isArray(v) ? v.slice(-20).map((m: Msg) => (m.proposals ? { ...m, proposals: m.proposals.map((c) => (c.state === 'working' ? { ...c, state: undefined } : c)) } : m)) : []; } catch { return []; }
   });
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [nudge, setNudge] = useState<Nudge | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef(msgs);
@@ -26,6 +39,9 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
   useEffect(() => { try { localStorage.setItem(KEY(userId), JSON.stringify(msgs.slice(-20))); } catch { /* storage full or blocked */ } }, [msgs, userId]);
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [msgs, busy, open]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
+  // The agent speaks first: the daily summary prepared for this person, if there is one.
+  useEffect(() => { let live = true; void assistantService.nudge().then((r) => { if (live) setNudge(r.nudge || null); }).catch(() => undefined); return () => { live = false; }; }, [userId]);
+  const dismissNudge = () => { const id = nudge?.id; setNudge(null); if (id) void assistantService.nudgeSeen(id).catch(() => undefined); };
 
   const send = async (q: string) => {
     const question = q.trim();
@@ -36,7 +52,7 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
     setBusy(true);
     try {
       const r = await assistantService.ask(question, history);
-      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, id: r.id, sources: r.sources || [], unsure: r.unsure, question }]);
+      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, id: r.id, sources: r.sources || [], unsure: r.unsure, question, proposals: r.proposals || [] }]);
     } catch (e: any) {
       setMsgs((m) => [...m, { role: 'assistant', content: e?.message || 'Something went wrong. Please try again.', unsure: true, question }]);
     } finally { setBusy(false); }
@@ -51,6 +67,22 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
     window.addEventListener(ASK_HR_EVENT, h);
     return () => window.removeEventListener(ASK_HR_EVENT, h);
   });
+
+  const setCard = (i: number, cardId: string, patch: Partial<CardState>) =>
+    setMsgs((all) => all.map((x, j) => (j === i ? { ...x, proposals: (x.proposals || []).map((c) => (c.id === cardId ? { ...c, ...patch } : c)) } : x)));
+  const confirmCard = async (i: number, cardId: string) => {
+    setCard(i, cardId, { state: 'working' });
+    try {
+      const r = await assistantService.confirm(cardId);
+      setCard(i, cardId, { state: (r.status === 'DONE' ? 'DONE' : r.status === 'EXPIRED' ? 'EXPIRED' : r.status === 'DISMISSED' ? 'DISMISSED' : 'FAILED'), message: r.message });
+    } catch (e: any) {
+      setCard(i, cardId, { state: 'FAILED', message: e?.message || 'Could not complete this. Please try again.' });
+    }
+  };
+  const dismissCard = (i: number, cardId: string) => {
+    setCard(i, cardId, { state: 'DISMISSED', message: 'Dismissed. Nothing was changed.' });
+    void assistantService.dismiss(cardId).catch(() => undefined);
+  };
 
   const rate = (i: number, helpful: boolean) => {
     const m = msgs[i];
@@ -75,6 +107,7 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
       {!open && (
         <button type="button" onClick={() => setOpen(true)} aria-label="Open Ask HR" className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#FA7014] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[#e5650f] cursor-pointer">
           <MessageCircle className="h-4 w-4" /> Ask HR
+          {nudge && <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-[#FA7014]" aria-label={`${nudge.count} things need your attention`}>{nudge.count}</span>}
         </button>
       )}
       {open && (
@@ -82,7 +115,7 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
               <p className="text-sm font-bold text-slate-900">Ask HR</p>
-              <p className="text-[11px] text-slate-500">Answers from your own data and company policies</p>
+              <p className="text-[11px] text-slate-500">Leave, attendance and policy answers from your own access</p>
             </div>
             <div className="flex items-center gap-1">
               {msgs.length > 0 && <button type="button" onClick={() => setMsgs([])} title="New chat" aria-label="New chat" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 cursor-pointer"><RotateCcw className="h-4 w-4" /></button>}
@@ -91,11 +124,24 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
+            {nudge && (
+              <div className="rounded-xl border border-orange-300 bg-orange-50 p-3 text-sm">
+                <p className="flex items-center gap-1.5 font-bold text-slate-900"><Bell className="h-4 w-4 text-[#FA7014]" /> {nudge.title.replace(/^Ask HR: /, '')}</p>
+                {nudge.sections.map((s, i) => (
+                  <div key={i} className="mt-2">
+                    <p className="text-xs font-semibold text-slate-800">{s.heading}</p>
+                    <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-xs text-slate-600">{s.lines.map((l, k) => <li key={k}>{l}</li>)}</ul>
+                  </div>
+                ))}
+                <p className="mt-2 text-[11px] text-slate-500">Ask me to open any of these, for example "show me what is waiting for my approval".</p>
+                <button type="button" onClick={dismissNudge} className="mt-2 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-orange-100 cursor-pointer">Got it</button>
+              </div>
+            )}
             {msgs.length === 0 && (
               <div>
-                <p className="text-sm text-slate-700">Hi, ask me about your leave, holidays, notice period, payslips or company policies.</p>
+                <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, onboarding tasks, exits, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals, leave applications and task updates for you to confirm. HR can ask me to record attendance, adjust a leave balance or close an exception.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
+                  {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
                 </div>
               </div>
             )}
@@ -104,6 +150,22 @@ export const AskHrPanel: React.FC<{ userId: string }> = ({ userId }) => {
             ) : (
               <div key={i} className="max-w-[92%]">
                 <p className="whitespace-pre-wrap rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{m.content}</p>
+                {(m.proposals || []).map((c) => (
+                  <div key={c.id} className={`mt-2 rounded-xl border bg-white p-3 text-sm ${c.state === 'DONE' ? 'border-emerald-300' : c.state === 'FAILED' ? 'border-red-300' : 'border-orange-300'}`}>
+                    <p className="font-bold text-slate-900">{c.title}</p>
+                    <ul className="mt-1 space-y-0.5 text-xs text-slate-600">{c.lines.map((l, k) => <li key={k}>{l}</li>)}</ul>
+                    {!c.state || c.state === 'working' ? (
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <button type="button" disabled={c.state === 'working'} onClick={() => void confirmCard(i, c.id)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60 cursor-pointer ${c.destructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#FA7014] hover:bg-[#e5650f]'}`}>
+                          {c.state === 'working' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}{c.confirmLabel}
+                        </button>
+                        <button type="button" disabled={c.state === 'working'} onClick={() => dismissCard(i, c.id)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-60 cursor-pointer">Dismiss</button>
+                      </div>
+                    ) : (
+                      <p className={`mt-2 text-xs font-semibold ${c.state === 'DONE' ? 'text-emerald-700' : c.state === 'FAILED' ? 'text-red-700' : 'text-slate-500'}`}>{c.message || (c.state === 'DONE' ? 'Done.' : '')}</p>
+                    )}
+                  </div>
+                ))}
                 {m.sources && m.sources.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {m.sources.map((s, k) => (

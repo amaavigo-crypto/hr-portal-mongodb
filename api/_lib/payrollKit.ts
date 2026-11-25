@@ -11,6 +11,7 @@ import {
   type Person,
 } from './leaveCore.js';
 import { daysBetween, isIsoDate } from '../../shared/leaveEngine.js';
+import type { Approvals } from '../../shared/payrollControls.js';
 import {
   daysInMonth, emptyPayrollSettings, paidDaysFor, payDaysFor, r2,
   type PayrollLine, type PayrollSettings, type RunTotals, type SalaryStructure,
@@ -108,6 +109,7 @@ export async function loadPayrollSettings(cid: string): Promise<{ settings: Payr
     ...base, ...d,
     pf: { ...base.pf, ...(d.pf || {}) }, esic: { ...base.esic, ...(d.esic || {}) },
     pt: { ...base.pt, ...(d.pt || {}), states: { ...(d.pt?.states || {}) } },
+    lwf: { enabled: d.lwf?.enabled === true, states: { ...(d.lwf?.states || {}) } },
     company: { ...base.company, ...(d.company || {}) },
     gratuity: { ...base.gratuity, ...(d.gratuity || {}) },
     claims: { ...base.claims, ...(d.claims || {}) },
@@ -132,6 +134,7 @@ export interface StructureDoc extends SalaryStructure {
   ifsc: string;
   updatedAt: string;
   updatedBy: string;
+  updatedByUid?: string;
   history: { at: string; by: string; amounts: Record<string, number>; annualCtc: number }[];
 }
 
@@ -249,8 +252,15 @@ export interface RunDoc {
   overrides: Record<string, { lopDelta: number; note: string }>;
   calculatedAt: string;
   calculatedBy: string;
+  /** Who calculated or changed the run (its makers). Used for separation of duties. */
+  calculatedByUid?: string;
+  touchedBy?: string[];
+  /** Fingerprint of the calculated figures; the approvals below are valid only while it is unchanged. */
+  contentHash?: string;
+  approvals?: Approvals;
   approvedAt?: string;
   approvedBy?: string;
+  approvedByUid?: string;
   lockedAt?: string;
   lockedBy?: string;
   paidAt?: string;

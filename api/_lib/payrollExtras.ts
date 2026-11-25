@@ -33,6 +33,7 @@ import { createHash } from 'node:crypto';
 import { claimFlags, suggestCategory, type Flag, type ScanInfo } from '../../shared/claimScan.js';
 import { scanBill } from './claimQuickApi.js';
 import { declarationFor, loadDeclaration, monthlyTds, paidLinesInFy, sumPaid } from './payrollTax.js';
+import { recordVersion } from './payrollControlsApi.js';
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && isIsoDate(v);
 
@@ -209,11 +210,12 @@ async function applyRevisions(who: Who, body: any): Promise<Result> {
     ops.push({
       ref: db().collection('payrollStructures').doc(structureId(who.cid, uid)),
       data: {
-        ...st, amounts: last.amounts, annualCtc: last.annualCtc || st.annualCtc, updatedAt: now, updatedBy: by,
+        ...st, amounts: last.amounts, annualCtc: last.annualCtc || st.annualCtc, updatedAt: now, updatedBy: by, updatedByUid: who.ctx.uid,
         history: [{ at: st.updatedAt, by: st.updatedBy, amounts: st.amounts, annualCtc: st.annualCtc }, ...(st.history || [])].slice(0, 20),
       },
     });
     for (const r of mine) {
+      await recordVersion(who.cid, uid, { effectiveFrom: r.effectiveFrom, amounts: r.amounts, annualCtc: r.annualCtc, source: 'REVISION', by, note: r.note });
       const rows = attributed.get(r.id) || [];
       ops.push({
         ref: db().collection('payrollRevisions').doc(r.id),

@@ -52,7 +52,7 @@ All data lives in MongoDB. Firebase is used only for **Authentication** (logins 
 
 ### Database schema (Mongoose)
 
-The data model is written down in code: one schema per collection in `api/_lib/schemas/` (98 collections), and a readable copy in
+The data model is written down in code: one schema per collection in `api/_lib/schemas/` (105 collections), and a readable copy in
 [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) (generated, never edit by hand: `npm run schema:doc`; `tests/schema.doc.test.ts` fails if it is stale).
 
 - **What the schemas do:** document each collection, check writes inside the adapter, and define the non-unique indexes (`companyId` first) created the first time a collection is used.
@@ -167,6 +167,18 @@ Employee business mapping (HRBP-001), org structure, headcount against approved 
 KPI governance (HRBP-006), performance improvement plans (HRBP-007), anonymous pulse surveys (HRBP-008, results hidden below 5 answers), recognition (HRBP-009), wellness (HRBP-010),
 training needs (HRBP-011), learning paths (HRBP-012), certificate tracker (HRBP-013), retention planning, succession planning and the leadership dashboard.
 Existing companies need `hrbp.manage` / `hrbp.view` / `hiring.budget.manage` granted to the right roles (new companies get them from the role templates).
+
+### AI project planner (HR Business Partner > AI project planner)
+
+Upload a project document (PDF, Word, text, up to 3 MB) or type the details. The planner turns it into a staffed, costed plan, and nothing is assigned until it is approved. Code: `shared/projectPlanner.ts` (rules, matching, money; pure and tested), `api/_lib/projectPlannerApi.ts` (routes, inside the existing `/api/hrbp/<action>` function), screens in `src/components/hrbp/ProjectPlanner.tsx` and `Skills.tsx`.
+
+1. **Brief.** gpt-4o-mini (`OPENAI_PLANNER_READ_MODEL`) reads the document into goals, deliverables, dates, budget, client price, other costs and roles with skills. A money figure is kept only if it is written in the document ("18 lakh", "18,00,000" and so on); what HR types always wins. HR checks and edits the brief.
+2. **Team (code only).** Everyone active is scored on skill fit (60%), free time (30%: approved leave in the window, time already booked on approved plans) and cost (10%). People whose last working day falls before the end are never picked. Nobody is booked over 100%. A role nobody fits is shown as a gap.
+3. **Plan.** gpt-4o (`OPENAI_PLANNER_MODEL`) drafts phases, milestones, tasks per role and risks. It never receives a salary, budget, price or cost. Its output is checked: phases are clamped to the dates, tasks get real owners and due dates, and sentences about money are removed.
+4. **Money (code only).** People cost = annual CTC ÷ 260 working days × working days in the project × allocation. Then other costs, budget headroom, profit and margin (when a client price is given), a split by phase and by role, and health checks (over budget, thin margin, skill gaps, overloaded people, leave clashes, missing salary structures).
+5. **Approve.** Needs `task.manage` or a company admin. One click creates a company board in Tasks with every task assigned, books each person's time (`allocation` records, so the next plan sees them as busy) and sends one email per person, not one per task. It runs once: a second click does nothing, and a partial failure can be retried without duplicates. Archiving a plan frees the people it booked.
+
+Access: the planner is for `hrbp.manage`. Per-person cost is shown only to people with `payroll.view`, `payroll.manage` or company admin; others see totals. **Skills:** everyone has **My skills** (pre-filled from job title, certificates and training needs). Their manager confirms under **Team skills**, and HRBP managers can confirm anyone's. Confirmed skills count fully in matching, submitted ones slightly less, guessed ones about half. Data lives in `hrbpItems` (kinds `projectPlan`, `skillProfile`, `allocation`). AI use counts against `AI_MONTHLY_CALLS`, with two calls per plan (read and build) and one per re-plan. Test: `npx tsx tests/projectPlanner.test.ts`.
 
 ## Performance Management (HR-PM-001 to HR-PM-009, simplified)
 
@@ -286,6 +298,63 @@ Short games for a break (3 to 8 minutes) that also give HR a skill picture for t
 ## Ask HR assistant
 
 A floating "Ask HR" button (all roles) opens a chat panel; Ctrl+K search also offers "Ask HR: ...". Read-only: it answers about the person's own leave, holidays, notice period, payslips and the published policies they may read. Code: `api/_lib/assistantApi.ts` (tools run as the caller through the existing routers), `shared/assistantEngine.ts`, `src/components/assistant/`. Logs in `assistantLogs`, daily counts in `assistantUsage` (server-only). Env: `OPENAI_ASSISTANT_MODEL` (optional), `ASSISTANT_DAILY_LIMIT` (per person, default 30); it also counts against `AI_MONTHLY_CALLS`. Test: `npx tsx tests/assistant.engine.test.ts`.
+
+### Leave & Attendance agent (stages 1 and 2; stage 3 below)
+
+The same Ask HR panel also answers for managers and HR, with the tools their permissions unlock (registry and counting in `shared/leaveAgentTools.ts`, wiring in `assistantApi.ts`). Look-ups are read-only. Actions are propose-then-confirm (below).
+
+| Tool | Who is told about it | What it reads |
+|---|---|---|
+| `get_pending_approvals`, `get_team_calendar`, `get_attendance_summary` | everyone (the route limits data to own / team / company) | `inbox`, `team-calendar`, `attendance-report` |
+| `get_leave_exceptions`, `get_leave_requests_overview` | `leave.report` or `leave.manage` | `exceptions`, `all-requests` |
+| `find_employee`, `get_employee_leave_ledger` | `leave.manage` | `people`, `balances-of` |
+| `propose_leave_decision`, `propose_attendance_decision`, `propose_apply_leave` | everyone (the route decides who may decide what) | `inbox`, `me`, `calc` to check, then `decide`, `decide-regularization`, `apply` on confirm |
+
+**Actions (propose, then confirm).** A `propose_*` tool changes nothing. It checks the real record (an approval must be in the person's own `inbox` right now; a leave application is priced by `calc`), saves a row in `agentProposals` (server-only) and the panel shows a confirm card whose wording the server wrote. `POST /api/assistant/confirm` (the person's own click) claims the proposal atomically, runs the same leave route as that person, and records DONE or FAILED. A proposal can only be confirmed by the person it was prepared for, expires after 30 minutes, can be dismissed, and runs once (an apply carries an idempotency key). A rejection needs a reason. Not yet: marking attendance, adjusting balances, resolving exceptions, applying for someone else.
+
+- Every tool calls the existing leave route with the signed-in person's own login, so company and permission checks are the ones the screens use. The server also refuses a tool the person's permissions do not unlock, even if the model asks for it.
+- Counts (attendance totals, requests per status, who is late most) are worked out in code and handed to the model; any number in an answer that is not in the tool results is rejected.
+- Same limits and logs as Ask HR (`ASSISTANT_DAILY_LIMIT`, `AI_MONTHLY_CALLS`, `assistantLogs`). Model: `OPENAI_ASSISTANT_MODEL` (default `gpt-4o-mini`).
+- Next stages: HR actions (mark attendance, resolve exceptions, balance adjust), then a daily watcher. Test: `npx tsx tests/leaveAgent.test.ts`.
+
+### People agent (onboarding, exits, letters)
+
+Same Ask HR panel and the same propose-then-confirm flow as the Leave agent; the People tools are in `shared/peopleAgentTools.ts` (registry and counting) and `api/_lib/peopleAgent.ts` (runners). Shared plumbing (`Run`, `route`, `give`, `makeProposal`) lives in `api/_lib/agentKit.ts`, so a new module is a new registry plus a runner file.
+
+| Tool | Who is told about it | Route behind it |
+|---|---|---|
+| `get_my_onboarding_tasks`, `get_my_exit`, `get_my_letters` | everyone | `onboarding-my`, `exit-my`, `my-letters` |
+| `get_exits`, `get_exit_details` | everyone (a manager gets their team, HR everyone, anyone else nothing) | `exits`, `exit` |
+| `get_onboarding_overview` | `lifecycle.manage` | `onboarding` |
+| `propose_task_done` | everyone (only an open task in their own task list) | `task-update` on confirm |
+| `propose_exit_decision` | everyone (a manager for their team, HR for everyone; a rejection needs a reason; only HR sets the last day) | `exit-decide` on confirm |
+| `propose_exit_clearance` | everyone (only the department owner or HR; waive is HR only; dues need an amount and a note) | `exit-clear` on confirm |
+
+Resigning, withdrawing a resignation, issuing letters and identity approvals are deliberately not available to the agent. Test: `npx tsx tests/peopleAgent.test.ts`.
+
+### Leave stage 3: HR actions (HR and company admin only)
+
+Three more propose-then-confirm tools in `shared/leaveAgentTools.ts` (registry and checks) and `api/_lib/leaveAgentHr.ts` (runners). Only people with `leave.manage` (or a company admin) are told about them; the leave route re-checks that permission when the card is confirmed, so a person who lost it between card and click changes nothing.
+
+| Tool | Rules enforced before a card exists, and again at Confirm | Route behind it |
+|---|---|---|
+| `propose_mark_attendance` | one employee, one day (today back to 62 days), both times as HH:MM and a reason; refused for a payroll-locked month; the card shows what is recorded now | `mark-attendance` (plus an audit entry, `ATTENDANCE_MARKED_ASK_HR`) |
+| `propose_resolve_exception` | must be an open exception the person can act on (payroll flags stay with payroll managers); a resolution is required | `exception-resolve` |
+| `propose_adjust_balance` | one employee, one leave type that has a balance, whole or half days, at most 30 at a time, a reason; a deduction cannot take the balance below zero; the card shows balance before and after | `adjust` (audited as `BALANCE_ADJUSTED`; the ledger note starts with "Via Ask HR:") |
+
+Nobody can change their own attendance, balance or exceptions this way (checked at propose and at Confirm). Bigger jobs (more days, older attendance, locked months) stay on the screens. Test: `npx tsx tests/leaveAgentHr.test.ts`.
+
+### Daily watcher (the agent speaks first)
+
+`GET /api/assistant/daily?key=$CRON_SECRET` (or `Authorization: Bearer $CRON_SECRET`, or `x-cron-key`), once a day from cronjob.org like the other daily jobs. No AI model is used, so it costs nothing. It only reads records and sends messages; it never changes a record. Rules are in `shared/agentWatcher.ts`, delivery in `api/_lib/agentWatcher.ts`.
+
+| Who | What they are told about |
+|---|---|
+| Managers | leave requests waiting on them for more than 2 days (their own team, manager step only) |
+| HR (the emails listed as the HR mailbox in Leave setup, the same list the leave escalations use) | open attendance exceptions (late marks, missing check-outs, leave next to a check-in), exit clearance still pending when the last working day is within 7 days or has passed, overdue onboarding tasks |
+| Everyone | their own overdue onboarding tasks (tasks assigned to them) |
+
+One digest per person per day, delivered three ways: the bell in Leave, an email, and a card at the top of the Ask HR panel (the launcher shows a count) until they press "Got it". A person with nothing to look at gets nothing. Running it twice in a day sends nothing twice (`agentWatchLog`, one entry per person per day). Add `&dry=1` to see what would be sent without sending or saving anything. Suspended companies are skipped. The same stuck item is raised again each day until it is dealt with; schedule the job on weekdays only if you prefer. The older leave cron (`/api/leave/cron`) still sends its one reminder to a manager and its escalation to HR; the watcher is a daily summary on top of that, not a replacement. Test: `npx tsx tests/agentWatcher.test.ts`.
 
 ## Flags (payroll checks, late marks, leave patterns)
 
