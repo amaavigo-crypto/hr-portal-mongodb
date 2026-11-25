@@ -71,7 +71,7 @@ function f(page: string, section: string, key: string, label: string, value: str
 // Site-wide: top strip, menu, footer and the closing call-to-action band
 // --------------------------------------------------------------------------------------------------------
 
-f('site', 'Top strip', 'site.strip.text', 'Announcement text', 'New: Testing CI/CD Pipeline.');
+f('site', 'Top strip', 'site.strip.text', 'Announcement text', 'New: Testing UAT branch CI/CD Pipeline.');
 // f('site', 'Top strip', 'site.strip.text', 'Announcement text', 'New: hiring automation and the Ask HR assistant are now part of the platform.');
 f('site', 'Top strip', 'site.strip.link', 'Announcement link text', 'See what’s new');
 
