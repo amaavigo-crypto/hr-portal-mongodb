@@ -94,6 +94,9 @@ interface EmployeeDoc {
   departmentName: string;
   roleIds: string[];
   roleNames: string[];
+  /** Permissions granted to this person on top of their roles. */
+  extraPermissions?: string[];
+  permissionHistory?: { at: string; by: string; added: string[]; removed: string[] }[];
   role: Portal;
   perms: string[];
   authorizedModules: string;
@@ -170,7 +173,7 @@ export async function syncUser(uid: string, preloaded?: { company?: CompanyDoc; 
   const allRoles = preloaded?.roles || (await loadRoles(emp.companyId));
   const mine = allRoles.filter((r) => emp.roleIds.includes(r.id));
   const modules = company.status === 'ACTIVE' ? company.modules : [];
-  const perms = effectivePermissions(mine, company.status === 'ACTIVE' ? company.modules : ALL_MODULE_KEYS);
+  const perms = effectivePermissions(mine, company.status === 'ACTIVE' ? company.modules : ALL_MODULE_KEYS, emp.extraPermissions || []);
   const isAdmin = mine.some((r) => r.isAdmin);
   // A group administrator acts as administrator in every organisation of the account, including this one.
   let account: AccountDoc | null = null;
@@ -924,6 +927,42 @@ async function afterEmailChange(a: {
   ]);
 }
 
+/** Give one person permissions beyond their roles. Add-only: it never removes what a role grants. */
+async function setExtraPermissions(headers: Record<string, any>, body: any): Promise<TenantResult> {
+  const actor = await requirePermission(headers, 'roles.manage');
+  const companyId = actor.companyId!;
+  const userId = str(body.userId, 128);
+  const ref = db().collection('employees').doc(userId);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()?.companyId !== companyId) return fail(404, 'User not found.');
+  const current = snap.data() as EmployeeDoc;
+  if (current.authUid === actor.uid) return fail(403, 'You cannot change your own permissions.');
+
+  const requested: string[] = Array.from(new Set<string>((Array.isArray(body.permissions) ? body.permissions : []).map(String)));
+  if (requested.some((p) => !isKnownPermission(p) || RETIRED_PERMISSIONS.includes(p))) return fail(400, 'Unknown permission.');
+  const [company, roles] = await Promise.all([loadCompany(companyId), loadRoles(companyId)]);
+  const targetIsAdmin = current.roleIds.some((id) => roles.find((r) => r.id === id)?.isAdmin);
+  if (targetIsAdmin) return fail(400, 'A Company Admin already has every permission.');
+
+  // Only the permissions that actually change need the actor to hold them, so existing extras can be left alone.
+  const before = current.extraPermissions || [];
+  const added = requested.filter((p) => !before.includes(p));
+  const removed = before.filter((p) => !requested.includes(p));
+  if (!added.length && !removed.length) return ok({ userId, changed: false });
+  if (!canGrantPermissions(actor.perms, actor.isCompanyAdmin, added)) return fail(403, 'You cannot give permissions that you do not have yourself.');
+  if (removed.length && !canGrantPermissions(actor.perms, actor.isCompanyAdmin, removed)) return fail(403, 'You cannot remove permissions that you do not have yourself.');
+
+  // Dry run first so a token that would be too large is refused before anything is saved.
+  const mine = roles.filter((r) => current.roleIds.includes(r.id));
+  const probe = effectivePermissions(mine, company.status === 'ACTIVE' ? company.modules : ALL_MODULE_KEYS, requested);
+  if (!claimsFitLimit({ cid: company.id, cs: company.status, perms: probe, adm: false })) return fail(400, 'Too many permissions to fit in the sign-in token. Remove some, or give them through a role instead.');
+
+  const history = [...(current.permissionHistory || []).slice(-9), { at: nowIso(), by: actor.email, added, removed }];
+  await ref.update({ extraPermissions: requested, permissionHistory: history, updatedAt: nowIso() });
+  await syncUser(current.authUid, { company, roles });
+  return ok({ userId, changed: true, added, removed });
+}
+
 async function resendInvite(headers: Record<string, any>, body: any, origin?: string): Promise<TenantResult> {
   const actor = await requirePermission(headers, 'users.manage');
   const snap = await db().collection('employees').doc(str(body.userId, 128)).get();
@@ -1126,6 +1165,7 @@ export async function routeTenant(r: TenantRequest): Promise<TenantResult> {
       case 'create-user': return await createUser(headers, b, origin);
       case 'import-users': return await importUsers(headers, b, origin);
       case 'update-user': return await updateUser(headers, b, origin);
+      case 'set-extra-permissions': return await setExtraPermissions(headers, b);
       case 'resend-invite': return await resendInvite(headers, b, origin);
       case 'save-department': return await saveDepartment(headers, b);
       case 'delete-department': return await deleteDepartment(headers, b);

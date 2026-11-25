@@ -192,8 +192,15 @@ export function permissionModule(key: string): ModuleKey | undefined {
 }
 
 /** Union of permissions across roles, restricted to the modules the company has enabled. */
-export function effectivePermissions(roles: Pick<RoleDef, 'permissions' | 'isAdmin'>[], enabledModules: string[]): string[] {
+/** Permissions a person gets from their roles, plus any extras granted to them personally. */
+export function effectivePermissions(roles: Pick<RoleDef, 'permissions' | 'isAdmin'>[], enabledModules: string[], extras: string[] = []): string[] {
   const set = new Set<string>();
+  for (const key of extras) {
+    if (!isKnownPermission(key) || RETIRED_PERMISSIONS.includes(key)) continue;
+    const mod = permissionModule(key);
+    if (mod && !enabledModules.includes(mod)) continue;
+    set.add(key);
+  }
   for (const role of roles) {
     const source = role.isAdmin ? ALL_PERMISSION_KEYS : role.permissions;
     for (const key of source) {

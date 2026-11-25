@@ -432,6 +432,7 @@ const UserModal: React.FC<{
             })}
           </div>
         </fieldset>
+        {user && (user.extraPermissions?.length || 0) > 0 && <p className="text-[11px] text-slate-500">{user.extraPermissions!.length} extra permission(s) given to this person. Manage them in Roles &amp; permissions → By person.</p>}
         {user && (
           <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Account active (untick to block sign-in)
@@ -656,6 +657,7 @@ const RolesTab: React.FC<{ roles: RoleDef[]; users: User[]; company: Company; cu
   const [editing, setEditing] = useState<RoleDef | 'new' | null>(null);
   const [flash, setFlash] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
   const holders = (id: string) => users.filter((u) => (u.roleIds || []).includes(id)).length;
+  const [view, setView] = useState<'role' | 'person'>('role');
 
   const remove = async (r: RoleDef) => {
     if (!window.confirm(`Delete the ${r.name} role?`)) return;
@@ -669,11 +671,17 @@ const RolesTab: React.FC<{ roles: RoleDef[]; users: User[]; company: Company; cu
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <button className={primaryBtn} onClick={() => setEditing('new')}><Plus className="h-3.5 w-3.5" /> New role</button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 text-xs font-bold">
+          {([['role', 'By role'], ['person', 'By person']] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setView(k)} className={`rounded-lg px-3 py-1.5 ${view === k ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>{l}</button>
+          ))}
+        </div>
+        {view === 'role' && <button className={primaryBtn} onClick={() => setEditing('new')}><Plus className="h-3.5 w-3.5" /> New role</button>}
       </div>
       {flash && <Banner kind={flash.kind}>{flash.text}</Banner>}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {view === 'person' && <PersonPermissions users={users} roles={roles} company={company} currentUser={currentUser} onFlash={setFlash} />}
+      {view === 'role' && <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {roles.map((r) => (
           <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-start justify-between gap-2">
@@ -696,7 +704,7 @@ const RolesTab: React.FC<{ roles: RoleDef[]; users: User[]; company: Company; cu
             </div>
           </div>
         ))}
-      </div>
+      </div>}
       {editing && (
         <RoleModal
           role={editing === 'new' ? null : editing}
@@ -707,6 +715,107 @@ const RolesTab: React.FC<{ roles: RoleDef[]; users: User[]; company: Company; cu
         />
       )}
     </div>
+  );
+};
+
+/** Who has what: every person with their roles and any extra permissions granted to them personally. */
+const PersonPermissions: React.FC<{ users: User[]; roles: RoleDef[]; company: Company; currentUser: User; onFlash: (f: { kind: 'error' | 'success'; text: string }) => void }> = ({ users, roles, company, currentUser, onFlash }) => {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState<User | null>(null);
+  const list = users.filter((u) => `${u.name} ${u.email} ${(u.roleNames || []).join(' ')}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => (b.extraPermissions?.length || 0) - (a.extraPermissions?.length || 0) || a.name.localeCompare(b.name));
+  return (
+    <div className="space-y-2">
+      <input className={input} placeholder="Search people or roles" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+        {list.map((u) => {
+          const extra = u.extraPermissions?.length || 0;
+          return (
+            <button key={u.id} type="button" onClick={() => setOpen(u)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-slate-50">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold text-slate-900">{u.name}</div>
+                <div className="truncate text-[11px] text-slate-500">{(u.roleNames || []).join(', ') || 'No role'} · {u.email}</div>
+              </div>
+              {extra > 0 && <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700">+{extra} extra</span>}
+            </button>
+          );
+        })}
+        {list.length === 0 && <div className="p-4 text-xs text-slate-500">No one matches.</div>}
+      </div>
+      {open && (
+        <PersonPermissionsModal user={open} roles={roles} company={company} currentUser={currentUser} onClose={() => setOpen(null)}
+          onDone={(text) => { setOpen(null); onFlash({ kind: 'success', text }); }} />
+      )}
+    </div>
+  );
+};
+
+const PersonPermissionsModal: React.FC<{ user: User; roles: RoleDef[]; company: Company; currentUser: User; onClose: () => void; onDone: (m: string) => void }> = ({
+  user, roles, company, currentUser, onClose, onDone,
+}) => {
+  const mine = roles.filter((r) => (user.roleIds || []).includes(r.id));
+  const isAdminUser = mine.some((r) => r.isAdmin);
+  const fromRole = (key: string) => mine.filter((r) => r.isAdmin || r.permissions.includes(key)).map((r) => r.name);
+  const [selected, setSelected] = useState<string[]>(user.extraPermissions || []);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const self = !!user.authUid && user.authUid === currentUser.authUid;
+  const canGrant = (key: string) => !!currentUser.isCompanyAdmin || !!currentUser.perms?.includes(key);
+  const groups = useMemo(() => {
+    const map = new Map<string, typeof PERMISSIONS>();
+    PERMISSIONS.forEach((p) => map.set(p.group, [...(map.get(p.group) || []), p]));
+    return Array.from(map.entries());
+  }, []);
+  const toggle = (key: string) => setSelected((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]));
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setError('');
+    try {
+      await adminApi.setExtraPermissions(user.id, selected);
+      onDone(`${user.name}'s extra permissions saved. They apply the next time ${user.name.split(' ')[0]} signs in.`);
+    } catch (err) { setError(message(err)); } finally { setBusy(false); }
+  };
+  return (
+    <Modal title={`Permissions: ${user.name}`} onClose={onClose} wide>
+      <form onSubmit={submit} className="space-y-3">
+        {error && <Banner kind="error">{error}</Banner>}
+        <p className="text-xs text-slate-500">Roles: <b>{mine.map((r) => r.name).join(', ') || 'none'}</b>. Locked ticks come from a role. Tick anything else to give it to {user.name.split(' ')[0]} only.</p>
+        {isAdminUser && <Banner kind="success">A Company Admin already has every permission.</Banner>}
+        {self && <Banner kind="error">You cannot change your own permissions.</Banner>}
+        <div className="space-y-3">
+          {groups.map(([group, perms]) => (
+            <fieldset key={group}>
+              <legend className="text-[11px] font-black uppercase tracking-wide text-slate-500">{group}</legend>
+              <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2">
+                {perms.map((p) => {
+                  const roleNames = fromRole(p.key);
+                  const locked = roleNames.length > 0;
+                  const moduleOff = !!p.module && !company.modules.includes(p.module);
+                  const disabled = locked || isAdminUser || self || (!selected.includes(p.key) && !canGrant(p.key));
+                  return (
+                    <label key={p.key} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${locked || selected.includes(p.key) ? 'bg-orange-50' : ''} ${disabled && !locked ? 'opacity-40' : ''}`}>
+                      <input type="checkbox" className="mt-0.5" checked={locked || selected.includes(p.key)} disabled={disabled} onChange={() => toggle(p.key)} />
+                      <span>
+                        {p.label}
+                        {locked && <span className="block text-[10px] text-slate-400">From role: {roleNames.join(', ')}</span>}
+                        {moduleOff && <span className="block text-[10px] text-amber-600">Its module is off for this company, so it has no effect yet.</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
+        </div>
+        {(user.permissionHistory?.length || 0) > 0 && (
+          <div className="text-[11px] text-slate-400">Last change: {user.permissionHistory![user.permissionHistory!.length - 1].at.slice(0, 16).replace('T', ' ')} by {user.permissionHistory![user.permissionHistory!.length - 1].by}</div>
+        )}
+        <div className="flex justify-end gap-2">
+          <button type="button" className={ghostBtn} onClick={onClose}>Cancel</button>
+          <button type="submit" className={primaryBtn} disabled={busy || self || isAdminUser}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

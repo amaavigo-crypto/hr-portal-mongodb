@@ -34,7 +34,7 @@ class DocRef {
 class Query {
   constructor(private store: Map<string, Doc>, private filters: ((d: Doc) => boolean)[] = [], private max = Infinity) {}
   where(field: string, op: string, value: any) {
-    const f = (d: Doc) => (op === '==' ? d[field] === value : op === 'in' ? value.includes(d[field]) : op === '<=' ? d[field] <= value : false);
+    const f = (d: Doc) => (op === '==' ? d[field] === value : op === 'in' ? value.includes(d[field]) : op === '<=' ? d[field] <= value : op === 'array-contains' ? Array.isArray(d[field]) && d[field].includes(value) : false);
     return new Query(this.store, [...this.filters, f], this.max);
   }
   limit(n: number) { return new Query(this.store, this.filters, n); }
