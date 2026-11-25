@@ -68,6 +68,10 @@ const eD = dg.find((d) => d.uid === 'e')!;
 assert.equal(eD.sections.find((s) => /attention/.test(s.heading))!.lines.length, 1, 'only the rejected document; a missing PAN is HR\'s list, not an email to the employee');
 assert.ok(!dg.some((d) => d.uid === 'n'), 'a new joiner inside the grace period is not nudged');
 
+// the panel shows plain text, so markdown from the model is removed
+import { plainText } from '../api/_lib/agentKit.ts';
+assert.equal(plainText('1. **Approver** (Emp ID: AMAA006)\n* **Chen** is `IT`\n## Summary\n__done__'), '1. Approver (Emp ID: AMAA006)\n- Chen is IT\nSummary\ndone');
+
 // ------------------------------------------------------------------ end to end through Ask HR (the model is scripted)
 
 const fdb = new FakeFirestore();

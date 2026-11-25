@@ -17,6 +17,10 @@ import { PROPOSAL_TTL_MS, type ProposalAction, type ProposalCard } from '../../s
 export type Result = { status: number; json: any };
 export const db = () => adminDb();
 export const str = (v: unknown, max = 500) => (v === undefined || v === null ? '' : String(v)).trim().slice(0, max);
+/** The Ask HR panel shows plain text, so markdown the model slips in (bold, headings, code ticks, "* " bullets) is removed. */
+export const plainText = (s: string) => s
+  .replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/__([^_\n]+)__/g, '$1').replace(/`([^`\n]+)`/g, '$1')
+  .replace(/^\s{0,3}#{1,6}\s+/gm, '').replace(/^(\s*)[*•]\s+/gm, '$1- ').replace(/\*\*/g, '');
 export const istDay = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
 
 export interface Source { kind: 'data' | 'policy'; label: string }

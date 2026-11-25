@@ -27,7 +27,7 @@ import { runPeopleAgentTool } from './peopleAgent.js';
 import { runEmployeeAgentTool } from './employeeAgent.js';
 import { HR_ACTIONS, runHrConfirm, runLeaveHrTool } from './leaveAgentHr.js';
 import { latestNudge, markNudgeSeen, runWatcherAll } from './agentWatcher.js';
-import { db, give, istDay, makeProposal, proposed, PROPOSALS, route, str, type Result, type Run, type Source } from './agentKit.js';
+import { db, give, istDay, makeProposal, plainText, proposed, PROPOSALS, route, str, type Result, type Run, type Source } from './agentKit.js';
 import { authErrorResponse, requireActiveTenant, type AuthContext } from './authContext.js';
 import { aiEnabled, aiKey, reserveAiCall } from './openaiHelper.js';
 import { routeLeave } from './leaveApi.js';
@@ -364,6 +364,7 @@ const systemPrompt = (company: string, today: string, who: Run['ctx']) => [
   '- Before you propose, be sure which item is meant (use the ids from the look-up tools; if several match, ask which). Never invent an id, a reason, an amount, a date or a leave type. For a rejection, ask for the reason if the person did not give one. To apply for leave you need the leave type and the dates; ask for what is missing.',
   '- You cannot submit or withdraw a resignation for anyone. If someone wants to resign or withdraw, tell them to use People > My exit. You also cannot issue letters or apply for someone else. If you have no propose_ tool for marking attendance, adjusting a balance or closing an exception, this person is not HR: say it is an HR task and point to the matching screen. Never do these for HR\'s own record. Identity and account numbers are always masked and you never ask for or repeat a full number. You cannot change anyone\'s department, title, roles, pay or bank details; for those point to Admin > People or Payroll. An employee can only ask what is missing on their own profile; they change details on the Employee screens, not through you. For attendance you need the date and both times; for a balance change the leave type, the number of days and a reason; for an exception a resolution. Ask for what is missing and never invent times, days or reasons.',
   '- The company pay date is not recorded. For "when is payday" say you do not have the date; mention the latest payslip month if the tool shows one.',
+  '- Write plain text only: no markdown, no asterisks, no bold, no headings, no tables. Use short lines or "1." numbering for lists.',
   '- Keep answers short and plain, no tables. A person asking about a queue or team (approvals, who is away, attendance) may get a short list, at most 8 lines, then a one-line summary. Say briefly what the answer is based on ("from your approvals", "per the Leave policy").',
   '- If the question is not about HR or work at the company, say you can only help with HR questions.',
   '- If you could not answer from the data, end your reply with the exact token [[ASK_HR]].',
@@ -413,7 +414,7 @@ async function converse(r: Run, company: string, question: string, history: Chat
     const raw = str(msg.content, 2000);
     if (!raw) return { answer: SORRY, unsure: true };
     const unsure = UNSURE.test(raw);
-    const answer = raw.replace(UNSURE, ' ').trim();
+    const answer = plainText(raw.replace(UNSURE, ' ')).trim();
     const bad = unverifiedNumbers(answer, [...r.facts, question, ...history.map((h) => h.content)]);
     if (bad.length === 0) return { answer, unsure };
     if (rewrote) return { answer: SAFE_NUMBERS, unsure: true };
