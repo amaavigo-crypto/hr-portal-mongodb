@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { downloadCsv } from '../../services/leaveService';
 import { inr, monthLabel, payrollService, previousMonth, shiftMonth } from '../../services/payrollService';
+import { AccountingExport } from './AccountingExport';
 import { Card, Field, Notice, btnDanger, btnGhost, btnPrimary, input, useRunner } from '../leave/ui';
 
 const save = (name: string, text: string, type = 'text/plain') => {
@@ -81,6 +82,8 @@ export const StatutoryTab: React.FC<{ canManage: boolean }> = ({ canManage }) =>
           <p className="text-[11px] text-slate-400 mt-2">Portals change their layouts now and then. Upload a small test file first.</p>
         </Card>
       )}
+
+      {dues && <AccountingExport month={month} canManage={canManage} />}
 
       <Card title="Deposits (challans)">
         {canManage && (
