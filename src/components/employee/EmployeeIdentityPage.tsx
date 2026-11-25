@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Check, Eye, EyeOff, FileBadge, ImagePlus, Image as ImageIcon, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
 import { lifecycleService } from '../../services/lifecycleService';
 import { maskIdentity } from '../../../shared/employeeIdentity';
@@ -17,10 +17,22 @@ const PILL: Record<string, { text: string; cls: string }> = {
 const EditPopover: React.FC<{ item: Item; uid?: string; byHr: boolean; onClose: () => void; onSaved: () => void }> = ({ item, uid, byHr, onClose, onSaved }) => {
   const [number, setNumber] = useState(item.pendingNumber || item.number);
   const { busy, note, run } = useRunner();
+  // Opens below the pencil; if that would run off the bottom of the screen (the last cards), opens above it instead.
+  const box = useRef<HTMLDivElement>(null);
+  const [up, setUp] = useState(false);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.bottom <= window.innerHeight - 8) return;
+    const anchorTop = r.top - 4; // the box starts 4px under the pencil
+    if (anchorTop - r.height - 8 >= 0) setUp(true);
+    else el.scrollIntoView({ block: 'nearest' });
+  }, []);
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} aria-hidden />
-      <div role="dialog" aria-label={`Edit ${item.label}`} className="absolute right-0 top-full mt-1 z-20 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-lg space-y-2.5">
+      <div ref={box} role="dialog" aria-label={`Edit ${item.label}`} className={`absolute right-0 ${up ? 'bottom-full mb-1' : 'top-full mt-1'} z-20 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-lg space-y-2.5`}>
         <Field label="Number" hint={item.hint}><input className={input} value={number} onChange={(e) => setNumber(e.target.value)} autoComplete="off" autoFocus /></Field>
         <p className="text-[11px] text-slate-400">{byHr ? 'Saved straight away. Leave it empty to remove this number.' : 'HR will check this before it is approved.'}</p>
         {note && <Notice tone={note.tone}>{note.text}</Notice>}
