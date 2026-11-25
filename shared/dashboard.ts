@@ -39,6 +39,7 @@ export interface WidgetTarget {
     | 'talent-acquisition-overview'
     | 'talent-acquisition-requisitions'
     | 'my-hiring'
+    | 'performance'
     | 'administration';
   section?: string;
   /** Document module only: which of its tabs to open. */

@@ -1,5 +1,6 @@
 import { apiJson } from './apiClient';
 import type { WidgetTarget } from '../../shared/dashboard';
+import type { AttentionResult } from '../../shared/attention';
 import type { AnnouncementKind, Celebrant, Mood, QuickLink, QuickReport } from '../../shared/home';
 
 // The Home cards share the leave serverless function: /api/leave/home-<action>
@@ -84,6 +85,7 @@ export interface HomeSettingsView {
 }
 
 export const homeService = {
+  attention: () => get<AttentionResult>('attention'),
   layout: () => get<HomeLayout>('layout'),
   profile: () => get<HomeProfile>('profile'),
   calendar: (month?: string) => get<HomeCalendar>('calendar', { month }),

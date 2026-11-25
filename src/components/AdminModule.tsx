@@ -10,6 +10,7 @@ import { PERMISSIONS, hasPerm, type RoleDef } from '../../shared/permissions';
 import { ToastProvider, useToast } from './leave/ui';
 
 import { OrganisationsTab } from './OrganisationsTab';
+import { NotificationDrawer } from './NotificationDrawer';
 
 type Tab = 'users' | 'departments' | 'roles' | 'integrations' | 'organisations';
 
@@ -67,6 +68,7 @@ interface Props {
 }
 
 export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
+  const [emailOpen, setEmailOpen] = useState(false);
   const perms = currentUser.perms;
   const canUsers = hasPerm(perms, 'users.manage');
   const canDepts = hasPerm(perms, 'departments.manage');
@@ -106,12 +108,18 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
   return (
     <ToastProvider>
     <div className="min-w-0 flex-1 space-y-4 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">Administration</h1>
-        <p className="text-xs text-slate-500 sm:text-sm">
-          Manage people, departments and roles for <b>{company.name}</b>.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Administration</h1>
+          <p className="text-xs text-slate-500 sm:text-sm">
+            Manage people, departments and roles for <b>{company.name}</b>.
+          </p>
+        </div>
+        <button type="button" onClick={() => setEmailOpen(true)} className={ghostBtn} title="Send a test email and check the email settings">
+          <Mail className="h-3.5 w-3.5" /> Email delivery
+        </button>
       </div>
+      <NotificationDrawer isOpen={emailOpen} onClose={() => setEmailOpen(false)} />
 
       <div className="inline-flex flex-wrap rounded-xl border border-slate-200 bg-white p-0.5 text-xs font-bold">
         {tabs.map((t) => (

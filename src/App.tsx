@@ -10,7 +10,6 @@ import {
 } from './types';
 import { governanceEngine, isEmployeeInDepartment } from './services/governance';
 import { auditService } from './services/audit';
-import { defaultEmailProvider } from './services/email';
 import { firestoreService } from './services/firestoreService';
 import { HRHeader } from './components/HRHeader';
 import { ApproverHeader } from './components/ApproverHeader';
@@ -34,7 +33,8 @@ import { CreateDocumentModal } from './components/CreateDocumentModal';
 import { CreateVersionModal } from './components/CreateVersionModal';
 import { ReviewDocumentModal } from './components/ReviewDocumentModal';
 import { DocumentDetailModal } from './components/DocumentDetailModal';
-import { NotificationDrawer } from './components/NotificationDrawer';
+import { NotificationCenter } from './components/NotificationCenter';
+import { useAttention } from './components/useAttention';
 import { DocumentViewer } from './components/DocumentViewer';
 import { formatDDMMYYYY } from './utils/documentHeaderFooter';
 import { downloadDocumentWithIntactFormat } from './utils/documentStamper';
@@ -217,7 +217,6 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<DocumentSuggestion[]>(() =>
     governanceEngine.getDocumentSuggestions()
   );
-  const [notificationCount, setNotificationCount] = useState(0);
   const [pendingComplianceCount, setPendingComplianceCount] = useState(0);
 
   // Modals
@@ -227,6 +226,8 @@ export default function App() {
   const [reviewVersion, setReviewVersion] = useState<DocumentVersion | null>(null);
   const [detailDocument, setDetailDocument] = useState<DocumentMaster | null>(null);
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
+  const attention = useAttention(session.kind === 'ready' && !!currentUser);
+  const notificationCount = attention.badge;
   const [readerVersion, setReaderVersion] = useState<DocumentVersion | null>(null);
   const [employeeTab, setEmployeeTab] = useState<'acknowledgements' | 'all-documents'>('acknowledgements');
 
@@ -342,7 +343,6 @@ export default function App() {
     }
     allVers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setVersions([...allVers]);
-    setNotificationCount(defaultEmailProvider.getNotifications().length);
     const acks = governanceEngine.getAcknowledgements();
     setAcknowledgements([...acks]);
     setPendingComplianceCount(acks.filter((a) => a.status === 'PENDING').length);
@@ -1042,10 +1042,12 @@ export default function App() {
         </div>
       )}
 
-      {/* NOTIFICATION LOG DRAWER */}
-      <NotificationDrawer
+      {/* NOTIFICATION CENTER: what needs attention, and updates */}
+      <NotificationCenter
         isOpen={isNotifDrawerOpen}
         onClose={() => setIsNotifDrawerOpen(false)}
+        state={attention}
+        onOpen={openDashboardTarget}
       />
       {session.kind === 'ready' && currentUser && !claimAppMode() && <QuickClaimLauncher />}
     </>

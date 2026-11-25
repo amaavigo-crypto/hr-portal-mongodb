@@ -166,6 +166,7 @@ async function proposeApplyLeave(r: Run, name: string, args: any): Promise<strin
 }
 
 const SELF_TOOLS = [
+  { name: 'get_my_attention', description: 'Everything waiting for the signed-in person across the portal right now: approvals, policies to acknowledge, tasks, documents to review, performance steps, payroll approvals. The same list as the bell. Use it for "what needs my attention", "what is pending for me" or "what should I do today".', parameters: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'get_leave_balances', description: 'The person\'s own leave balances for the current leave year: each leave type with balance, pending, used and credited days, and when the year ends.', parameters: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'get_holidays', description: 'Upcoming company holidays for the person\'s location, and their weekly off days.', parameters: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'get_my_profile', description: 'The person\'s joining date, reporting manager, work location, leave policy name, and today\'s attendance (check in/out, worked minutes).', parameters: { type: 'object', properties: {}, additionalProperties: false } },
@@ -310,6 +311,15 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
       if (j.error || j.found === false || !j.configured) return give(r, name, null, { note: 'Holidays are not available.' });
       const upcoming = (j.holidays || []).filter((h: any) => h.date >= j.today).slice(0, 12).map((h: any) => ({ date: h.date, name: h.name, optional: !!h.optional }));
       return give(r, name, { kind: 'data', label: 'Company holidays' }, { today: j.today, upcoming, weeklyOff: j.weeklyOff || {}, location: j.profile?.location || '' });
+    }
+    case 'get_my_attention': {
+      const j = await route(r, 'home', 'GET', 'attention');
+      if (j.error) return give(r, name, null, j);
+      return give(r, name, { kind: 'data', label: 'Needs your attention' }, {
+        total: j.total ?? 0,
+        groups: (j.groups || []).map((g: any) => ({ area: g.label, count: g.count, items: (g.items || []).slice(0, 8).map((i: any) => ({ what: i.title, detail: i.detail, waitingDays: i.waitingDays, urgent: i.urgent || undefined })), more: g.more || undefined })),
+        note: j.partial ? 'Some areas could not be checked just now.' : undefined,
+      });
     }
     case 'get_my_profile': {
       const j = await route(r, 'leave', 'GET', 'me');
