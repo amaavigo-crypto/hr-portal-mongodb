@@ -492,6 +492,7 @@ Employment details of a person (joining, designation, reporting, status). Docume
 | --- | --- | --- | --- |
 | `companyId` | string | required |  |
 | `uid` | string |  |  |
+| `photo` | string |  |  |
 | `updatedAt` | string |  |  |
 | `updatedBy` | string |  |  |
 

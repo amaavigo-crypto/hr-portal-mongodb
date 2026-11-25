@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Briefcase, Building2, FileText, Pencil, RefreshCw, UserRound } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Briefcase, Building2, Camera, FileText, Pencil, RefreshCw, Trash2, UserRound } from 'lucide-react';
+import { squarePhoto } from './shrinkImage';
 import { lifecycleService } from '../../services/lifecycleService';
 import { Avatar } from '../home/parts';
 import { Drawer, Field, Notice, btnGhost, btnPrimary, input, niceDate, useRunner } from '../leave/ui';
 
 type Mgr = { uid: string; name: string; empId: string } | null;
 interface Profile {
-  uid: string; name: string; email: string; empId: string; department: string; title: string; active: boolean;
+  uid: string; photo: string; name: string; email: string; empId: string; department: string; title: string; active: boolean;
   salutation: string; firstName: string; middleName: string; lastName: string; shortName: string; nameInLocal: string;
   machineCode: string; oldCode: string; mobile: string; gender: string; dob: string; joinDate: string; leavingDate: string;
   confirmationDate: string; wef: string; reportingManager: Mgr; approvingManager: Mgr;
@@ -62,7 +63,10 @@ const EditDrawer: React.FC<{ p: Profile; open: boolean; onClose: () => void; onS
 
 /** Employee Master: one employee's profile. Everyone opens their own; HR can pick anyone. */
 export const EmployeeProfilePage: React.FC<{ uid?: string }> = ({ uid }) => {
-  const [data, setData] = useState<{ profile: Profile; canEdit: boolean } | null>(null);
+  const [data, setData] = useState<{ profile: Profile; canEdit: boolean; canPhoto: boolean } | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoErr, setPhotoErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('about');
   const [edit, setEdit] = useState(false);
@@ -73,11 +77,34 @@ export const EmployeeProfilePage: React.FC<{ uid?: string }> = ({ uid }) => {
   if (err) return <Notice tone="error">{err}</Notice>;
   if (!data) return <div className="text-sm text-slate-500">Loading…</div>;
   const p = data.profile;
+  const setPhoto = async (fn: () => Promise<string>) => {
+    setPhotoBusy(true); setPhotoErr(null);
+    try { await lifecycleService.saveProfilePhoto(p.uid, await fn()); await load(); }
+    catch (e: any) { setPhotoErr(e?.message || 'Could not save the photo.'); }
+    finally { setPhotoBusy(false); if (fileRef.current) fileRef.current.value = ''; }
+  };
 
   return (
     <div className="space-y-4">
       <section className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row gap-5">
-        <div className="relative shrink-0 self-start"><span className="inline-flex"><Avatar name={p.name} size="lg" /></span></div>
+        <div className="shrink-0 self-start flex flex-col items-center gap-1.5">
+          <div className="relative">
+            <Avatar name={p.name} size="xl" photo={p.photo} />
+            {data.canPhoto && (
+              <button type="button" disabled={photoBusy} aria-label={p.photo ? 'Change profile photo' : 'Upload profile photo'} onClick={() => fileRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-slate-300 shadow flex items-center justify-center text-slate-600 hover:text-[#FA7014] disabled:opacity-50">
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          {data.canPhoto && p.photo && (
+            <button type="button" disabled={photoBusy} className="text-[11px] text-slate-400 hover:text-rose-700 inline-flex items-center gap-1" onClick={() => void setPhoto(async () => '')}><Trash2 className="w-3 h-3" />Remove</button>
+          )}
+          {photoBusy && <span className="text-[11px] text-slate-500">Saving…</span>}
+          {photoErr && <span className="text-[11px] text-rose-700 max-w-[8rem] text-center">{photoErr}</span>}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" aria-label="Choose a profile photo"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void setPhoto(() => squarePhoto(f)); }} />
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-sm font-bold text-slate-800">{[p.empId, p.name].filter(Boolean).join(' - ')}</h2>

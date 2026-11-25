@@ -218,6 +218,18 @@ assert.equal(hrView.profile.dob, '2000-03-14');
 assert.equal(hrView.canEdit, true);
 assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { dob: '2999-01-01' } })).status, 400);
 assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { gender: 'x' } })).status, 400);
+// profile photo: self or HR may set it, others may not; only a small real JPEG is accepted
+const JPEG = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1]).toString('base64');
+assert.equal((await call(EMP, 'GET', 'profile')).json.canPhoto, true, 'own profile: can set photo');
+await ok(EMP, 'POST', 'profile-photo-save', { dataUrl: JPEG });
+assert.equal((await call(EMP, 'GET', 'profile')).json.profile.photo, JPEG);
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { uid: 'u_mgr', dataUrl: JPEG })).status, 403, 'cannot set someone else\'s photo');
+await ok(HR, 'POST', 'profile-photo-save', { uid: 'u_emp', dataUrl: JPEG });
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { dataUrl: 'data:image/png;base64,iVBORw0KGgo=' })).status, 400, 'only JPEG');
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(200000) })).status, 400, 'too large');
+assert.equal((await call(EMP, 'POST', 'profile-photo-save', { dataUrl: 'data:image/jpeg;base64,AAAAAAAAAAAA' })).status, 400, 'not a real JPEG');
+await ok(EMP, 'POST', 'profile-photo-save', { dataUrl: '' });
+assert.equal((await call(EMP, 'GET', 'profile')).json.profile.photo, '', 'photo removed');
 assert.equal((await call(FOREIGN, 'GET', 'profile', {}, { uid: 'u_emp' })).status, 404, 'another company cannot read it');
 
 // ---- employee identity
