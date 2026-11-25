@@ -35,7 +35,7 @@ const EditDrawer: React.FC<{ p: Profile; open: boolean; onClose: () => void; onS
   const [f, setF] = useState<Record<string, string>>({});
   const { busy, note, run } = useRunner();
   useEffect(() => {
-    if (open) setF({ salutation: p.salutation, firstName: p.firstName, middleName: p.middleName, lastName: p.lastName, shortName: p.shortName, nameInLocal: p.nameInLocal, machineCode: p.machineCode, oldCode: p.oldCode, mobile: p.mobile, gender: p.gender, dob: p.dob, confirmationDate: p.confirmationDate, wef: p.wef });
+    if (open) setF({ salutation: p.salutation, firstName: p.firstName, middleName: p.middleName, lastName: p.lastName, shortName: p.shortName, nameInLocal: p.nameInLocal, machineCode: p.machineCode, oldCode: p.oldCode, mobile: p.mobile, gender: p.gender, dob: p.dob, joinDate: p.joinDate, confirmationDate: p.confirmationDate, wef: p.wef });
   }, [open, p]);
   const t = (k: string, label: string, type = 'text') => (
     <Field label={label}><input type={type} className={input} value={f[k] ?? ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></Field>
@@ -53,8 +53,8 @@ const EditDrawer: React.FC<{ p: Profile; open: boolean; onClose: () => void; onS
           </select>
         </Field>
         {t('dob', 'Date of birth', 'date')}{t('mobile', 'Mobile number', 'tel')}{t('machineCode', 'Machine code')}{t('oldCode', 'Old code')}
-        {t('confirmationDate', 'Confirmation date', 'date')}{t('wef', 'Effective from (WEF)', 'date')}
-        <p className="text-[11px] text-slate-400">Joining date and reporting manager are changed from People and Leave setup.</p>
+        {t('joinDate', 'Date of joining', 'date')}{t('confirmationDate', 'Confirmation date', 'date')}{t('wef', 'Effective from (WEF)', 'date')}
+        <p className="text-[11px] text-slate-400">The joining date sets leave accrual and probation. The reporting manager is changed from People and Leave setup.</p>
         {note && <Notice tone={note.tone}>{note.text}</Notice>}
       </div>
     </Drawer>

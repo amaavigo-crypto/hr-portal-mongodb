@@ -218,6 +218,12 @@ assert.equal(hrView.profile.dob, '2000-03-14');
 assert.equal(hrView.canEdit, true);
 assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { dob: '2999-01-01' } })).status, 400);
 assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { gender: 'x' } })).status, 400);
+// joining date: HR only, must be a real date, and lands on the leave profile
+assert.equal((await call(EMP, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: '2022-01-10' } })).status, 403);
+assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: 'nope' } })).status, 400);
+assert.equal((await call(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: '' } })).status, 400);
+await ok(HR, 'POST', 'profile-save', { uid: 'u_emp', fields: { joinDate: '2022-01-10' } });
+assert.equal((await call(HR, 'GET', 'profile', {}, { uid: 'u_emp' })).json.profile.joinDate, '2022-01-10', 'joining date saved');
 // profile photo: self or HR may set it, others may not; only a small real JPEG is accepted
 const JPEG = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1]).toString('base64');
 assert.equal((await call(EMP, 'GET', 'profile')).json.canPhoto, true, 'own profile: can set photo');
