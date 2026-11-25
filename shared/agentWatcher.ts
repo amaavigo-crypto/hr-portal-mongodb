@@ -5,6 +5,8 @@
  *   Managers   leave requests waiting on them for more than 2 days
  *   HR         open attendance exceptions, exit clearance that is running out of time, overdue onboarding tasks
  *   HR         also: identity documents waiting for review for more than 3 days, and employee records still incomplete 14 days after joining
+ *   Documents  HR: versions waiting for review 3+ days, policies due for review, low acknowledgement a week after publishing;
+ *             everyone: policies they have had to acknowledge for a week or more
  *   Wellbeing  people who can view Wellbeing results get one Monday line when few people have opted in or nobody has played lately
  *             (never sent to the players themselves: playing is voluntary)
  *   Everyone   their own overdue onboarding tasks and identity documents HR did not approve (never "you have nothing on file": missing details go to HR)
@@ -14,6 +16,7 @@
  */
 import { addDays, dateSpan, dayWord, daysBetween } from './leaveAgentTools.js';
 import { wellbeingNudge, type WellbeingWatch } from './wellbeingAgentTools.js';
+import { type DocumentWatch } from './documentAgentTools.js';
 
 /** A leave request is "stuck" once it has waited longer than this many days. */
 export const WATCH_WAIT_DAYS = 2;
@@ -49,6 +52,8 @@ export interface WatchInput {
   tasks: WatchTask[];
   /** Employee records. Optional so older callers keep working. */
   records?: WatchRecord[];
+  /** Document governance. Optional. */
+  documents?: DocumentWatch | undefined;
   /** Wellbeing programme health, for the people who can view Wellbeing results. Optional. */
   wellbeing?: (WellbeingWatch & { viewerUids: string[] }) | undefined;
 }
@@ -104,6 +109,18 @@ export function buildDigests(inp: WatchInput): Digest[] {
   for (const uid of hr) {
     add(uid, { heading: `Identity ${plural(stuckDocs.length, 'document', 'documents')} waiting for your review (${stuckDocs.length})`, lines: cap(stuckDocs.map((d) => `${d.name}: ${d.document}, waiting ${dayWord(d.waiting)}`)) });
     add(uid, { heading: `Incomplete employee ${plural(incomplete.length, 'record', 'records')} (${incomplete.length})`, lines: cap(incomplete.map((r) => `${r.name}: missing ${r.missing.join(', ')}`)) });
+  }
+  // Documents: HR sees the pipeline; each person sees their own pending acknowledgements.
+  const dw = inp.documents;
+  if (dw) {
+    for (const uid of hr) {
+      add(uid, { heading: `Document ${plural(dw.reviewWaiting.length, 'version', 'versions')} waiting for review (${dw.reviewWaiting.length})`, lines: cap(dw.reviewWaiting.map((d) => `${d.document} v${d.version}, created ${dayWord(d.days)} ago`)) });
+      add(uid, { heading: `${plural(dw.reviewDue.length, 'Policy', 'Policies')} due for review (${dw.reviewDue.length})`, lines: cap(dw.reviewDue.map((d) => `${d.document} v${d.version}: ${d.days < 0 ? `overdue by ${dayWord(-d.days)}` : d.days === 0 ? 'due today' : `due in ${dayWord(d.days)}`}`)) });
+      add(uid, { heading: `Low acknowledgement (${dw.lowAcknowledged.length})`, lines: cap(dw.lowAcknowledged.map((d) => `${d.document} v${d.version}: ${d.percent}% acknowledged, ${d.pending} pending`)) });
+    }
+    const mine = new Map<string, typeof dw.pendingAcks>();
+    for (const a of dw.pendingAcks) mine.set(a.uid, [...(mine.get(a.uid) || []), a]);
+    for (const [uid, list] of mine) add(uid, { heading: `${plural(list.length, 'Policy', 'Policies')} to acknowledge (${list.length})`, lines: cap(list.map((a) => `${a.document} v${a.version}, waiting ${dayWord(a.days)}`)) });
   }
   // Wellbeing: only people who can view its results, only on Mondays, and only about the programme (never about a person).
   const wb = wellbeingNudge(inp.wellbeing, today);

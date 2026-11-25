@@ -26,6 +26,7 @@
 import { runPeopleAgentTool } from './peopleAgent.js';
 import { runEmployeeAgentTool } from './employeeAgent.js';
 import { runWellbeingAgentTool } from './wellbeingAgent.js';
+import { runDocumentAgentTool } from './documentAgent.js';
 import { HR_ACTIONS, runHrConfirm, runLeaveHrTool } from './leaveAgentHr.js';
 import { latestNudge, markNudgeSeen, runWatcherAll } from './agentWatcher.js';
 import { db, give, istDay, makeProposal, plainText, proposed, PROPOSALS, route, str, type Result, type Run, type Source } from './agentKit.js';
@@ -40,6 +41,7 @@ import { cleanHistory, rankPassages, unverifiedNumbers, type ChatTurn, type Poli
 import { peopleRoleLine, peopleToolsFor } from '../../shared/peopleAgentTools.js';
 import { employeeRoleLine, employeeToolsFor } from '../../shared/employeeAgentTools.js';
 import { WELLBEING_RULES, wellbeingRoleLine, wellbeingToolsFor } from '../../shared/wellbeingAgentTools.js';
+import { DOCUMENT_RULES, documentRoleLine, documentToolsFor } from '../../shared/documentAgentTools.js';
 import {
   LEAVE_AGENT_TOOLS, PROPOSAL_TTL_MS, cleanRange, cleanText, cleanUid, countBy, addDays, dateSpan, dayWord, daysBetween, isIsoDate, matchEmployees,
   matchLeaveType, mayUseTool, proposalLive, roleLine, summarizeAttendance, toolsFor, type PersonDays, type ProposalAction, type ProposalCard,
@@ -179,6 +181,7 @@ const toolsOf = (r: Run) => [
   ...peopleToolsFor(r.ctx).map(({ name, description, parameters }) => ({ name, description, parameters })),
   ...employeeToolsFor(r.ctx).map(({ name, description, parameters }) => ({ name, description, parameters })),
   ...wellbeingToolsFor(r.ctx).map(({ name, description, parameters }) => ({ name, description, parameters })),
+  ...documentToolsFor(r.ctx).map(({ name, description, parameters }) => ({ name, description, parameters })),
 ];
 
 const range = (from: unknown, to: unknown, fallback: number, defaultStart?: string) => cleanRange(from, to, istDay(), fallback, 31, defaultStart);
@@ -286,7 +289,7 @@ async function runLeaveAgentTool(r: Run, name: string, args: any): Promise<strin
 }
 
 async function runTool(r: Run, name: string, args: any): Promise<string> {
-  const agent = (await runLeaveAgentTool(r, name, args)) ?? (await runLeaveHrTool(r, name, args)) ?? (await runPeopleAgentTool(r, name, args)) ?? (await runEmployeeAgentTool(r, name, args)) ?? (await runWellbeingAgentTool(r, name, args));
+  const agent = (await runLeaveAgentTool(r, name, args)) ?? (await runLeaveHrTool(r, name, args)) ?? (await runPeopleAgentTool(r, name, args)) ?? (await runEmployeeAgentTool(r, name, args)) ?? (await runWellbeingAgentTool(r, name, args)) ?? (await runDocumentAgentTool(r, name, args));
   if (agent !== null) return agent;
   switch (name) {
     case 'get_leave_balances': {
@@ -355,7 +358,7 @@ async function runTool(r: Run, name: string, args: any): Promise<string> {
 // ------------------------------------------------------------------ model
 
 const systemPrompt = (company: string, today: string, who: Run['ctx']) => [
-  `You are Ask HR, the HR assistant inside ${company}'s HR portal. You help one person at a time with questions about leave, attendance, payslips, holidays, notice period, onboarding tasks, exits, letters, employee records (what is missing on a profile, identity documents), the Wellbeing games and the company's HR policies. ${roleLine(who)} ${peopleRoleLine(who)} ${employeeRoleLine(who)} ${wellbeingRoleLine(who)}`,
+  `You are Ask HR, the HR assistant inside ${company}'s HR portal. You help one person at a time with questions about leave, attendance, payslips, holidays, notice period, onboarding tasks, exits, letters, employee records (what is missing on a profile, identity documents), the Wellbeing games, document versions and acknowledgements, and the company's HR policies. ${roleLine(who)} ${peopleRoleLine(who)} ${employeeRoleLine(who)} ${wellbeingRoleLine(who)} ${documentRoleLine(who)}`,
   'Rules:',
   '- Get facts with the tools. Never answer from memory about this person or this company.',
   '- Use only numbers and dates that appear in tool results. Never calculate, estimate or convert. If a figure you need is not in the results, say you cannot tell and that HR can confirm.',
@@ -368,6 +371,7 @@ const systemPrompt = (company: string, today: string, who: Run['ctx']) => [
   '- You cannot submit or withdraw a resignation for anyone. If someone wants to resign or withdraw, tell them to use People > My exit. You also cannot issue letters or apply for someone else. If you have no propose_ tool for marking attendance, adjusting a balance or closing an exception, this person is not HR: say it is an HR task and point to the matching screen. Never do these for HR\'s own record. Identity and account numbers are always masked and you never ask for or repeat a full number. You cannot change anyone\'s department, title, roles, pay or bank details; for those point to Admin > People or Payroll. An employee can only ask what is missing on their own profile; they change details on the Employee screens, not through you. For attendance you need the date and both times; for a balance change the leave type, the number of days and a reason; for an exception a resolution. Ask for what is missing and never invent times, days or reasons.',
   '- The company pay date is not recorded. For "when is payday" say you do not have the date; mention the latest payslip month if the tool shows one.',
   WELLBEING_RULES,
+  DOCUMENT_RULES,
   '- Write plain text only: no markdown, no asterisks, no bold, no headings, no tables. Use short lines or "1." numbering for lists.',
   '- Keep answers short and plain, no tables. A person asking about a queue or team (approvals, who is away, attendance) may get a short list, at most 8 lines, then a one-line summary. Say briefly what the answer is based on ("from your approvals", "per the Leave policy").',
   '- If the question is not about HR or work at the company, say you can only help with HR questions.',

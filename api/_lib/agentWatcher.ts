@@ -18,6 +18,8 @@ import { peopleRows } from './lifecycleApi.js';
 import { GAP_LABEL, gapsOf, identityList, type PersonRow } from '../../shared/employeeAgentTools.js';
 import { WATCH_WELLBEING_QUIET_DAYS } from '../../shared/wellbeingAgentTools.js';
 import { CONSENT_VERSION } from '../../shared/wellbeingEngine.js';
+import { documentWatch } from '../../shared/documentAgentTools.js';
+import { loadDocumentData } from './documentAgent.js';
 
 const db = () => adminDb();
 export const WATCH_LOG = 'agentWatchLog';
@@ -37,6 +39,7 @@ export async function gatherWatchInput(cid: string, today: string): Promise<Watc
   const notifyList = new Set((settings.notifyEmails || []).map((e) => e.trim().toLowerCase()));
   const hrUids = people.filter((p) => notifyList.has(p.email)).map((p) => p.uid);
   const wellbeing = await gatherWellbeing(cid, today, people.map((p) => p.uid), hrUids).catch(() => undefined);
+  const documents = await loadDocumentData(cid).then((d) => documentWatch(d.versions, d.published, d.acks, people.map((p) => ({ uid: p.uid, email: p.email })), today)).catch(() => undefined);
   return {
     today,
     people: people.map((p) => ({ uid: p.uid, name: p.name, email: p.email })),
@@ -54,6 +57,7 @@ export async function gatherWatchInput(cid: string, today: string): Promise<Watc
       pendingDepts: (Array.isArray(e.clearance) ? e.clearance : []).filter((c: any) => c.status === 'PENDING').map((c: any) => String(c.label || c.deptId || 'Department')),
     })).filter((e: any) => e.lastWorkingDay),
     wellbeing,
+    documents,
     records: recordRows.map((r) => {
       const g = gapsOf(r);
       const ids = identityList(r);
