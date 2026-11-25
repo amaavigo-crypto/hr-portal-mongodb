@@ -43,6 +43,7 @@ export const lifecycleService = {
   // employee profile
   profile: (uid?: string) => get('profile', { uid }),
   saveProfile: (uid: string, fields: Record<string, string>) => post('profile-save', { uid, fields }),
+  saveProfilePhoto: (uid: string, dataUrl: string) => post('profile-photo-save', { uid, dataUrl }),
   // identity documents
   identities: (uid?: string) => get('identity', { uid }),
   saveIdentity: (b: { uid?: string; type: string; number: string }) => post('identity-save', b),

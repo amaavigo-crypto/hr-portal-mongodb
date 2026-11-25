@@ -64,10 +64,12 @@ const PALETTE = ['bg-orange-100 text-orange-700', 'bg-sky-100 text-sky-700', 'bg
 
 export const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || '?';
 
-export const Avatar: React.FC<{ name: string; size?: 'sm' | 'lg' }> = ({ name, size = 'sm' }) => {
+export const Avatar: React.FC<{ name: string; size?: 'sm' | 'lg' | 'xl'; photo?: string }> = ({ name, size = 'sm', photo }) => {
   const color = PALETTE[Array.from(name).reduce((n, c) => n + c.charCodeAt(0), 0) % PALETTE.length];
+  const dim = size === 'xl' ? 'w-24 h-24 text-2xl' : size === 'lg' ? 'w-14 h-14 text-lg' : 'w-8 h-8 text-[11px]';
+  if (photo && /^data:image\/jpeg;base64,/.test(photo)) return <img src={photo} alt={name} className={`shrink-0 rounded-full object-cover ${dim.split(' ').slice(0, 2).join(' ')}`} />;
   return (
-    <span className={`shrink-0 inline-flex items-center justify-center rounded-full font-black ${color} ${size === 'lg' ? 'w-14 h-14 text-lg' : 'w-8 h-8 text-[11px]'}`} aria-hidden>
+    <span className={`shrink-0 inline-flex items-center justify-center rounded-full font-black ${color} ${dim}`} aria-hidden>
       {initials(name)}
     </span>
   );

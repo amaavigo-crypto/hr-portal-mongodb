@@ -820,8 +820,9 @@ async function profileGet(w: Who, q: any): Promise<Result> {
   const left = exit && exit.status === 'COMPLETED' ? exit.lastWorkingDay : exit && ['APPROVED', 'MANAGER_APPROVED', 'SUBMITTED'].includes(exit.status) ? exit.lastWorkingDay || exit.requestedLastDay : '';
   return ok({
     canEdit: w.canManage,
+    canPhoto: w.canManage || uid === w.uid,
     profile: {
-      uid, name: person.name, email: person.email, empId: person.empId, department: person.department, title: person.title, active: person.active,
+      uid, photo: typeof x.photo === 'string' ? x.photo : '', name: person.name, email: person.email, empId: person.empId, department: person.department, title: person.title, active: person.active,
       salutation: x.salutation || '', firstName: x.firstName || fallbackFirst, middleName: x.middleName ?? fallbackMiddle, lastName: x.lastName || fallbackLast,
       shortName: x.shortName || '', nameInLocal: x.nameInLocal || '', machineCode: x.machineCode || '', oldCode: x.oldCode || '', mobile: x.mobile || '',
       gender: x.gender || (pr?.gender === 'M' ? 'Male' : pr?.gender === 'F' ? 'Female' : pr?.gender === 'O' ? 'Other' : ''),
@@ -862,6 +863,27 @@ async function profileSave(w: Who, body: any): Promise<Result> {
     const d: any = dcur.exists ? dcur.data() : {};
     await dref.set(clean({ showCelebrations: true, showMarriage: false, marriageDate: '', ...d, companyId: w.cid, uid, dob, updatedAt: nowIso(), updatedBy: w.uid }));
   }
+  return ok({});
+}
+
+// Profile photo: a small square JPEG (the browser crops and shrinks it) kept on the employeeProfiles document.
+// The person themselves or HR can change it. An empty dataUrl removes it.
+const MAX_PHOTO_CHARS = 150_000;
+async function profilePhotoSave(w: Who, body: any): Promise<Result> {
+  const uid = str(body?.uid, 128) || w.uid;
+  if (uid !== w.uid && !w.canManage) return fail(403, 'Only HR can change someone else\'s photo.');
+  if (!(await personByUid(w.cid, uid))) return fail(404, 'Employee not found.');
+  const dataUrl = typeof body?.dataUrl === 'string' ? body.dataUrl : '';
+  if (dataUrl) {
+    const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+    if (!m) return fail(400, 'Choose a JPG or PNG photo.');
+    if (dataUrl.length > MAX_PHOTO_CHARS) return fail(400, 'That photo is too large. Try a smaller one.');
+    const head = Buffer.from(m[1].slice(0, 8), 'base64');
+    if (!(head[0] === 0xff && head[1] === 0xd8)) return fail(400, 'That file is not a valid photo.');
+  }
+  const ref = db().collection('employeeProfiles').doc(profileDocId(w.cid, uid));
+  const cur = await ref.get();
+  await ref.set(clean({ ...(cur.exists ? cur.data() : {}), photo: dataUrl, uid, companyId: w.cid, updatedAt: nowIso(), updatedBy: w.uid }));
   return ok({});
 }
 
@@ -1350,6 +1372,7 @@ export async function routeLifecycle(r: LifecycleRequestIn): Promise<Result> {
       case 'family-delete': return POST ? await familyDelete(w, body) : wrong;
       case 'profile': return GET ? await profileGet(w, r.query) : wrong;
       case 'profile-save': return POST ? await profileSave(w, body) : wrong;
+      case 'profile-photo-save': return POST ? await profilePhotoSave(w, body) : wrong;
       case 'directory': return GET ? await directory(w, r.query) : wrong;
       case 'set-manager': return POST ? await setManager(w, body) : wrong;
       case 'set-emp-id': return POST ? await setEmpId(w, body) : wrong;

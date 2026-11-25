@@ -33,3 +33,28 @@ export async function shrinkImage(file: File): Promise<string> {
     URL.revokeObjectURL(url);
   }
 }
+/** A profile photo: centre-cropped to a square, 256 px, JPEG (about 15 to 30 KB). */
+export async function squarePhoto(file: File): Promise<string> {
+  if (!/^image\//.test(file.type)) throw new Error('Choose a photo (JPG or PNG).');
+  if (file.size > 25 * 1024 * 1024) throw new Error('That image is too large.');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('That file could not be read as an image.'));
+      i.src = url;
+    });
+    const side = Math.min(img.width, img.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Your browser cannot prepare this image.');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 256, 256);
+    return canvas.toDataURL('image/jpeg', 0.85);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
