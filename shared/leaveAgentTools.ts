@@ -219,7 +219,7 @@ export function matchEmployees<T extends { name?: string; empId?: string; email?
 
 export type ProposalAction =
   | 'leave_decision' | 'regularization_decision' | 'apply_leave' | 'task_done' | 'exit_decision' | 'exit_clearance'
-  | 'attendance_mark' | 'exception_resolve' | 'balance_adjust';
+  | 'attendance_mark' | 'exception_resolve' | 'balance_adjust' | 'identity_decision' | 'profile_change';
 export const PROPOSAL_TTL_MS = 30 * 60_000;
 
 /** What the panel shows. Built by the server from the real record. */

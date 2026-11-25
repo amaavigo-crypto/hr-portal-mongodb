@@ -14,7 +14,8 @@ import { hasPerm } from '../../shared/permissions.js';
 import {
   audit, db, loadPeople, loadProfiles, notify, nowIso, personByUid, profileId, profileOf, str, companyLabel, type Person, type Profile,
 } from './leaveCore.js';
-import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, identityProblem, identityTypeKeys, normalizeIdentity } from '../../shared/employeeIdentity.js';
+import { IDENTITY_TYPES, MAX_IDENTITY_FILES, checkAttachment, identityProblem, identityTypeKeys, maskIdentity, normalizeIdentity } from '../../shared/employeeIdentity.js';
+import type { PersonRow } from '../../shared/employeeAgentTools.js';
 import { PERSONAL_FIELDS, checkPersonalField } from '../../shared/employeePersonal.js';
 import { MAX_QUALIFICATIONS, cleanQualification } from '../../shared/employeeQualification.js';
 import { MAX_FAMILY_MEMBERS, cleanFamilyMember } from '../../shared/employeeFamily.js';
@@ -932,6 +933,42 @@ async function identityGet(w: Who, q: any): Promise<Result> {
   });
 }
 
+/**
+ * One row per active employee for the Ask HR agent and the daily watcher: what is on file and what is missing. Numbers are
+ * masked here, so a full Aadhaar or PAN never leaves this function. HR gets everyone; `self=1` (or anyone without
+ * lifecycle.manage) gets only their own row.
+ */
+export async function peopleRows(cid: string, only?: string): Promise<PersonRow[]> {
+  const eq = (c: string) => db().collection(c).where('companyId', '==', cid).get();
+  const [people, profiles, idSnap, qSnap, fSnap, perSnap, extSnap] = await Promise.all([
+    loadPeople(cid), loadProfiles(cid), eq('employeeIdentities'), eq('employeeQualifications'), eq('employeeFamily'), eq('employeePersonal'), eq('employeeProfiles'),
+  ]);
+  const count = (snap: any) => { const m = new Map<string, number>(); snap.docs.forEach((d: any) => m.set(String(d.data().uid), (m.get(String(d.data().uid)) || 0) + 1)); return m; };
+  const quals = count(qSnap);
+  const fam = count(fSnap);
+  const personal = new Set<string>(perSnap.docs.filter((d: any) => Object.keys(d.data()).some((k) => !['companyId', 'uid', 'updatedAt', 'updatedBy'].includes(k))).map((d: any) => String(d.data().uid)));
+  const mobile = new Map<string, string>(extSnap.docs.map((d: any) => [String(d.data().uid), String(d.data().mobile || '')]));
+  const ids = new Map<string, Record<string, any>>();
+  idSnap.docs.forEach((d: any) => {
+    const x = d.data() as IdentityDoc;
+    const mine = ids.get(x.uid) || {};
+    mine[x.type] = {
+      status: x.status || '', hasNumber: !!x.number, numberMasked: x.number ? maskIdentity(x.number) : undefined,
+      pendingMasked: x.pendingNumber ? maskIdentity(x.pendingNumber) : undefined, pendingSince: x.status === 'PENDING' ? String(x.updatedAt || '').slice(0, 10) : undefined, note: x.note || '',
+    };
+    ids.set(x.uid, mine);
+  });
+  return people.filter((p) => p.active && (!only || p.uid === only) && !profiles.get(p.uid)?.hidden).map((p) => ({
+    uid: p.uid, name: p.name, empId: p.empId, department: p.department, title: p.title, joinDate: profiles.get(p.uid)?.joinDate || '',
+    mobile: mobile.get(p.uid) || '', identity: ids.get(p.uid) || {}, qualifications: quals.get(p.uid) || 0, family: fam.get(p.uid) || 0, personal: personal.has(p.uid),
+  }));
+}
+
+async function peopleReview(w: Who, q: any): Promise<Result> {
+  const self = q?.self === '1' || q?.self === 1 || !w.canManage;
+  return ok({ scope: self ? 'self' : 'company', rows: await peopleRows(w.cid, self ? w.uid : undefined) });
+}
+
 async function identitySave(w: Who, body: any): Promise<Result> {
   const uid = str(body?.uid, 128) || w.uid;
   const type = str(body?.type, 40);
@@ -1361,6 +1398,7 @@ export async function routeLifecycle(r: LifecycleRequestIn): Promise<Result> {
       case 'letters': return GET ? await lettersList(w, r.query) : wrong;
       case 'my-letters': return GET ? await myLetters(w) : wrong;
       case 'letter': return GET ? await letterGet(w, r.query) : wrong;
+      case 'people-review': return GET ? await peopleReview(w, r.query) : wrong;
       case 'identity': return GET ? await identityGet(w, r.query) : wrong;
       case 'identity-save': return POST ? await identitySave(w, body) : wrong;
       case 'identity-file-add': return POST ? await identityFileAdd(w, body) : wrong;

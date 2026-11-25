@@ -4,7 +4,8 @@
  *
  *   Managers   leave requests waiting on them for more than 2 days
  *   HR         open attendance exceptions, exit clearance that is running out of time, overdue onboarding tasks
- *   Everyone   their own overdue onboarding tasks
+ *   HR         also: identity documents waiting for review for more than 3 days, and employee records still incomplete 14 days after joining
+ *   Everyone   their own overdue onboarding tasks and identity documents HR did not approve (never "you have nothing on file": missing details go to HR)
  *
  * One digest per person. A person who is a manager and HR and has a task gets one message with three sections. People with
  * nothing to look at get nothing. The model is never involved: the counts and the wording come from here.
@@ -16,6 +17,10 @@ export const WATCH_WAIT_DAYS = 2;
 /** Clearance counts as running out of time when the last working day is this close, or already past. */
 export const WATCH_EXIT_WINDOW_DAYS = 7;
 export const WATCH_MAX_LINES = 6;
+/** An identity document waiting for HR is nudged once it has waited longer than this many days. */
+export const WATCH_DOC_WAIT_DAYS = 3;
+/** A new joiner gets this many days to fill in their record before anyone is nudged about gaps. */
+export const WATCH_PROFILE_GRACE_DAYS = 14;
 /** Exception categories that are about attendance (late marks, missing check-outs, leave next to a check-in). */
 export const ATTENDANCE_CATEGORIES = ['ATTENDANCE_MISMATCH', 'FLAG_LATE'];
 
@@ -23,6 +28,13 @@ export interface WatchLeave { name: string; typeName: string; from: string; to: 
 export interface WatchException { category: string; employee: string; message: string; severity: string; createdDay: string }
 export interface WatchExit { name: string; lastWorkingDay: string; pendingDepts: string[] }
 export interface WatchTask { title: string; forUid: string; forName: string; assigneeUid: string; assignee: string; dueDate: string }
+export interface WatchRecord {
+  uid: string; name: string; joinDate: string;
+  /** Labels of what is missing (PAN, Aadhaar, Mobile number...). */
+  missing: string[];
+  rejected: { document: string; reason: string }[];
+  pending: { document: string; submittedDay: string }[];
+}
 export interface WatchInput {
   today: string;
   people: { uid: string; name: string; email: string }[];
@@ -32,6 +44,8 @@ export interface WatchInput {
   exits: WatchExit[];
   /** Open tasks only. Overdue is decided here. */
   tasks: WatchTask[];
+  /** Employee records. Optional so older callers keep working. */
+  records?: WatchRecord[];
 }
 
 export interface DigestSection { heading: string; lines: string[] }
@@ -74,6 +88,22 @@ export function buildDigests(inp: WatchInput): Digest[] {
     add(uid, { heading: `Open attendance ${plural(attendance.length, 'exception', 'exceptions')} (${attendance.length})`, lines: cap(attendance.map((e) => `${e.employee ? `${e.employee}: ` : ''}${cut(e.message, 110)}`)) });
     add(uid, { heading: `Exit clearance running out of time (${exits.length})`, lines: cap(exits.map((e) => `${e.name}: last working day ${e.lastWorkingDay}${e.lastWorkingDay < today ? ' (passed)' : ''}, still pending: ${e.pendingDepts.join(', ')}`)) });
     add(uid, { heading: `Overdue onboarding ${plural(overdue.length, 'task', 'tasks')} (${overdue.length})`, lines: cap(overdue.map((t) => `${t.forName}: ${t.title}, due ${t.dueDate}`)) });
+  }
+
+  // HR: identity documents that have waited too long, and records that are still incomplete after the grace period.
+  const records = inp.records || [];
+  const stuckDocs = records.flatMap((r) => r.pending.map((d) => ({ name: r.name, document: d.document, waiting: d.submittedDay ? daysBetween(d.submittedDay, today) : 0 })))
+    .filter((d) => d.waiting > WATCH_DOC_WAIT_DAYS).sort((a, b) => b.waiting - a.waiting || a.name.localeCompare(b.name));
+  const incomplete = records.filter((r) => r.missing.length > 0 && r.joinDate && daysBetween(r.joinDate, today) >= WATCH_PROFILE_GRACE_DAYS)
+    .sort((a, b) => b.missing.length - a.missing.length || a.name.localeCompare(b.name));
+  for (const uid of hr) {
+    add(uid, { heading: `Identity ${plural(stuckDocs.length, 'document', 'documents')} waiting for your review (${stuckDocs.length})`, lines: cap(stuckDocs.map((d) => `${d.name}: ${d.document}, waiting ${dayWord(d.waiting)}`)) });
+    add(uid, { heading: `Incomplete employee ${plural(incomplete.length, 'record', 'records')} (${incomplete.length})`, lines: cap(incomplete.map((r) => `${r.name}: missing ${r.missing.join(', ')}`)) });
+  }
+  // Everyone: their own documents that need attention.
+  for (const r of records) {
+    const lines = r.rejected.map((d) => `${d.document} was not approved${d.reason ? `: ${cut(d.reason, 80)}` : ''}. Please submit it again`);
+    add(r.uid, { heading: `Your ${plural(lines.length, 'document needs', 'documents need')} attention (${lines.length})`, lines: cap(lines) });
   }
 
   // Everyone else: tasks that are theirs to do. HR already sees every overdue task above.

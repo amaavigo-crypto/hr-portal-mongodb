@@ -154,7 +154,7 @@ assert.deepEqual(to, ['u_hr@acme.com', 'u_mgr@acme.com', 'u_new@acme.com'], 'HR,
 assert.equal((await fdb.collection('agentWatchLog').get()).docs.length, 0, 'a dry run saves nothing');
 assert.equal((await fdb.collection('leaveNotifications').get()).docs.filter((d: any) => /Ask HR/.test(d.data().title)).length, 0);
 const hrSections = dry.preview!.find((p) => p.to === 'u_hr@acme.com')!.sections;
-assert.deepEqual(hrSections.map((s) => s.heading), ['Open attendance exception (1)', 'Exit clearance running out of time (1)', 'Overdue onboarding tasks (2)'], 'the NO_POLICY exception, the inactive person\'s task and the closed company are not in it');
+assert.deepEqual(hrSections.map((s) => s.heading), ['Open attendance exception (1)', 'Exit clearance running out of time (1)', 'Overdue onboarding tasks (2)', 'Incomplete employee records (5)'], 'the NO_POLICY exception, the inactive person\'s task and the closed company are not in it');
 assert.ok(!JSON.stringify(dry).includes('Cora') && !JSON.stringify(dry).includes('Other company task'), 'another company never leaks in');
 const mgrSections = dry.preview!.find((p) => p.to === 'u_mgr@acme.com')!.sections;
 assert.match(mgrSections[0].lines[0], /^Esha Employee: Casual leave, .*waiting 4 days/);
@@ -205,7 +205,7 @@ assert.equal(m.count, 2);
 assert.equal(m.sections.length, 2);
 assert.match(m.sections[0].lines[0], /Esha Employee/);
 assert.equal((await nudge(EMP)).json.nudge, null, 'nothing to say to someone with nothing waiting');
-assert.equal((await nudge(HR)).json.nudge.count, 4);
+assert.equal((await nudge(HR)).json.nudge.count, 9);
 assert.equal((await seen(HR, m.id)).status, 404, 'only the person it was for can dismiss it');
 assert.equal((await seen(tokenFor('u_c2', [], 'c2'), m.id)).status, 404, 'and nobody from another company');
 assert.equal((await nudge(MGR)).json.nudge.id, m.id, 'still there after a failed dismiss');

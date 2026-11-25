@@ -14,6 +14,8 @@ import { companyLabel, companyRequests, inApp, loadPeople, loadSettings, notify 
 import { buildDigests, emailBody, type Digest, type WatchInput } from '../../shared/agentWatcher.js';
 import { addDays } from '../../shared/leaveAgentTools.js';
 import { istDay, str, type Result } from './agentKit.js';
+import { peopleRows } from './lifecycleApi.js';
+import { GAP_LABEL, gapsOf, identityList, type PersonRow } from '../../shared/employeeAgentTools.js';
 
 const db = () => adminDb();
 export const WATCH_LOG = 'agentWatchLog';
@@ -21,11 +23,12 @@ const logId = (cid: string, uid: string, day: string) => `${cid}__${uid}__${day}
 
 /** Reads what the watcher needs for one company. */
 export async function gatherWatchInput(cid: string, today: string): Promise<WatchInput> {
-  const [{ settings }, everyone, requests, exSnap, exitSnap, taskSnap] = await Promise.all([
+  const [{ settings }, everyone, requests, exSnap, exitSnap, taskSnap, recordRows] = await Promise.all([
     loadSettings(cid), loadPeople(cid), companyRequests(cid),
     db().collection('leaveExceptions').where('companyId', '==', cid).where('status', '==', 'OPEN').get(),
     db().collection('lifecycleExits').where('companyId', '==', cid).where('status', '==', 'APPROVED').get(),
     db().collection('lifecycleTasks').where('companyId', '==', cid).where('status', '==', 'OPEN').get(),
+    peopleRows(cid).catch((): PersonRow[] => []),
   ]);
   const people = everyone.filter((p) => p.active);
   const by = new Map(everyone.map((p) => [p.uid, p]));
@@ -46,6 +49,15 @@ export async function gatherWatchInput(cid: string, today: string): Promise<Watc
       name: by.get(e.uid)?.name || 'Employee', lastWorkingDay: String(e.lastWorkingDay || ''),
       pendingDepts: (Array.isArray(e.clearance) ? e.clearance : []).filter((c: any) => c.status === 'PENDING').map((c: any) => String(c.label || c.deptId || 'Department')),
     })).filter((e: any) => e.lastWorkingDay),
+    records: recordRows.map((r) => {
+      const g = gapsOf(r);
+      const ids = identityList(r);
+      return {
+        uid: r.uid, name: r.name, joinDate: r.joinDate, missing: g.map((x) => GAP_LABEL[x]),
+        rejected: ids.filter((d) => d.status === 'not approved').map((d) => ({ document: d.document, reason: d.hrReason || '' })),
+        pending: Object.entries(r.identity).filter(([, i]) => i.status === 'PENDING').map(([t, i]) => ({ document: ids.find((d) => d.type === t)?.document || t, submittedDay: i.pendingSince || '' })),
+      };
+    }),
     // A checklist for someone who has already left is not worth a message.
     tasks: taskSnap.docs.map((d: any) => d.data() as any).filter((t: any) => people.some((p) => p.uid === String(t.uid))).map((t: any) => ({
       title: String(t.title || 'Task'), forUid: String(t.uid || ''), forName: by.get(String(t.uid))?.name || 'New joiner',
