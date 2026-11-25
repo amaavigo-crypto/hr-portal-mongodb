@@ -1884,6 +1884,11 @@ export async function routeLeave(r: LeaveRequestIn): Promise<Result> {
       return await runLeaveCron();
     }
 
+    if (r.action === 'attendance-ingest') {
+      if (r.method !== 'POST') return fail(405, 'Method not allowed.');
+      return await (await import('./attendanceIngestApi.js')).ingestWithKey(r.headers, body);
+    }
+
     let who: Who;
     try {
       who = await whoIs(r.headers);
@@ -1913,6 +1918,10 @@ export async function routeLeave(r: LeaveRequestIn): Promise<Result> {
       case 'doc-set': if (POST) return await docSet(who, body); break;
       case 'doc-get': if (GET) return await docGet(who, r.query); break;
       case 'team-calendar': if (GET) return await teamCalendar(who, r.query); break;
+      case 'attendance-import': if (POST) { if (!who.canManage) return fail(403, 'Only HR can import attendance.'); return await (await import('./attendanceIngestApi.js')).importCsv(who.cid, body); } break;
+      case 'attendance-keys': if (GET) { if (!who.canManage) return fail(403, 'Only HR can manage attendance keys.'); return await (await import('./attendanceIngestApi.js')).listKeys(who.cid); } break;
+      case 'create-attendance-key': if (POST) { if (!who.canManage) return fail(403, 'Only HR can manage attendance keys.'); return await (await import('./attendanceIngestApi.js')).createKey(who.cid, who.ctx.uid, body); } break;
+      case 'revoke-attendance-key': if (POST) { if (!who.canManage) return fail(403, 'Only HR can manage attendance keys.'); return await (await import('./attendanceIngestApi.js')).revokeKey(who.cid, body); } break;
       case 'check-in': if (POST) return await punch(who, 'in', r.ip, body); break;
       case 'check-out': if (POST) return await punch(who, 'out', r.ip, body); break;
       case 'attendance': if (GET) return await attendance(who, r.query); break;

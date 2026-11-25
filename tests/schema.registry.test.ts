@@ -19,7 +19,7 @@ async function main() {
   scan('api');
   const missing = [...used].filter((n) => !SCHEMAS[n] && n !== 'things');
   assert.deepEqual(missing, [], `collections without a schema: ${missing.join(', ')}`);
-  assert.ok(Object.keys(SCHEMAS).length >= 99);
+  assert.ok(Object.keys(SCHEMAS).length >= 100);
 
   // 2. Valid documents pass
   const company = { id: 'cmp_1', name: 'Acme', slug: 'acme', status: 'ACTIVE', modules: ['talent-acquisition'], plan: 'trial', adminEmail: 'a@acme.com', employeeIdPrefix: 'ACM', nextEmployeeNumber: 2, createdAt: '2026-11-24T00:00:00.000Z', updatedAt: '2026-11-24T00:00:00.000Z' };
