@@ -5,12 +5,15 @@
  *   Managers   leave requests waiting on them for more than 2 days
  *   HR         open attendance exceptions, exit clearance that is running out of time, overdue onboarding tasks
  *   HR         also: identity documents waiting for review for more than 3 days, and employee records still incomplete 14 days after joining
+ *   Wellbeing  people who can view Wellbeing results get one Monday line when few people have opted in or nobody has played lately
+ *             (never sent to the players themselves: playing is voluntary)
  *   Everyone   their own overdue onboarding tasks and identity documents HR did not approve (never "you have nothing on file": missing details go to HR)
  *
  * One digest per person. A person who is a manager and HR and has a task gets one message with three sections. People with
  * nothing to look at get nothing. The model is never involved: the counts and the wording come from here.
  */
 import { addDays, dateSpan, dayWord, daysBetween } from './leaveAgentTools.js';
+import { wellbeingNudge, type WellbeingWatch } from './wellbeingAgentTools.js';
 
 /** A leave request is "stuck" once it has waited longer than this many days. */
 export const WATCH_WAIT_DAYS = 2;
@@ -46,6 +49,8 @@ export interface WatchInput {
   tasks: WatchTask[];
   /** Employee records. Optional so older callers keep working. */
   records?: WatchRecord[];
+  /** Wellbeing programme health, for the people who can view Wellbeing results. Optional. */
+  wellbeing?: (WellbeingWatch & { viewerUids: string[] }) | undefined;
 }
 
 export interface DigestSection { heading: string; lines: string[] }
@@ -100,6 +105,9 @@ export function buildDigests(inp: WatchInput): Digest[] {
     add(uid, { heading: `Identity ${plural(stuckDocs.length, 'document', 'documents')} waiting for your review (${stuckDocs.length})`, lines: cap(stuckDocs.map((d) => `${d.name}: ${d.document}, waiting ${dayWord(d.waiting)}`)) });
     add(uid, { heading: `Incomplete employee ${plural(incomplete.length, 'record', 'records')} (${incomplete.length})`, lines: cap(incomplete.map((r) => `${r.name}: missing ${r.missing.join(', ')}`)) });
   }
+  // Wellbeing: only people who can view its results, only on Mondays, and only about the programme (never about a person).
+  const wb = wellbeingNudge(inp.wellbeing, today);
+  if (wb) for (const uid of inp.wellbeing!.viewerUids) add(uid, { heading: 'Wellbeing games (1)', lines: [wb] });
   // Everyone: their own documents that need attention.
   for (const r of records) {
     const lines = r.rejected.map((d) => `${d.document} was not approved${d.reason ? `: ${cut(d.reason, 80)}` : ''}. Please submit it again`);

@@ -12,6 +12,7 @@ import { routeLeave } from './leaveApi.js';
 import { routeLifecycle } from './lifecycleApi.js';
 import { routePayroll } from './payrollApi.js';
 import { routeHome } from './homeApi.js';
+import { routeWellbeing } from './wellbeingApi.js';
 import { PROPOSAL_TTL_MS, type ProposalAction, type ProposalCard } from '../../shared/leaveAgentTools.js';
 
 export type Result = { status: number; json: any };
@@ -36,13 +37,13 @@ export interface Run {
   proposals: ProposalCard[];
 }
 
-export async function route(r: Run, router: 'leave' | 'lifecycle' | 'payroll' | 'home', method: 'GET' | 'POST', action: string, body?: any, query: Record<string, any> = {}): Promise<any> {
+export async function route(r: Run, router: 'leave' | 'lifecycle' | 'payroll' | 'home' | 'wellbeing', method: 'GET' | 'POST', action: string, body?: any, query: Record<string, any> = {}): Promise<any> {
   const key = `${router}:${method}:${action}:${JSON.stringify(body || '')}:${JSON.stringify(query)}`;
   if (r.cache.has(key)) return r.cache.get(key);
   const req = { method, action, query, body: body ?? {}, headers: r.headers };
   let res: { status: number; json: any };
   try {
-    res = router === 'leave' ? await routeLeave(req) : router === 'lifecycle' ? await routeLifecycle(req) : router === 'payroll' ? await routePayroll(req) : await routeHome(req);
+    res = router === 'leave' ? await routeLeave(req) : router === 'lifecycle' ? await routeLifecycle(req) : router === 'payroll' ? await routePayroll(req) : router === 'wellbeing' ? await routeWellbeing(req) : await routeHome(req);
   } catch (e: any) {
     res = { status: 500, json: { success: false, error: String(e?.message || 'failed') } };
   }
