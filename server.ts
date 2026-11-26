@@ -19,6 +19,7 @@ import { routeLifecycle } from './api/_lib/lifecycleApi';
 import { routeDashboard } from './api/_lib/dashboardApi';
 import { routeHome } from './api/_lib/homeApi';
 import { routeWellbeing } from './api/_lib/wellbeingApi';
+import { founderMetrics } from './api/_lib/founderApi.js';
 import { UserRole } from './src/types';
 import { routeOnboarding } from './api/_lib/onboarding';
 import { routeTenant } from './api/_lib/tenantAdmin';
@@ -60,6 +61,7 @@ async function startServer() {
     /^\/api\/tenant\/signup$/,
     /^\/api\/onboarding\/(public-info|upload|submit|cron)$/,
     /^\/api\/leave\/cron$/,
+    /^\/api\/founder\/metrics$/, // the Founders Dashboard pulls this with its own key (founderApi.ts checks it)
     /^\/api\/apply\/[a-f0-9]+$/, // each company's own website posts applications here; the router checks the key
     /^\/api\/storage\/(file|download)\//, // protected by an HMAC token in the URL (see storageToken.ts)
   ];
@@ -78,6 +80,18 @@ async function startServer() {
       const known = authErrorResponse(err);
       if (known) return res.status(known.status).json(known.json);
       next(err);
+    }
+  });
+
+  // Founders Dashboard feed: read-only counts, protected by FOUNDER_METRICS_KEY (not by a user login)
+  app.get('/api/founder/metrics', async (req, res) => {
+    try {
+      const { status, json } = await founderMetrics(req.headers);
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(status).json(json);
+    } catch (err: any) {
+      console.error('[founder metrics] failed:', err?.message || err);
+      res.status(500).json({ error: 'The metrics could not be built.' });
     }
   });
 

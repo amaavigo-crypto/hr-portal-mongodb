@@ -17,6 +17,19 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ status: 'ok', runtime: 'vercel-serverless', timestamp: new Date().toISOString() });
   }
 
+  // Founders Dashboard feed. Lives here (not in its own function) so it does not use up one of the 12 Vercel Hobby slots.
+  if (path === '/api/founder/metrics' && req.method === 'GET') {
+    try {
+      const { founderMetrics } = await import('./_lib/founderApi.js');
+      const { status, json } = await founderMetrics(req.headers);
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(status).json(json);
+    } catch (err: any) {
+      console.error('[founder metrics] failed:', err?.message || err);
+      return res.status(500).json({ error: 'The metrics could not be built.' });
+    }
+  }
+
   // Landing pages, sitemap and robots.txt arrive here from vercel.json (see api/_lib/landingVercel.ts). Loaded on demand, so a
   // problem there can never affect the rest of the API; the last resort is the plain app page.
   // (Keyed on the helper parameter as well as the path, so it works whichever address Vercel reports for a rewritten request.)

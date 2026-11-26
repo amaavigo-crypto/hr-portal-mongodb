@@ -69,6 +69,8 @@ let fake: { db?: any; auth?: any } | null = null;
 export function __useFakeAdmin(f: { db?: any; auth?: any } | null) {
   fake = f;
 }
+/** True while a test has swapped in a fake database / token verifier. */
+export const __fakeAdminActive = () => fake !== null;
 
 export function adminAuth(): Auth {
   if (fake?.auth) return fake.auth;
