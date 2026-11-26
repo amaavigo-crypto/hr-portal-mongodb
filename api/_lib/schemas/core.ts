@@ -81,4 +81,9 @@ export const core = {
   platformAudit: collection('Platform-admin actions (company approval, landing-page edits).', defineSchema({ action: String, by: String, at: String, detail: Mixed })),
 
   profilePhotos: collection('Employee profile photos as small data URLs. Document id = employee id.', defineSchema({ companyId: String, dataUrl: String, updatedAt: String })),
+
+  userActivity: collection(
+    'When each signed-in person was last seen (one record per person, written at most hourly). Feeds the Founders Dashboard counts. Never read by the browser.',
+    defineSchema({ uid: reqStr, companyId: reqStr, firstSeenAt: String, lastSeenAt: String }),
+  ),
 };

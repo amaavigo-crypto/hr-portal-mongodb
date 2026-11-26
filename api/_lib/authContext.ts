@@ -4,6 +4,7 @@
  * Admin SDK and read the company / permission claims that only the server can write.
  */
 import { adminAuth } from './firebaseAdmin.js';
+import { touchActivity } from './userActivity.js';
 import { hasPerm, type TenantClaims } from '../../shared/permissions.js';
 
 export interface AuthContext {
@@ -46,6 +47,8 @@ export async function authenticate(headers: Record<string, any> | undefined): Pr
   }
 
   const claims = decoded as TenantClaims & Record<string, any>;
+  // Feeds the Founders Dashboard's active-user counts. Throttled to one write an hour per person; never blocks or fails a request.
+  await touchActivity(decoded.uid, claims.cid ? String(claims.cid) : null);
   return {
     uid: decoded.uid,
     email: String(decoded.email || '').toLowerCase(),

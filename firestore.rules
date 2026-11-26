@@ -494,6 +494,7 @@ service cloud.firestore {
     match /leaveLedger/{id} { allow read, write: if false; }
     match /leaveRequests/{id} { allow read, write: if false; }
     match /leaveAttendance/{id} { allow read, write: if false; }
+    match /userActivity/{id} { allow read, write: if false; }
     match /leaveRegularizations/{id} { allow read, write: if false; }
     match /leaveLocks/{id} { allow read, write: if false; }
     match /leaveDocs/{id} { allow read, write: if false; }
