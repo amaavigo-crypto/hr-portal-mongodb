@@ -1,11 +1,12 @@
 name: CI and deploy
 
-# Every push to main is tested and, if everything passes, deployed to the server.
+# main        = test branch. Tested on every push and, if everything passes, deployed to the STAGING copy on the server.
+# production  = live branch. Tested on every push and, if everything passes, deployed to the LIVE site on the server.
 # Pull requests are tested but never deployed.
-# You can also deploy manually from the Actions tab ("Run workflow").
+# You can also deploy manually: Actions tab > "CI and deploy" > Run workflow, choosing main or production.
 on:
   push:
-    branches: [main]
+    branches: [main, production]
   pull_request:
   workflow_dispatch:
 
@@ -42,10 +43,45 @@ jobs:
       - name: Build
         run: npm run build
 
-  deploy:
-    name: Deploy to server
+  deploy-staging:
+    name: Deploy to staging
     needs: test
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin main; git checkout -q -f -B main '$COMMIT_SHA'; PM2_APP=hr-portal-staging APP_PORT=3001 PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+  deploy:
+    name: Deploy to server (live)
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/production'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
@@ -71,7 +107,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin main; git reset --hard '$COMMIT_SHA'; PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
+            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin production; git checkout -q -f -B production '$COMMIT_SHA'; PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
 
       - name: Clean up SSH key
         if: always()

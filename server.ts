@@ -41,7 +41,7 @@ try {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // The public application webhook takes small JSON or form posts only (parsed before the large-upload parsers below).
   app.use('/api/apply', express.json({ limit: '200kb' }), express.urlencoded({ extended: true, limit: '200kb' }));
