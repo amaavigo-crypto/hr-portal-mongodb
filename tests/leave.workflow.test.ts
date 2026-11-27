@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { __useFakeAdmin } from '../api/_lib/firebaseAdmin.ts';
 import { FakeFirestore } from './fakeFirestore.ts';
 import { routeLeave } from '../api/_lib/leaveApi.ts';
-import { addDays, cycleOf, istToday, previousCycle, weekday } from '../shared/leaveEngine.ts';
+import { NATIONAL_HOLIDAYS, addDays, cycleOf, istToday, previousCycle, weekday } from '../shared/leaveEngine.ts';
 import { routePayroll } from '../api/_lib/payrollApi.ts';
 
 const fdb = new FakeFirestore();
@@ -27,7 +27,9 @@ const ok = async (h: any, method: string, action: string, body?: any, query?: an
 };
 process.env.CRON_SECRET = 's3cret';
 const today = istToday();
-const workday = (from: number) => { let d = addDays(today, from); while (weekday(d) === 0 || weekday(d) === 6) d = addDays(d, 1); return d; };
+// Skips weekends and the starter national holidays, so the test does not depend on the day it runs.
+const holiday = (d: string) => NATIONAL_HOLIDAYS.some((h) => d.endsWith(h.md));
+const workday = (from: number) => { let d = addDays(today, from); while (weekday(d) === 0 || weekday(d) === 6 || holiday(d)) d = addDays(d, 1); return d; };
 
 // The leave year starts this month, so every date used below falls in the same year whenever the test runs.
 await ok(HR, 'POST', 'apply-starter', { yearStartMonth: Number(today.slice(5, 7)) });
