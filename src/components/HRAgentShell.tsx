@@ -895,7 +895,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
               </nav>
             )}
             </div>
-            <div className="relative w-full max-w-[25rem] shrink-0">
+            <div className="relative w-full max-w-[25rem] min-w-0">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden />
               <input
                 id="topbar-page-search"
@@ -924,7 +924,8 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                 </ul>
               )}
             </div>
-            <div className="shrink-0 flex items-center gap-4">
+            {/* Same width rule as the breadcrumb side, so the search box sits in the middle of the header. */}
+            <div className="flex-1 basis-0 min-w-max flex items-center justify-end gap-4">
             {onOpenNotifications && (
               <button type="button" onClick={onOpenNotifications} aria-label={notificationCount > 0 ? `Notifications (${notificationCount} unread)` : 'Notifications'} title="Notifications" className="relative w-10 h-10 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer">
                 <Bell className="w-[22px] h-[22px]" />

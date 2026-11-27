@@ -26,7 +26,7 @@ import { authErrorResponse, requireActiveTenant, type AuthContext } from './auth
 import { hasPerm } from '../../shared/permissions.js';
 import { addDays, istParts, istToday, isIsoDate, sessionsOf } from '../../shared/leaveEngine.js';
 import {
-  ANNOUNCEMENT_LIMITS, DEFAULT_QUICK_LINKS, MAX_QUICK_LINKS, canManageAnnouncements, canManageHome, canSeeLoginSummary, canSeeMoodSummary,
+  ANNOUNCEMENT_LIMITS, DEFAULT_QUICK_LINKS, MAX_QUICK_LINKS, canManageAnnouncements, canManageHome, canSeeCompanyOverview, canSeeLoginSummary, canSeeMoodSummary,
   celebrationsFor, isMood, loginChannel, MOODS, quickReportsFor, sanitizeQuickLinks, visibleAnnouncements, visibleQuickLinks,
   type AnnouncementDoc, type AnnouncementKind, type CelebrationPerson, type CelebrationRange, type QuickLink,
 } from '../../shared/home.js';
@@ -110,6 +110,7 @@ async function layout(w: Who): Promise<Result> {
       manageHome: canManageHome(w.perms, w.isAdmin),
       loginSummary: canSeeLoginSummary(w.perms, w.isAdmin),
       moodSummary: canSeeMoodSummary(w.perms, w.isAdmin),
+      companyOverview: canSeeCompanyOverview(w.perms, w.isAdmin || w.ctx.isPlatformAdmin),
       people: w.isAdmin || hasPerm(w.perms, 'users.manage'),
       acknowledge: w.isAdmin || hasPerm(w.perms, 'doc.acknowledge'),
     },

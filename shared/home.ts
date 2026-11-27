@@ -259,6 +259,14 @@ export function canManageHome(perms: string[], isAdmin: boolean) {
 export function canSeeLoginSummary(perms: string[], isAdmin: boolean) {
   return isAdmin || hasPerm(perms, 'users.manage');
 }
+/**
+ * The company numbers and the Hiring Pipeline card on Home are for HR and administrators only.
+ * Role names can be changed by each company, so "HR" means holding a permission that only HR roles get by default.
+ */
+export const HR_OVERVIEW_PERMS = ['req.hr_decide', 'leave.manage', 'lifecycle.manage', 'users.manage'];
+export function canSeeCompanyOverview(perms: string[], isAdmin: boolean) {
+  return isAdmin || hasAnyPerm(perms, HR_OVERVIEW_PERMS);
+}
 export function canSeeMoodSummary(perms: string[], isAdmin: boolean) {
   return isAdmin || hasAnyPerm(perms, ['users.manage', 'leave.manage']);
 }

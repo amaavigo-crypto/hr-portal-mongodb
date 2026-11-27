@@ -62,4 +62,10 @@ assert.equal((await call(EMP, 'my-dates', 'POST', { dob: '1991-07-09', showCeleb
 const wishes = await call(HR, 'wishes', 'GET', undefined, { range: 'month' });
 assert.equal(JSON.stringify(wishes.json).includes('1991'), false);
 
+// company numbers and Hiring Pipeline on Home: HR and administrators only, with the default roles
+const overview = async (headers: any) => ((await call(headers, 'layout')).json as any).can.companyOverview;
+for (const slug of ['hr', 'hr-head']) assert.equal(await overview(tok(`u_${slug}`, perms(slug))), true, `${slug} sees the company overview`);
+assert.equal(await overview(tok('u_adm', [], 'c1', true)), true, 'company admin sees the company overview');
+for (const slug of ['employee', 'department-head', 'approver']) assert.equal(await overview(tok(`u_${slug}`, perms(slug))), false, `${slug} does not see the company overview`);
+
 console.log('home tests passed');

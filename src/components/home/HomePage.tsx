@@ -71,25 +71,39 @@ export const HomePage: React.FC<Props> = ({ fallbackName, onOpen }) => {
 
         {layout.error && <Notice tone="error">{layout.error} <button type="button" className="underline font-bold" onClick={refresh}>Try again</button></Notice>}
 
-        <TopTiles widgets={dash.data?.widgets || []} refreshKey={tick} onOpen={onOpen} />
+        {/* Company numbers: HR and administrators only. Hidden until the server confirms it. */}
+        {can?.companyOverview && <TopTiles widgets={dash.data?.widgets || []} refreshKey={tick} onOpen={onOpen} />}
 
-        {/* One masonry for every card: columns end together, so there are no empty gaps between boxes. */}
+        {/*
+          The five everyday cards come first. Wide screens: three columns. Narrower screens: the columns dissolve
+          (display: contents) and the cards stack in the order profile, attendance, calendar, mood, tasks.
+        */}
+        <div id="home-top" className="flex flex-col gap-4 xl:grid xl:grid-cols-3 xl:items-start">
+          <div className="contents xl:flex xl:flex-col xl:gap-4 xl:min-w-0">
+            {L && <div className="order-1"><ProfileCard fallbackName={fallbackName || ''} refreshKey={tick} /></div>}
+            {L && show('mood') && <div className="order-4"><MoodCard showSummary={!!can?.moodSummary} /></div>}
+          </div>
+          <div className="contents xl:flex xl:flex-col xl:gap-4 xl:min-w-0">
+            {L && show('attendance') && <div className="order-2"><AttendanceCard refreshKey={tick} onChanged={refresh} /></div>}
+          </div>
+          <div className="contents xl:flex xl:flex-col xl:gap-4 xl:min-w-0">
+            {L && show('calendar') && <div className="order-3"><CalendarCard refreshKey={tick} /></div>}
+            <div className="order-5"><MyTasks widgets={dash.data?.widgets || []} onOpen={onOpen} /></div>
+          </div>
+        </div>
+
+        {/* Everything else. One masonry: columns end together, so there are no empty gaps between boxes. */}
         <Masonry id="home-more">
             {[
-              <PipelineChart key="pipeline" refreshKey={tick} onOpen={onOpen} />,
+              can?.companyOverview && <PipelineChart key="pipeline" refreshKey={tick} onOpen={onOpen} />,
               <QuickActionsGrid key="quick-actions" onOpen={onOpen} />,
               <UpcomingCard key="upcoming" refreshKey={tick} onOpen={onOpen} />,
-              <MyTasks key="my-tasks" widgets={dash.data?.widgets || []} onOpen={onOpen} />,
               <LeaveBalanceCard key="leave-balance" refreshKey={tick} onOpen={onOpen} />,
               <TeamAttendanceCard key="team-attendance" refreshKey={tick} onOpen={onOpen} />,
               ...(L ? [
-              <ProfileCard key="profile" fallbackName={fallbackName || ''} refreshKey={tick} />,
-              show('attendance') && <AttendanceCard key="attendance" refreshKey={tick} onChanged={refresh} />,
               show('celebrations') && <CelebrationsCard key="celebrations" refreshKey={tick} />,
               show('ceo-speak') && <AnnouncementsCard key="ceo-speak" kind="CEO_SPEAK" canManage={!!can?.announce} onManage={() => setManage(true)} refreshKey={tick} />,
               show('announcements') && <AnnouncementsCard key="announcements" kind="ANNOUNCEMENT" canManage={!!can?.announce} onManage={() => setManage(true)} refreshKey={tick} />,
-              show('calendar') && <CalendarCard key="calendar" refreshKey={tick} />,
-              show('mood') && <MoodCard key="mood" showSummary={!!can?.moodSummary} />,
               show('login-summary') && can?.loginSummary && <LoginSummaryCard key="login-summary" refreshKey={tick} />,
               show('acknowledgements') && can?.acknowledge && <AcksCard key="acknowledgements" onOpen={onOpen} refreshKey={tick} />,
               show('quick-links') && <QuickLinksCard key="quick-links" links={L?.quickLinks || []} onOpen={onOpen} />,

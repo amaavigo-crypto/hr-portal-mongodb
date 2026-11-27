@@ -23,7 +23,7 @@ export interface HomeLayout {
   hiddenCards: string[];
   quickLinks: QuickLink[];
   quickReports: QuickReport[];
-  can: { announce: boolean; manageHome: boolean; people: boolean; loginSummary: boolean; moodSummary: boolean; acknowledge: boolean };
+  can: { announce: boolean; manageHome: boolean; people: boolean; loginSummary: boolean; moodSummary: boolean; acknowledge: boolean; companyOverview: boolean };
 }
 
 export type PersonStatus = 'ACTIVE' | 'ON_LEAVE' | 'INACTIVE';
