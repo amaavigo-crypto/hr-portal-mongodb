@@ -26,7 +26,7 @@ export const PendingApprovalView: React.FC<Props> = ({ company, email, suspended
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] p-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-lg shadow-slate-200/50">
-        <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${suspended ? 'bg-rose-50 text-rose-600' : 'bg-orange-50 text-[#FA7014]'}`}>
+        <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${suspended ? 'bg-rose-50 text-rose-600' : 'bg-brand-50 text-[#6050D0]'}`}>
           {suspended ? <ShieldAlert className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
         </div>
         <h1 className="mt-4 text-lg font-black text-slate-900">
@@ -48,7 +48,7 @@ export const PendingApprovalView: React.FC<Props> = ({ company, email, suspended
             <button
               onClick={check}
               disabled={checking}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#FA7014] px-4 py-2 text-sm font-bold text-white hover:bg-[#E65A05] disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#6050D0] px-4 py-2 text-sm font-bold text-white hover:bg-[#5243BE] disabled:opacity-60"
             >
               {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Check again
             </button>

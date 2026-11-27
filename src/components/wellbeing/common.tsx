@@ -6,7 +6,7 @@ import { isMuted, setMuted, sfx, subscribeMute, unlockAudio } from './sfx';
 export interface GameProps { seed: string; onDone: (payload: any) => void; onQuit: () => void }
 
 export const ACCENT: Record<string, { from: string; to: string; glow: string; soft: string; text: string }> = {
-  'fruit-catch': { from: '#ff7a59', to: '#ffb347', glow: 'rgba(255,122,89,.45)', soft: '#fff1ea', text: '#b4421f' },
+  'fruit-catch': { from: '#ff7a59', to: '#ffb347', glow: 'rgba(255,122,89,.45)', soft: '#F1EFFC', text: '#b4421f' },
   'echo-beats': { from: '#7c5cff', to: '#38d5c9', glow: 'rgba(124,92,255,.45)', soft: '#f0ecff', text: '#4b30c9' },
   'fraud-hunter': { from: '#0ea5a4', to: '#4f8cff', glow: 'rgba(14,165,164,.4)', soft: '#e6f8f7', text: '#0b7f7e' },
 };

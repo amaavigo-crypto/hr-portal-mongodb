@@ -7,7 +7,7 @@ interface Props {
 }
 
 const field =
-  'w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FA7014]/30 focus:border-[#FA7014]';
+  'w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6050D0]/30 focus:border-[#6050D0]';
 
 interface Draft {
   headcount: string;
@@ -111,7 +111,7 @@ export const HiringBudgetsModal: React.FC<Props> = ({ onClose }) => {
                       </td>
                       <td className="py-2 text-right">
                         <button
-                          className="rounded-lg bg-[#FA7014] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#E65A05] disabled:bg-slate-300"
+                          className="rounded-lg bg-[#6050D0] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5243BE] disabled:bg-slate-300"
                           disabled={!dirty(r) || busy !== null}
                           onClick={() => save(r.departmentName)}
                         >

@@ -8,7 +8,7 @@ type Tone = 'orange' | 'blue' | 'purple' | 'green';
 
 // Soft tinted tile and round icon, one colour per tile.
 const TONES: Record<Tone, { tile: string; icon: string }> = {
-  orange: { tile: 'bg-orange-50 border-orange-100', icon: 'bg-orange-100 text-[#FA7014]' },
+  orange: { tile: 'bg-brand-50 border-brand-100', icon: 'bg-brand-100 text-[#6050D0]' },
   blue: { tile: 'bg-sky-50 border-sky-100', icon: 'bg-sky-100 text-sky-600' },
   purple: { tile: 'bg-violet-50 border-violet-100', icon: 'bg-violet-100 text-violet-600' },
   green: { tile: 'bg-emerald-50 border-emerald-100', icon: 'bg-emerald-100 text-emerald-600' },

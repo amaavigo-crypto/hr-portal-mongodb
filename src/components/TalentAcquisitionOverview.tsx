@@ -380,7 +380,7 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
       return (
         <a
           href={`tel:${cleanDigits}`}
-          className="inline-flex items-center gap-1.5 text-slate-800 hover:text-[#FA7014] hover:underline font-mono text-xs font-semibold whitespace-nowrap transition-colors bg-slate-100 hover:bg-orange-50/60 border border-slate-200 px-2.5 py-1 rounded-lg"
+          className="inline-flex items-center gap-1.5 text-slate-800 hover:text-[#6050D0] hover:underline font-mono text-xs font-semibold whitespace-nowrap transition-colors bg-slate-100 hover:bg-brand-50/60 border border-slate-200 px-2.5 py-1 rounded-lg"
           title={`Call ${trimmed}`}
         >
           <Phone className="w-3.5 h-3.5 shrink-0 text-slate-500" />
@@ -400,13 +400,13 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
             href={trimmed}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-start gap-1.5 text-[#FA7014] hover:text-[#E65A05] hover:underline font-medium break-all transition-colors group"
+            className="inline-flex items-start gap-1.5 text-[#6050D0] hover:text-[#5243BE] hover:underline font-medium break-all transition-colors group"
             title={`Open attachment: ${trimmed}`}
           >
             {isFile ? (
-              <Paperclip className="w-3.5 h-3.5 shrink-0 text-[#FA7014] mt-0.5" />
+              <Paperclip className="w-3.5 h-3.5 shrink-0 text-[#6050D0] mt-0.5" />
             ) : (
-              <ExternalLink className="w-3.5 h-3.5 shrink-0 text-[#FA7014] mt-0.5" />
+              <ExternalLink className="w-3.5 h-3.5 shrink-0 text-[#6050D0] mt-0.5" />
             )}
             <span className="break-all">{strVal}</span>
             <ExternalLink className="w-3 h-3 shrink-0 opacity-60 group-hover:opacity-100 mt-0.5 ml-0.5" />
@@ -503,7 +503,7 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
           <div
             onDoubleClick={() => cellKey && toggleCellExpand(cellKey)}
             onTouchEnd={() => cellKey && handleCellTouch(cellKey)}
-            className="bg-orange-50/40 border border-[#FA7014]/50 rounded-lg p-2.5 shadow-xs transition-all cursor-pointer select-text ring-1 ring-[#FA7014]/20"
+            className="bg-brand-50/40 border border-[#6050D0]/50 rounded-lg p-2.5 shadow-xs transition-all cursor-pointer select-text ring-1 ring-[#6050D0]/20"
             title="Double-tap or double-click to collapse"
           >
             <div className="text-slate-800 text-sm whitespace-pre-line break-words leading-relaxed">
@@ -518,7 +518,7 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
         <div
           onDoubleClick={() => cellKey && toggleCellExpand(cellKey)}
           onTouchEnd={() => cellKey && handleCellTouch(cellKey)}
-          className="cursor-pointer select-none rounded p-0.5 hover:bg-orange-50/30 transition-colors"
+          className="cursor-pointer select-none rounded p-0.5 hover:bg-brand-50/30 transition-colors"
           title="Double-tap or double-click to expand"
         >
           <p className="text-slate-700 text-sm line-clamp-2 leading-relaxed break-words">
@@ -570,7 +570,7 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
             className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer ${
               isLoading || isRefreshing
                 ? 'bg-slate-400 cursor-not-allowed'
-                : 'bg-[#FA7014] hover:bg-[#E65A05] active:scale-[0.99]'
+                : 'bg-[#6050D0] hover:bg-[#5243BE] active:scale-[0.99]'
             }`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing || isLoading ? 'animate-spin' : ''}`} />
@@ -698,7 +698,7 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
           { label: 'Open Positions', icon: Briefcase, tone: 'from-violet-100/80 to-indigo-50', chip: 'bg-violet-100 text-violet-600', value: overviewData?.kpis?.openPositions, note: 'Active requisition postings' },
           { label: 'Total Vacancies', icon: Users, tone: 'from-sky-100/80 to-blue-50', chip: 'bg-sky-100 text-sky-600', value: overviewData?.kpis?.totalVacancies, note: 'Total approved headcounts' },
           { label: 'Total Applications', icon: UserCheck, tone: 'from-emerald-100/70 to-green-50', chip: 'bg-emerald-100 text-emerald-600', value: selectedDesignation !== 'ALL' ? filteredMetrics.applicationsCount : overviewData?.kpis?.totalApplications, note: selectedDesignation === 'ALL' ? 'All logged candidates' : `Filtered by: ${selectedDesignation}` },
-          { label: 'Hiring Departments', icon: Building2, tone: 'from-orange-100/80 to-amber-50', chip: 'bg-orange-100 text-[#F36B21]', value: overviewData?.kpis?.departmentsCount, note: 'Active business functions' },
+          { label: 'Hiring Departments', icon: Building2, tone: 'from-brand-100/80 to-brand-50', chip: 'bg-brand-100 text-[#6050D0]', value: overviewData?.kpis?.departmentsCount, note: 'Active business functions' },
         ] as const).map((t) => (
           <div key={t.label} className={`flex items-center gap-3 rounded-2xl border border-white bg-gradient-to-br px-4 py-3.5 ${t.tone}`}>
             <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${t.chip}`}><t.icon className="h-6 w-6" /></span>
@@ -816,7 +816,7 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
                       <span className="font-medium text-slate-700 truncate">{dept.department}</span>
                       <div className="flex items-center space-x-2 font-mono text-[11px]">
                         <span className="text-slate-500">{dept.openPositions} pos</span>
-                        <span className="font-bold text-violet-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                        <span className="font-bold text-violet-600 bg-brand-50 px-1.5 py-0.5 rounded">
                           {dept.vacancies} vac
                         </span>
                       </div>

@@ -296,7 +296,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                     placeholder="Search pending documents awaiting your acknowledgement..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 transition-colors"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 transition-colors"
                   />
                 </div>
               </div>
@@ -360,7 +360,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                           <button
                             id={`btn-ack-${doc.id}`}
                             onClick={() => handleAcknowledge(doc, verNumber)}
-                            className="inline-flex items-center justify-center space-x-1.5 bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
+                            className="inline-flex items-center justify-center space-x-1.5 bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                             <span>Acknowledge Policy v{verNumber}</span>
@@ -371,10 +371,10 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                             <button
                               id={`btn-card-suggest-${doc.id}`}
                               onClick={() => setSelectedDocForSuggestion(doc)}
-                              className="inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] text-xs font-medium px-3 py-2 rounded-xl transition-colors border border-slate-200 hover:border-orange-300 cursor-pointer"
+                              className="inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] text-xs font-medium px-3 py-2 rounded-xl transition-colors border border-slate-200 hover:border-brand-300 cursor-pointer"
                               title="Give feedback or suggest an improvement on this policy"
                             >
-                              <MessageSquarePlus className="w-3.5 h-3.5 text-[#FA7014]" />
+                              <MessageSquarePlus className="w-3.5 h-3.5 text-[#6050D0]" />
                               <span>Give Suggestion</span>
                             </button>
 
@@ -414,7 +414,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                 placeholder="Search all documents by ID, title, department, or keyword..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 transition-colors"
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 transition-colors"
               />
             </div>
 
@@ -426,7 +426,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                 id="filter-employee-category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] cursor-pointer"
+                className="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] cursor-pointer"
               >
                 <option value="ALL">All Categories</option>
                 {Object.values(DocumentCategory).map((cat) => (
@@ -545,7 +545,7 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                                   <button
                                     id={`btn-table-ack-${doc.id}`}
                                     onClick={() => handleAcknowledge(doc, verNumber)}
-                                    className="inline-flex items-center space-x-1 bg-[#FA7014] hover:bg-[#E65A05] text-white text-[11px] font-bold px-2 py-0.5 rounded-md transition-all shadow-xs cursor-pointer w-fit"
+                                    className="inline-flex items-center space-x-1 bg-[#6050D0] hover:bg-[#5243BE] text-white text-[11px] font-bold px-2 py-0.5 rounded-md transition-all shadow-xs cursor-pointer w-fit"
                                   >
                                     <Check className="w-3 h-3 stroke-[3]" />
                                     <span>Sign-off</span>
@@ -566,10 +566,10 @@ export const EmployeePortalView: React.FC<EmployeePortalViewProps> = ({
                               <button
                                 id={`btn-table-suggest-${doc.id}`}
                                 onClick={() => setSelectedDocForSuggestion(doc)}
-                                className="inline-flex items-center space-x-1 bg-white hover:bg-orange-50 hover:text-[#FA7014] text-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors border border-slate-200 hover:border-orange-300 cursor-pointer shadow-2xs"
+                                className="inline-flex items-center space-x-1 bg-white hover:bg-brand-50 hover:text-[#6050D0] text-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors border border-slate-200 hover:border-brand-300 cursor-pointer shadow-2xs"
                                 title="Give Suggestion or Feedback on this document"
                               >
-                                <MessageSquarePlus className="w-3.5 h-3.5 text-[#FA7014]" />
+                                <MessageSquarePlus className="w-3.5 h-3.5 text-[#6050D0]" />
                                 <span>Suggest</span>
                               </button>
 

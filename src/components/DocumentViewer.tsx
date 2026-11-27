@@ -373,7 +373,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
             if (!container.querySelector(`.badge-banner-comment-${comment.id}`)) {
               const banner = document.createElement('div');
-              banner.className = `badge-banner-comment-${comment.id} comment-table-badge-bar flex items-center justify-between bg-orange-50/95 border border-[#FA7014] rounded-lg px-2.5 py-1 mb-1.5 shadow-xs cursor-pointer select-none transition-transform hover:scale-[1.005]`;
+              banner.className = `badge-banner-comment-${comment.id} comment-table-badge-bar flex items-center justify-between bg-brand-50/95 border border-[#6050D0] rounded-lg px-2.5 py-1 mb-1.5 shadow-xs cursor-pointer select-none transition-transform hover:scale-[1.005]`;
               banner.setAttribute('data-comment-id', comment.id);
               banner.setAttribute('id', `highlight-banner-${comment.id}`);
               const safeComment = escapeHtml(comment.comment);
@@ -383,7 +383,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   <span class="text-xs font-bold text-slate-800">Table Revision Comment:</span>
                   <span class="text-[11px] text-slate-600 font-medium italic truncate max-w-sm">"${safeComment}"</span>
                 </div>
-                <span class="text-[10px] font-bold text-[#FA7014] bg-white border border-orange-200 px-2 py-0.5 rounded shadow-2xs hover:bg-orange-100 flex items-center gap-1">
+                <span class="text-[10px] font-bold text-[#6050D0] bg-white border border-brand-200 px-2 py-0.5 rounded shadow-2xs hover:bg-brand-100 flex items-center gap-1">
                   <span>Jump &rarr;</span>
                 </span>
               `;
@@ -427,7 +427,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
           const mark = document.createElement('mark');
           mark.className =
-            'docx-revision-highlight bg-amber-200/95 hover:bg-amber-300 text-slate-900 border-b-2 border-[#FA7014] px-0.5 rounded cursor-pointer transition-colors shadow-2xs inline-flex items-center flex-wrap gap-0.5';
+            'docx-revision-highlight bg-amber-200/95 hover:bg-amber-300 text-slate-900 border-b-2 border-[#6050D0] px-0.5 rounded cursor-pointer transition-colors shadow-2xs inline-flex items-center flex-wrap gap-0.5';
           mark.setAttribute('data-comment-id', comment.id);
           mark.setAttribute('id', `highlight-${comment.id}`);
           mark.setAttribute('title', `Comment #${idx + 1}: ${comment.comment}`);
@@ -1002,7 +1002,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Video className="w-3.5 h-3.5 text-[#FA7014]" />
+              <Video className="w-3.5 h-3.5 text-[#6050D0]" />
               <span>Video Player</span>
             </button>
           )}
@@ -1017,7 +1017,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Eye className="w-3.5 h-3.5 text-[#FA7014]" />
+              <Eye className="w-3.5 h-3.5 text-[#6050D0]" />
               <span>Word Document (DOCX)</span>
             </button>
           )}
@@ -1032,7 +1032,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Eye className="w-3.5 h-3.5 text-[#FA7014]" />
+              <Eye className="w-3.5 h-3.5 text-[#6050D0]" />
               <span>Interactive PDF</span>
             </button>
           )}
@@ -1046,7 +1046,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <FileText className="w-3.5 h-3.5 text-[#FA7014]" />
+            <FileText className="w-3.5 h-3.5 text-[#6050D0]" />
             <span>Readable Document</span>
           </button>
 
@@ -1059,7 +1059,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <FileCode className="w-3.5 h-3.5 text-[#FA7014]" />
+            <FileCode className="w-3.5 h-3.5 text-[#6050D0]" />
             <span>Raw Text</span>
           </button>
         </div>
@@ -1067,7 +1067,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         {/* VIDEO ASSET BADGE */}
         {viewMode === 'video' && (
           <div className="flex items-center space-x-2 text-xs text-slate-500">
-            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#FA7014]/10 text-[#FA7014] font-semibold">
+            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#6050D0]/10 text-[#6050D0] font-semibold">
               <Video className="w-3.5 h-3.5" />
               <span>Video Master Asset</span>
             </span>
@@ -1171,7 +1171,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 onClick={handleFitDocxWidth}
                 className={`px-2.5 py-1 text-[11px] rounded-lg font-bold transition-all cursor-pointer ${
                   isFitDocxWidth
-                    ? 'bg-[#FA7014] text-white shadow-2xs'
+                    ? 'bg-[#6050D0] text-white shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
                 title="Fit full Word document page to container width"
@@ -1208,7 +1208,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               }}
               className={`px-3 py-1.5 text-xs rounded-xl font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer ${
                 selectedText
-                  ? 'bg-[#FA7014] text-white hover:bg-[#E65A05] ring-2 ring-[#FA7014]/30 animate-pulse'
+                  ? 'bg-[#6050D0] text-white hover:bg-[#5243BE] ring-2 ring-[#6050D0]/30 animate-pulse'
                   : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
               }`}
               title={selectedText ? `Comment on selected text: "${selectedText.slice(0, 30)}..."` : 'Select text in the document with your mouse to comment'}
@@ -1228,10 +1228,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   : 'bg-white text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              <MessageSquare className="w-3.5 h-3.5 text-[#FA7014]" />
+              <MessageSquare className="w-3.5 h-3.5 text-[#6050D0]" />
               <span>Revision Comments</span>
               {inlineComments.length > 0 && (
-                <span className="bg-[#FA7014] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-0.5">
+                <span className="bg-[#6050D0] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-0.5">
                   {inlineComments.length}
                 </span>
               )}
@@ -1263,7 +1263,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               onClick={() => {
                 setShowCommentModal(true);
               }}
-              className="flex items-center space-x-2 bg-gradient-to-r from-[#FA7014] to-[#E65A05] hover:from-[#E65A05] hover:to-[#D44E00] text-white px-3.5 py-1.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs font-bold ring-2 ring-white cursor-pointer"
+              className="flex items-center space-x-2 bg-gradient-to-r from-[#6050D0] to-[#5243BE] hover:from-[#5243BE] hover:to-[#D44E00] text-white px-3.5 py-1.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs font-bold ring-2 ring-white cursor-pointer"
               title="Add Revision Comment on selected text (or press 'C')"
             >
               <MessageSquarePlus className="w-3.5 h-3.5" />
@@ -1305,7 +1305,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               )}
               <div className="w-full px-5 py-3.5 bg-slate-900 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FA7014]/20 text-[#FA7014] border border-[#FA7014]/30">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#6050D0]/20 text-[#6050D0] border border-[#6050D0]/30">
                     VIDEO ASSET
                   </span>
                   <span className="font-mono text-slate-200 truncate max-w-xs">{fileName}</span>
@@ -1331,7 +1331,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     className="inline-flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-700 transition-colors cursor-pointer"
                     title="Download Video"
                   >
-                    <Download className="w-3 h-3 text-[#FA7014]" />
+                    <Download className="w-3 h-3 text-[#6050D0]" />
                     <span>Download Video</span>
                   </button>
                 </div>
@@ -1345,26 +1345,26 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div ref={docxOuterWrapperRef} className="flex flex-col items-center justify-start w-full overflow-x-auto min-h-[400px]">
             {loadingDocx && (
               <div className="py-16 text-center text-slate-500">
-                <div className="w-8 h-8 border-2 border-[#FA7014] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-[#6050D0] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs">Rendering Word Document with intact fonts, styles, and header/footer...</p>
               </div>
             )}
 
             {!loadingDocx && !stampedDocxBlob && !docxError && (
               <div className="py-16 text-center text-slate-500">
-                <div className="w-8 h-8 border-2 border-[#FA7014] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-[#6050D0] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs">Preparing Word Document preview...</p>
               </div>
             )}
 
             {docxError && !loadingDocx && (
               <div className="text-center py-10 text-slate-500 max-w-md">
-                <AlertCircle className="w-8 h-8 mx-auto text-[#FA7014] mb-2" />
+                <AlertCircle className="w-8 h-8 mx-auto text-[#6050D0] mb-2" />
                 <p className="text-xs font-semibold text-slate-900 mb-1">Interactive Word Document Preview</p>
                 <p className="text-xs text-slate-500 mb-4">{docxError}</p>
                 <button
                   onClick={() => setViewMode('formatted')}
-                  className="bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-4 py-2 rounded-xl"
+                  className="bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-4 py-2 rounded-xl"
                 >
                   View Readable Policy Content
                 </button>
@@ -1389,7 +1389,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div className="flex flex-col items-center justify-center w-full">
             {loadingPdf && (
               <div className="py-16 text-center text-slate-500">
-                <div className="w-8 h-8 border-2 border-[#FA7014] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-[#6050D0] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs">Rendering PDF Document Canvas...</p>
               </div>
             )}
@@ -1402,14 +1402,14 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
             {!loadingPdf && !pdfDoc && (
               <div className="text-center py-12 text-slate-500 max-w-md">
-                <AlertCircle className="w-8 h-8 mx-auto text-[#FA7014] mb-2" />
+                <AlertCircle className="w-8 h-8 mx-auto text-[#6050D0] mb-2" />
                 <p className="text-xs font-semibold text-slate-900 mb-1">Interactive Canvas Preview Unavailable</p>
                 <p className="text-xs text-slate-500 mb-4">
                   Viewing extracted document content below. You can also download the original PDF file.
                 </p>
                 <button
                   onClick={() => setViewMode('formatted')}
-                  className="bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-4 py-2 rounded-xl"
+                  className="bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-4 py-2 rounded-xl"
                 >
                   View Extracted Policy Content
                 </button>
@@ -1423,7 +1423,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs text-slate-800">
             <div className="border-b border-slate-200 pb-4 mb-6 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#FA7014]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#6050D0]">
                   Official Document Content
                 </span>
                 <h3 className="text-lg font-bold text-slate-900 mt-0.5">{fileName}</h3>
@@ -1450,7 +1450,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     </span>
                   )
                 )}
-                <span className="bg-orange-50 text-[#FA7014] text-xs px-2.5 py-1 rounded-lg border border-orange-200 font-mono font-bold flex items-center space-x-1.5">
+                <span className="bg-brand-50 text-[#6050D0] text-xs px-2.5 py-1 rounded-lg border border-brand-200 font-mono font-bold flex items-center space-x-1.5">
                   <FileCheck className="w-3.5 h-3.5" />
                   <span>Text Extracted</span>
                 </span>
@@ -1489,7 +1489,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   }
                   if (trimmed.startsWith('## ')) {
                     return (
-                      <h2 key={i} className="text-base font-bold text-[#FA7014] mt-4 mb-1">
+                      <h2 key={i} className="text-base font-bold text-[#6050D0] mt-4 mb-1">
                         {trimmed.replace(/^## /, '')}
                       </h2>
                     );
@@ -1563,7 +1563,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             {/* Comments Sidebar Header */}
             <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-2">
-                <MessageSquare className="w-4 h-4 text-[#FA7014]" />
+                <MessageSquare className="w-4 h-4 text-[#6050D0]" />
                 <span className="text-xs font-bold">Revision Comments ({inlineComments.length})</span>
               </div>
               <button
@@ -1600,8 +1600,8 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     onClick={() => handleJumpToComment(c)}
                     className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                       selectedCommentId === c.id
-                        ? 'border-[#FA7014] bg-orange-50/70 shadow-xs ring-2 ring-[#FA7014]/40'
-                        : 'border-slate-200 bg-slate-50/80 hover:border-[#FA7014]/50 hover:bg-orange-50/30'
+                        ? 'border-[#6050D0] bg-brand-50/70 shadow-xs ring-2 ring-[#6050D0]/40'
+                        : 'border-slate-200 bg-slate-50/80 hover:border-[#6050D0]/50 hover:bg-brand-50/30'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1.5">
@@ -1634,7 +1634,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                         e.stopPropagation();
                         handleJumpToComment(c);
                       }}
-                      className="bg-white border-l-2 border-[#FA7014] p-2 rounded-r-lg mb-2 text-[11px] text-slate-600 font-serif italic line-clamp-3 hover:bg-orange-50/40 transition-colors"
+                      className="bg-white border-l-2 border-[#6050D0] p-2 rounded-r-lg mb-2 text-[11px] text-slate-600 font-serif italic line-clamp-3 hover:bg-brand-50/40 transition-colors"
                       title="Click to jump to quoted text"
                     >
                       "{c.selectedText}"
@@ -1661,7 +1661,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                             handleJumpToComment(c);
                           }
                         }}
-                        className="text-[#FA7014] font-semibold hover:underline cursor-pointer select-none inline-flex items-center space-x-1 group"
+                        className="text-[#6050D0] font-semibold hover:underline cursor-pointer select-none inline-flex items-center space-x-1 group"
                         title="Scroll to referenced text in document"
                       >
                         <span>Jump to text</span>
@@ -1680,7 +1680,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         {enableInlineComments && selectedText && !showCommentModal && (
           <div className="fixed bottom-6 right-6 z-[60] bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center space-x-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="flex flex-col max-w-xs">
-              <span className="text-[10px] font-bold text-[#FA7014] uppercase tracking-wider">Text Selected</span>
+              <span className="text-[10px] font-bold text-[#6050D0] uppercase tracking-wider">Text Selected</span>
               <span className="text-xs font-serif italic truncate text-slate-200">"{selectedText}"</span>
             </div>
             <button
@@ -1688,7 +1688,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               onClick={() => {
                 setShowCommentModal(true);
               }}
-              className="bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0 transition-transform hover:scale-105"
+              className="bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0 transition-transform hover:scale-105"
             >
               <MessageSquarePlus className="w-4 h-4" />
               <span>Add Comment</span>
@@ -1702,7 +1702,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200 text-[#FA7014] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-brand-50 border border-brand-200 text-[#6050D0] flex items-center justify-center">
                   <MessageSquarePlus className="w-5 h-5" />
                 </div>
                 <div>
@@ -1723,9 +1723,9 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             </div>
 
             {/* Selected text quote */}
-            <div className="mt-3.5 bg-slate-50 border-l-4 border-l-[#FA7014] border-slate-200 p-3 rounded-r-xl">
+            <div className="mt-3.5 bg-slate-50 border-l-4 border-l-[#6050D0] border-slate-200 p-3 rounded-r-xl">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1 mb-1">
-                <Quote className="w-3 h-3 text-[#FA7014]" />
+                <Quote className="w-3 h-3 text-[#6050D0]" />
                 <span>Selected Text from Document:</span>
               </span>
               <p className="text-xs text-slate-800 font-serif italic line-clamp-4 leading-relaxed">
@@ -1736,7 +1736,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             {/* Comment Input */}
             <div className="mt-4">
               <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                Requested Modification / Note <span className="text-[#FA7014]">*</span>
+                Requested Modification / Note <span className="text-[#6050D0]">*</span>
               </label>
               <textarea
                 autoFocus
@@ -1744,7 +1744,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 onChange={(e) => setCommentInput(e.target.value)}
                 placeholder="Example: Please revise this paragraph to specify 15 days notice period instead of 30 days as discussed..."
                 rows={3}
-                className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 resize-none"
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 resize-none"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1772,7 +1772,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 type="button"
                 disabled={!commentInput.trim()}
                 onClick={handleSaveComment}
-                className="bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer"
+                className="bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Attach Comment</span>

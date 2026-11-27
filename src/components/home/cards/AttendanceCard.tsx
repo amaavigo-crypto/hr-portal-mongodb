@@ -43,7 +43,7 @@ export const AttendanceCard: React.FC<{ refreshKey: number; onChanged: () => voi
 
   const p = punches.data;
   return (
-    <HomeCard title="Online attendance" icon={<Clock className="w-4 h-4 text-[#FA7014]" />} loading={me.loading && !me.data} error={me.error} onRetry={me.reload}>
+    <HomeCard title="Online attendance" icon={<Clock className="w-4 h-4 text-[#6050D0]" />} loading={me.loading && !me.data} error={me.error} onRetry={me.reload}>
       {!configured || !found ? (
         <NoData text="Attendance is not available for you yet" hint="HR needs to add you under Leave & Attendance." />
       ) : (

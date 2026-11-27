@@ -2,11 +2,24 @@
 
 @theme {
   --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* App brand purple (the landing site keeps its own orange/purple themes). 600 is the main brand colour. */
+  --color-brand-50: #F4F2FD;
+  --color-brand-100: #EAE7FB;
+  --color-brand-200: #D7D2F7;
+  --color-brand-300: #BDB5F0;
+  --color-brand-400: #9B8FE6;
+  --color-brand-500: #7B6DDD;
+  --color-brand-600: #6050D0;
+  --color-brand-700: #5142B5;
+  --color-brand-800: #433793;
+  --color-brand-900: #382F75;
+  --color-brand-950: #221C47;
 }
 
 @layer base {
   body {
-    @apply bg-[#F8FAFC] text-slate-900 antialiased selection:bg-[#FA7014] selection:text-white;
+    @apply bg-[#F8FAFC] text-slate-900 antialiased selection:bg-[#6050D0] selection:text-white;
   }
 
   /* Ensure select options are always legible */
@@ -16,7 +29,7 @@
   }
 }
 
-/* Amaavigo White, Black & Orange Theme Panels */
+/* White, black & purple theme panels */
 .glass-panel-light,
 .glass-panel-dark {
   background: rgba(255, 255, 255, 0.98);
@@ -27,8 +40,8 @@
 }
 
 .gradient-creator-card {
-  background: linear-gradient(135deg, rgba(250, 112, 20, 0.06) 0%, rgba(255, 255, 255, 1) 100%);
-  border: 1px solid #FED7AA;
+  background: linear-gradient(135deg, rgba(96, 80, 208, 0.06) 0%, rgba(255, 255, 255, 1) 100%);
+  border: 1px solid #D7D2F7;
 }
 
 .gradient-reviewer-card {
@@ -37,12 +50,12 @@
 }
 
 .gradient-employee-card {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(255, 255, 255, 1) 100%);
-  border: 1px solid #FED7AA;
+  background: linear-gradient(135deg, rgba(96, 80, 208, 0.06) 0%, rgba(255, 255, 255, 1) 100%);
+  border: 1px solid #D7D2F7;
 }
 
 .gradient-amaavigo-brand {
-  background: linear-gradient(135deg, #FA7014 0%, #FF8C38 100%);
+  background: linear-gradient(135deg, #6050D0 0%, #7364DC 100%);
 }
 
 /* Custom Sleek Scrollbar */
@@ -58,7 +71,7 @@
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(250, 112, 20, 0.8);
+  background: rgba(96, 80, 208, 0.8);
 }
 
 /* Interactive Word (DOCX) Document Preview Styles */
@@ -128,7 +141,7 @@
 .document-html-content h2 {
   font-size: 1.25rem !important;
   font-weight: 700 !important;
-  color: #FA7014;
+  color: #6050D0;
   margin-top: 1.25rem !important;
   margin-bottom: 0.6rem !important;
 }

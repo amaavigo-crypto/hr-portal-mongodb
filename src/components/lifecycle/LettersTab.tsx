@@ -71,7 +71,7 @@ export const LettersTab: React.FC<{ people: { uid: string; name: string }[]; tem
           <table className="w-full text-xs"><tbody>{history.map((l) => (
             <tr key={l.id} className="border-b border-slate-100">
               <td className="p-1.5 font-mono">{l.number}</td><td className="p-1.5">{l.title}</td><td className="p-1.5 font-bold">{l.recipient}</td><td className="p-1.5 text-slate-500">{when(l.issuedAt)} · {l.issuedBy}</td>
-              <td className="p-1.5 text-right"><button className="text-[#FA7014] font-bold hover:underline" onClick={() => run(async () => { const r = await lifecycleService.letter(l.id); downloadLetterPdf(r.letter); })}>PDF</button></td>
+              <td className="p-1.5 text-right"><button className="text-[#6050D0] font-bold hover:underline" onClick={() => run(async () => { const r = await lifecycleService.letter(l.id); downloadLetterPdf(r.letter); })}>PDF</button></td>
             </tr>
           ))}</tbody></table>
         )}

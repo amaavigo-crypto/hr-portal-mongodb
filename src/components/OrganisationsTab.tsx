@@ -46,7 +46,7 @@ export const OrganisationsTab: React.FC = () => {
         <ul className="divide-y divide-slate-100 text-sm">
           {data.organisations.map((o) => (
             <li key={o.id} className="flex items-center justify-between py-2">
-              <span className="font-semibold text-slate-800">{o.name}{o.home && <span className="ml-2 text-[10px] font-bold text-slate-400">HOME</span>}{o.current && <span className="ml-2 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-[#FA7014]">VIEWING</span>}</span>
+              <span className="font-semibold text-slate-800">{o.name}{o.home && <span className="ml-2 text-[10px] font-bold text-slate-400">HOME</span>}{o.current && <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-[#6050D0]">VIEWING</span>}</span>
               {!o.current && <button disabled={busy} onClick={() => orgService.switchTo(o.id).catch((e) => setError(msg(e)))} className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50">Switch</button>}
             </li>
           ))}
@@ -76,7 +76,7 @@ export const OrganisationsTab: React.FC = () => {
               </div>
               <p className="mt-1 text-[11px] text-slate-400">People are never copied. Move them with Transfer people.</p>
             </div>
-            <button disabled={busy || name.trim().length < 2} className="inline-flex items-center gap-1.5 rounded-lg bg-[#FA7014] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#E65A05] disabled:opacity-50">
+            <button disabled={busy || name.trim().length < 2} className="inline-flex items-center gap-1.5 rounded-lg bg-[#6050D0] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#5243BE] disabled:opacity-50">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Create organisation
             </button>
           </form>

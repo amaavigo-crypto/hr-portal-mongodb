@@ -19,7 +19,7 @@ export const HiringShell: React.FC<{ active: string; access: HiringAccess; onNav
             const on = t.key === openTab?.key;
             return (
               <button key={t.key} type="button" aria-current={on ? 'page' : undefined} onClick={() => onNavigate(t.pages[0].module)}
-                className={`h-11 shrink-0 cursor-pointer whitespace-nowrap border-b-2 text-sm transition-colors ${on ? 'border-[#c2500a] font-semibold text-[#16181d]' : 'border-transparent font-medium text-[#5c626d] hover:text-[#16181d]'}`}>
+                className={`h-11 shrink-0 cursor-pointer whitespace-nowrap border-b-2 text-sm transition-colors ${on ? 'border-[#4C3EB0] font-semibold text-[#16181d]' : 'border-transparent font-medium text-[#5c626d] hover:text-[#16181d]'}`}>
                 {t.label}
               </button>
             );

@@ -110,7 +110,7 @@ export const MonthView: React.FC<{ uid?: string; onPickDay?: (d: any) => void; o
     { label: 'Late', value: s.late, tone: s.late ? 'text-amber-700' : 'text-slate-900', show: true },
     { label: 'Absent', value: s.absent, tone: s.absent ? 'text-rose-700' : 'text-slate-900', show: true },
     { label: 'Missed check-out', value: s.incomplete, tone: 'text-rose-700', show: s.incomplete > 0 },
-    { label: 'Half days', value: s.halfDay, tone: 'text-orange-700', show: more },
+    { label: 'Half days', value: s.halfDay, tone: 'text-brand-700', show: more },
     { label: 'Holidays', value: count('HOLIDAY'), tone: 'text-violet-700', show: more },
     { label: 'Weekly offs', value: count('WEEKLY_OFF'), tone: 'text-slate-600', show: more },
     { label: 'Avg hours a day', value: avg ? hm(avg) : '–', tone: 'text-slate-900', show: more },
@@ -203,7 +203,7 @@ export const MonthView: React.FC<{ uid?: string; onPickDay?: (d: any) => void; o
             <thead className="bg-slate-50 text-slate-500 text-left"><tr><th className="p-2">Date</th><th className="p-2">Status</th><th className="p-2">In</th><th className="p-2">Out</th><th className="p-2 hidden sm:table-cell">Worked</th><th className="p-2" /></tr></thead>
             <tbody>
               {shown.map((d: any) => (
-                <tr key={d.date} className={`border-t border-slate-100 ${d.date === today ? 'bg-orange-50/50' : ''}`}>
+                <tr key={d.date} className={`border-t border-slate-100 ${d.date === today ? 'bg-brand-50/50' : ''}`}>
                   <td className="p-2 whitespace-nowrap font-semibold text-slate-700">{dayName(d.date)} {Number(d.date.slice(8))}</td>
                   <td className="p-2">{STATUS_LABEL[d.status] ? <StatusPill status={d.status} /> : <span className="text-slate-300">—</span>}</td>
                   <td className="p-2">{d.checkIn || '—'}</td><td className="p-2">{d.checkOut || '—'}</td>

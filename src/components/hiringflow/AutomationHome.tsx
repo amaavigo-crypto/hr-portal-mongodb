@@ -55,7 +55,7 @@ export const AutomationHome: React.FC<Props> = ({ onOpenFlow, onCreate, onShowSt
       {runs.error && <p className="text-sm text-rose-700" role="alert">Could not load applicant progress: {runs.error}</p>}
 
       <section>
-        {families.length > 5 && <div className="relative mb-3 max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search flows" aria-label="Search flows" className="h-9 w-full rounded-lg border border-[#dfe1e5] bg-white pl-9 pr-3 text-[13px] outline-none focus:border-[#c2500a]" /></div>}
+        {families.length > 5 && <div className="relative mb-3 max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search flows" aria-label="Search flows" className="h-9 w-full rounded-lg border border-[#dfe1e5] bg-white pl-9 pr-3 text-[13px] outline-none focus:border-[#4C3EB0]" /></div>}
         {rows.length === 0 ? <p className="py-8 text-center text-sm text-[#5c626d]">{families.length ? 'No flows match.' : 'No flow yet. Start one below.'}</p> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm">
             <thead><tr className="border-b border-[#e8e9ec] text-xs text-[#5c626d]">{['Flow', 'Used for', 'Steps', 'In flow now', 'Status', 'Last activity', ''].map((h, i) => <th key={i} className="px-2 py-2.5 font-medium">{h}</th>)}</tr></thead>
@@ -80,7 +80,7 @@ export const AutomationHome: React.FC<Props> = ({ onOpenFlow, onCreate, onShowSt
         <p className="mt-0.5 text-[13px] text-[#5c626d]">For roles that are hired differently from everyone else.</p>
         <div className="mt-3 grid max-w-3xl gap-3 sm:grid-cols-2">
           {([['standard', 'Use the standard process', 'Score, phone screen, interview, offer and joining. Change any step.'], ['empty', 'Start with a blank flow', 'Add only the steps you want.']] as const).map(([k, title, text]) => (
-            <button key={k} type="button" onClick={() => onCreate(k)} className="cursor-pointer rounded-[10px] border border-[#dfe1e5] p-4 text-left hover:border-[#c2500a]">
+            <button key={k} type="button" onClick={() => onCreate(k)} className="cursor-pointer rounded-[10px] border border-[#dfe1e5] p-4 text-left hover:border-[#4C3EB0]">
               <span className="block text-sm font-semibold text-[#16181d]">{title}</span>
               <span className="mt-1 block text-[13px] text-[#5c626d]">{text}</span>
             </button>

@@ -46,16 +46,16 @@ export const HiringPipelineModule: React.FC<Props> = ({ currentUser, users, show
     { value: 'interviews', label: 'Interviews' }, { value: 'offers', label: 'Offers' }, { value: 'referrals', label: 'Referrals' },
     { value: 'ai', label: 'AI & duplicates' }, ...(seeDash ? [{ value: 'dashboard' as Tab, label: 'Analytics' }] : []),
   ];
-  const iconButton = 'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[#dfe1e5] bg-white text-[#3d434d] hover:border-[#c2500a]';
+  const iconButton = 'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[#dfe1e5] bg-white text-[#3d434d] hover:border-[#4C3EB0]';
   return (
     <div className="min-w-0 flex-1 overflow-y-auto">
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-8">
         <Segmented label="Candidate views" value={tab} onChange={go} options={views} />
         <div className="flex flex-wrap items-center gap-2">
-          {tab === 'pipeline' && <select value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Period" className="h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] outline-none focus:border-[#c2500a]">{PERIODS.map((p) => <option key={p.days} value={p.days}>{p.label}</option>)}</select>}
+          {tab === 'pipeline' && <select value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Period" className="h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] outline-none focus:border-[#4C3EB0]">{PERIODS.map((p) => <option key={p.days} value={p.days}>{p.label}</option>)}</select>}
           <button type="button" onClick={() => setRefreshKey((n) => n + 1)} aria-label="Refresh" title="Refresh" className={iconButton}><RefreshCw className="h-4 w-4" /></button>
-          <button type="button" onClick={() => go('scoring')} aria-label="Scoring settings" title="Scoring settings" aria-pressed={tab === 'scoring'} className={`${iconButton} ${tab === 'scoring' ? '!border-[#c2500a]' : ''}`}><Settings className="h-4 w-4" /></button>
-          {tab !== 'applications' && <button type="button" onClick={() => go('applications')} className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#c2500a] px-4 text-[13px] font-semibold text-white hover:bg-[#a84308]"><Plus className="h-4 w-4" />Add candidate</button>}
+          <button type="button" onClick={() => go('scoring')} aria-label="Scoring settings" title="Scoring settings" aria-pressed={tab === 'scoring'} className={`${iconButton} ${tab === 'scoring' ? '!border-[#4C3EB0]' : ''}`}><Settings className="h-4 w-4" /></button>
+          {tab !== 'applications' && <button type="button" onClick={() => go('applications')} className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#4C3EB0] px-4 text-[13px] font-semibold text-white hover:bg-[#3F3393]"><Plus className="h-4 w-4" />Add candidate</button>}
         </div>
       </div>
       <div key={refreshKey} className={tab === 'applications' ? 'flex flex-col' : 'space-y-4 px-4 py-4 sm:px-8'}>

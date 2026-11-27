@@ -140,7 +140,7 @@ export const OffersTab: React.FC<{ canApprove: boolean }> = ({ canApprove }) => 
       <Loading error={list.error} loading={list.loading} />
       {!list.loading && items.length === 0 && <EmptyState title="No offers yet" text="Create one above for a candidate who has cleared the interviews." />}
       <div className="grid gap-2">{items.map((o) => (
-        <button key={o.id} onClick={() => setOpen(o.id)} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left hover:border-[#FA7014]">
+        <button key={o.id} onClick={() => setOpen(o.id)} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left hover:border-[#6050D0]">
           <div><div className="text-sm font-bold text-slate-800">{o.candidateName}</div><div className="text-xs text-slate-500">{o.designation} - joining {o.joiningDate} - {o.approvedCtcLpa || o.recommendedCtcLpa} LPA</div></div>
           <Pill tone={tone(o.status)}>{LABEL[o.status] || o.status}</Pill>
         </button>

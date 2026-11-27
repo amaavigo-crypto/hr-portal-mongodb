@@ -24,7 +24,7 @@ export type Tone = 'violet' | 'green' | 'amber' | 'rose' | 'blue';
 const TONES: Record<Tone, { card: string; circle: string }> = {
   violet: { card: 'bg-gradient-to-br from-violet-50 to-white border-violet-100', circle: 'bg-violet-100 text-violet-600' },
   green: { card: 'bg-gradient-to-br from-emerald-50 to-white border-emerald-100', circle: 'bg-emerald-100 text-emerald-600' },
-  amber: { card: 'bg-gradient-to-br from-orange-50 to-white border-orange-100', circle: 'bg-orange-100 text-orange-500' },
+  amber: { card: 'bg-gradient-to-br from-brand-50 to-white border-brand-100', circle: 'bg-brand-100 text-brand-500' },
   rose: { card: 'bg-gradient-to-br from-rose-50 to-white border-rose-100', circle: 'bg-rose-100 text-rose-500' },
   blue: { card: 'bg-gradient-to-br from-sky-50 to-white border-sky-100', circle: 'bg-sky-100 text-sky-600' },
 };
@@ -81,7 +81,7 @@ export const tbl = {
 
 /** A soft tinted pill for versions, statuses and categories. */
 export const Chip: React.FC<{ tone?: Tone | 'slate'; children: React.ReactNode }> = ({ tone = 'slate', children }) => {
-  const c = { violet: 'bg-violet-100 text-violet-700', green: 'bg-emerald-100 text-emerald-700', amber: 'bg-orange-100 text-orange-700', rose: 'bg-rose-100 text-rose-700', blue: 'bg-sky-100 text-sky-700', slate: 'bg-slate-100 text-slate-700' }[tone];
+  const c = { violet: 'bg-violet-100 text-violet-700', green: 'bg-emerald-100 text-emerald-700', amber: 'bg-brand-100 text-brand-700', rose: 'bg-rose-100 text-rose-700', blue: 'bg-sky-100 text-sky-700', slate: 'bg-slate-100 text-slate-700' }[tone];
   return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${c}`}>{children}</span>;
 };
 

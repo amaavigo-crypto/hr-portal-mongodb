@@ -122,12 +122,12 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
         {/* HEADER */}
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[#FA7014]/20 border border-[#FA7014]/40 flex items-center justify-center text-[#FA7014] shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[#6050D0]/20 border border-[#6050D0]/40 flex items-center justify-center text-[#6050D0] shrink-0">
               <MessageSquarePlus className="w-5 h-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center space-x-2">
-                <span className="font-mono text-[11px] font-bold text-[#FA7014] bg-white/10 px-2 py-0.5 rounded">
+                <span className="font-mono text-[11px] font-bold text-[#6050D0] bg-white/10 px-2 py-0.5 rounded">
                   {document.documentId}
                 </span>
                 <span className="text-xs text-slate-300 font-medium">v{document.currentPublishedVersionNumber || '1.0'}</span>
@@ -151,8 +151,8 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
         {/* BODY */}
         <div className="p-6 overflow-y-auto flex-1 space-y-5 bg-white">
           {/* NOTICE BANNER */}
-          <div className="bg-orange-50/70 border border-orange-200/80 rounded-2xl p-3.5 flex items-start space-x-3 text-xs text-slate-700">
-            <Sparkles className="w-4 h-4 text-[#FA7014] shrink-0 mt-0.5" />
+          <div className="bg-brand-50/70 border border-brand-200/80 rounded-2xl p-3.5 flex items-start space-x-3 text-xs text-slate-700">
+            <Sparkles className="w-4 h-4 text-[#6050D0] shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-slate-900">Direct Input to HR & Leadership:</span> Your suggestions are directly routed to the HR Policy Authors and Founders. When this document undergoes its scheduled periodic re-review, all employee suggestions are reviewed and synthesized into upcoming revisions.
             </div>
@@ -193,13 +193,13 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
               {/* CATEGORY SELECT */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="select-suggestion-category">
-                  Suggestion Type <span className="text-[#FA7014]">*</span>
+                  Suggestion Type <span className="text-[#6050D0]">*</span>
                 </label>
                 <select
                   id="select-suggestion-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value as SuggestionCategory)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white cursor-pointer font-medium"
+                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white cursor-pointer font-medium"
                 >
                   {CATEGORY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -212,7 +212,7 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
               {/* SUBJECT INPUT */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="input-suggestion-subject">
-                  Subject / Summary <span className="text-[#FA7014]">*</span>
+                  Subject / Summary <span className="text-[#6050D0]">*</span>
                 </label>
                 <input
                   id="input-suggestion-subject"
@@ -220,7 +220,7 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="e.g. Increase core overlap flexibility for remote teams..."
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 font-medium"
+                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 font-medium"
                   required
                 />
               </div>
@@ -229,7 +229,7 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider" htmlFor="textarea-suggestion-content">
-                    Detailed Suggestion & Reasoning <span className="text-[#FA7014]">*</span>
+                    Detailed Suggestion & Reasoning <span className="text-[#6050D0]">*</span>
                   </label>
                   <span className="text-[10px] text-slate-400 font-mono">
                     {content.length} characters (min 15)
@@ -241,7 +241,7 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Describe your suggestion in detail. What is working well? What needs improvement or clarity? How would this change benefit your team and the organization?"
-                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 leading-relaxed font-sans"
+                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 leading-relaxed font-sans"
                   required
                 />
               </div>
@@ -293,7 +293,7 @@ export const SubmitSuggestionModal: React.FC<SubmitSuggestionModalProps> = ({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center space-x-2 bg-[#FA7014] hover:bg-[#E65A05] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center space-x-2 bg-[#6050D0] hover:bg-[#5243BE] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{submitting ? 'Submitting...' : 'Submit Suggestion to HR'}</span>

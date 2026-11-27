@@ -32,9 +32,9 @@ export const ScreeningLinkPage: React.FC = () => {
               <input className={inp} placeholder="Open to relocation?" value={f.relocation} onChange={(e) => setF({ ...f, relocation: e.target.value })} />
               <div className="text-xs font-bold text-slate-700">Times that suit you for a call</div>
               {slots.map((s, i) => <input key={i} className={inp} type="datetime-local" value={s} onChange={(e) => setSlots(slots.map((x, k) => (k === i ? e.target.value : x)))} />)}
-              {slots.length < 4 && <button className="text-xs font-bold text-[#FA7014]" onClick={() => setSlots([...slots, ''])}>Add another time</button>}
+              {slots.length < 4 && <button className="text-xs font-bold text-[#6050D0]" onClick={() => setSlots([...slots, ''])}>Add another time</button>}
               <textarea className={inp} rows={2} placeholder="Anything else" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
-              <div className="flex gap-2"><button disabled={busy || !slots.some(Boolean)} onClick={() => send(false)} className="rounded-lg bg-[#FA7014] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Submit</button><button disabled={busy} onClick={() => send(true)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold">None of these work, please reschedule</button></div>
+              <div className="flex gap-2"><button disabled={busy || !slots.some(Boolean)} onClick={() => send(false)} className="rounded-lg bg-[#6050D0] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Submit</button><button disabled={busy} onClick={() => send(true)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold">None of these work, please reschedule</button></div>
             </div>
           )}
         </>

@@ -49,7 +49,7 @@ export const AccountsPanel: React.FC = () => {
             {!a.modules && !d.modules && <p className="mt-1 text-[11px] text-slate-400">No account-wide modules set yet. Each organisation keeps its own until you save here.</p>}
             <div className="mt-2 flex gap-2">
               <input value={d.email || ''} onChange={(e) => setEdit({ ...edit, [a.id]: { ...d, email: e.target.value } })} placeholder="Add a group administrator by email" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs" />
-              <button disabled={!dirty || busy === a.id} onClick={() => save(a)} className="rounded-lg bg-[#FA7014] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">{busy === a.id ? 'Saving…' : 'Save'}</button>
+              <button disabled={!dirty || busy === a.id} onClick={() => save(a)} className="rounded-lg bg-[#6050D0] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">{busy === a.id ? 'Saving…' : 'Save'}</button>
             </div>
           </div>
         );

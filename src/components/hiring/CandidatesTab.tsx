@@ -23,7 +23,7 @@ const ScoreBlock: React.FC<{ score: any }> = ({ score }) => (
       {score.lines.map((l: any) => (
         <div key={l.part} className="flex items-center gap-2 text-xs">
           <span className="w-28 shrink-0 text-slate-600">{l.label} <span className="text-slate-400">({l.weight})</span></span>
-          <div className="h-2 flex-1 overflow-hidden rounded bg-slate-100">{!l.pending && <div className="h-full bg-[#FA7014]" style={{ width: `${l.rating}%` }} />}</div>
+          <div className="h-2 flex-1 overflow-hidden rounded bg-slate-100">{!l.pending && <div className="h-full bg-[#6050D0]" style={{ width: `${l.rating}%` }} />}</div>
           <span className="w-16 text-right font-semibold text-slate-700">{l.pending ? 'pending' : `${l.points}`}</span>
         </div>
       ))}
@@ -78,12 +78,12 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
           </div>
           {a && (
             <>
-              <div className="flex flex-wrap items-center gap-2"><Pill tone={stageTone(a.status)}>{a.status}</Pill>{d.data.referral && <Pill tone="blue">Referred by {d.data.referral.by}</Pill>}{a.resumeUrl && <a className="text-xs text-[#FA7014] underline" href={a.resumeUrl} target="_blank" rel="noreferrer">Resume</a>}</div>
+              <div className="flex flex-wrap items-center gap-2"><Pill tone={stageTone(a.status)}>{a.status}</Pill>{d.data.referral && <Pill tone="blue">Referred by {d.data.referral.by}</Pill>}{a.resumeUrl && <a className="text-xs text-[#6050D0] underline" href={a.resumeUrl} target="_blank" rel="noreferrer">Resume</a>}</div>
               {stage !== null && (
                 <ol className="mt-3 grid grid-cols-5 gap-1.5" aria-label={`Stage: ${STAGES[stage]}`}>
                   {STAGES.map((label, i) => (
                     <li key={label} aria-current={i === stage ? 'step' : undefined}>
-                      <span className={`block h-1 rounded ${i < stage ? 'bg-[#3d434d]' : i === stage ? 'bg-[#c2500a]' : 'bg-[#e8e9ec]'}`} />
+                      <span className={`block h-1 rounded ${i < stage ? 'bg-[#3d434d]' : i === stage ? 'bg-[#4C3EB0]' : 'bg-[#e8e9ec]'}`} />
                       <span className={`mt-1.5 block truncate text-[11px] ${i === stage ? 'font-semibold text-[#16181d]' : 'text-[#5c626d]'}`}>{label}</span>
                     </li>
                   ))}
@@ -91,7 +91,7 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
               )}
               <div className="-mb-px mt-3 flex gap-6" role="tablist" aria-label="Candidate sections">
                 {PANEL_TABS.map(([k, label]) => (
-                  <button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => setView(k)} className={`h-10 cursor-pointer border-b-2 text-[13px] ${view === k ? 'border-[#c2500a] font-semibold text-[#16181d]' : 'border-transparent font-medium text-[#5c626d] hover:text-[#16181d]'}`}>{label}</button>
+                  <button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => setView(k)} className={`h-10 cursor-pointer border-b-2 text-[13px] ${view === k ? 'border-[#4C3EB0] font-semibold text-[#16181d]' : 'border-transparent font-medium text-[#5c626d] hover:text-[#16181d]'}`}>{label}</button>
                 ))}
               </div>
             </>
@@ -100,8 +100,8 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
       )}
       footer={a && a.status !== 'Rejected' ? (
         <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" onClick={() => setView('screening')} className="h-9 cursor-pointer rounded-lg border border-[#dfe1e5] bg-white px-4 text-[13px] font-semibold text-[#16181d] hover:border-[#c2500a]">Screening and tests</button>
-          <button type="button" onClick={() => setView('interviews')} className="h-9 cursor-pointer rounded-lg bg-[#c2500a] px-4 text-[13px] font-semibold text-white hover:bg-[#a84308]">Schedule interview</button>
+          <button type="button" onClick={() => setView('screening')} className="h-9 cursor-pointer rounded-lg border border-[#dfe1e5] bg-white px-4 text-[13px] font-semibold text-[#16181d] hover:border-[#4C3EB0]">Screening and tests</button>
+          <button type="button" onClick={() => setView('interviews')} className="h-9 cursor-pointer rounded-lg bg-[#4C3EB0] px-4 text-[13px] font-semibold text-white hover:bg-[#3F3393]">Schedule interview</button>
         </div>
       ) : undefined}>
       <Loading error={d.error} loading={d.loading && !d.data} />
@@ -110,7 +110,7 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
         <div className="space-y-4">
           {view === 'overview' && (
             <>
-              {next && <div className="rounded-lg bg-[#fdf1e9] px-4 py-3"><p className="text-xs font-semibold text-[#8f3a06]">Next step</p><p className="text-sm text-[#16181d]">{next.text} <span className="text-[#5c626d]">· {next.sub}</span></p></div>}
+              {next && <div className="rounded-lg bg-[#F1EFFC] px-4 py-3"><p className="text-xs font-semibold text-[#3F3393]">Next step</p><p className="text-sm text-[#16181d]">{next.text} <span className="text-[#5c626d]">· {next.sub}</span></p></div>}
             <Card title="Score" right={a.resumeUrl ? <button className={btnGhost} disabled={busy} onClick={() => run(async () => { await pipelineService.extractResume(id); await reload(); }, 'Resume read.')}>Read resume</button> : undefined}>
               <ScoreBlock score={d.data.score} />
               {d.data.resumeFacts && <p className="mt-2 text-xs text-slate-500">From the resume: {d.data.resumeFacts.years ? `${d.data.resumeFacts.years} years mentioned. ` : ''}Skills found: {d.data.resumeFacts.skillsFound.join(', ') || 'none'}. Missing: {d.data.resumeFacts.skillsMissing.join(', ') || 'none'}.</p>}
@@ -173,7 +173,7 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
                 <div className="flex items-center justify-between gap-2"><div><span className="font-bold text-slate-800">{i.round}</span> <span className="text-slate-500">{when(i.startIso)} - {i.mode}</span></div><Pill tone={i.status === 'COMPLETED' ? 'green' : i.status === 'CANCELLED' ? 'slate' : 'blue'}>{i.status.toLowerCase()}</Pill></div>
                 <div className="text-slate-500">Panel: {(i.panel as any[]).map((p) => p.name).join(', ')} - {i.submittedCount}/{(i.panel as any[]).length} scorecards</div>
                 {Array.isArray(i.guests) && i.guests.length > 0 && <div className="text-slate-500">Also invited: {i.guests.join(', ')}</div>}
-                {i.status !== 'CANCELLED' && /^https?:\/\//i.test(i.location || '') && <div><a className="text-[#FA7014] underline" href={i.location} target="_blank" rel="noreferrer">{i.meetProvider === 'google' ? 'Join Google Meet' : 'Meeting link'}</a></div>}
+                {i.status !== 'CANCELLED' && /^https?:\/\//i.test(i.location || '') && <div><a className="text-[#6050D0] underline" href={i.location} target="_blank" rel="noreferrer">{i.meetProvider === 'google' ? 'Join Google Meet' : 'Meeting link'}</a></div>}
                 {i.status !== 'CANCELLED' && <button className={`${btnGhost} mt-1`} onClick={() => setOpen(open === i.id ? null : i.id)}>{open === i.id ? 'Hide feedback' : 'Feedback'}</button>}
                 {open === i.id && <div className="mt-2"><FeedbackPanel interviewId={i.id} manager onChanged={reload} /></div>}
               </div>
@@ -209,7 +209,7 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
 };
 
 const PAGE = 10;
-const SELECT = 'h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] focus:outline-none focus:border-[#c2500a]';
+const SELECT = 'h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] focus:outline-none focus:border-[#4C3EB0]';
 const SOURCE_LABEL: Record<string, string> = { WEBSITE: 'Website', REFERRAL: 'Referral', MANUAL: 'Manual', CSV: 'CSV import' };
 const sourceLabel = (s: string) => SOURCE_LABEL[s] || (s ? s.charAt(0) + s.slice(1).toLowerCase() : '—');
 
@@ -257,13 +257,13 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
   return <div className="space-y-5">
     <div className="space-y-4">
       <div className="min-w-0 space-y-4">
-        {actions.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Next actions">{actions.map((x) => <button key={x.key} type="button" aria-pressed={quick === x.key} onClick={() => change(() => setQuick(quick === x.key ? '' : x.key))} className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[13px] ${quick === x.key ? 'border-[#c2500a] bg-[#fdf1e9] font-semibold text-[#8f3a06]' : 'border-[#dfe1e5] text-[#3d434d] hover:border-[#c2500a]'}`}><x.Icon className="h-3.5 w-3.5" />{x.text}</button>)}</div>}
+        {actions.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Next actions">{actions.map((x) => <button key={x.key} type="button" aria-pressed={quick === x.key} onClick={() => change(() => setQuick(quick === x.key ? '' : x.key))} className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[13px] ${quick === x.key ? 'border-[#4C3EB0] bg-[#F1EFFC] font-semibold text-[#3F3393]' : 'border-[#dfe1e5] text-[#3d434d] hover:border-[#4C3EB0]'}`}><x.Icon className="h-3.5 w-3.5" />{x.text}</button>)}</div>}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:border-[#FA7014] focus:ring-2 focus:ring-[#FA7014]/20" placeholder="Search candidates by name, email or role..." value={q} onChange={(e) => change(() => setQ(e.target.value))} aria-label="Search candidates" /></div>
+          <div className="relative min-w-[220px] flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:border-[#6050D0] focus:ring-2 focus:ring-[#6050D0]/20" placeholder="Search candidates by name, email or role..." value={q} onChange={(e) => change(() => setQ(e.target.value))} aria-label="Search candidates" /></div>
           <select className={SELECT} value={role} onChange={(e) => change(() => setRole(e.target.value))} aria-label="Role"><option value="">Role: All</option>{roles.map((x) => <option key={x} value={x}>{x}</option>)}</select>
           <select className={SELECT} value={stage} onChange={(e) => change(() => setStage(e.target.value))} aria-label="Stage"><option value="">Stage: All</option>{stages.map((x) => <option key={x} value={x}>{x}</option>)}</select>
           <select className={SELECT} value={source} onChange={(e) => change(() => setSource(e.target.value))} aria-label="Source"><option value="">Source: All</option>{sources.map((x) => <option key={x} value={x}>{sourceLabel(x)}</option>)}</select>
-          {(role || stage || source || quick || q) && <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-[#FA7014] hover:text-[#FA7014]" onClick={() => change(() => { setQ(''); setRole(''); setStage(''); setSource(''); setQuick(''); })}><ListFilter className="h-4 w-4" />Clear filters</button>}
+          {(role || stage || source || quick || q) && <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-[#6050D0] hover:text-[#6050D0]" onClick={() => change(() => { setQ(''); setRole(''); setStage(''); setSource(''); setQuick(''); })}><ListFilter className="h-4 w-4" />Clear filters</button>}
         </div>
 
         <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -278,13 +278,13 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
                 <td className="px-4 py-3">{r.screening ? <Pill tone={r.screening === 'PASS' ? 'green' : r.screening === 'FAIL' ? 'red' : 'amber'}>{r.screening}</Pill> : <span className="text-slate-400">—</span>}</td>
                 <td className="px-4 py-3 text-slate-700">{sourceLabel(r.source)}{r.referredByName ? <div className="text-xs text-slate-500">by {r.referredByName}</div> : null}</td>
                 <td className="px-4 py-3"><div className="font-medium text-slate-800">{n.text}</div><div className="text-xs text-slate-500">{n.sub}</div></td>
-                <td className="px-4 py-3 text-right"><button onClick={() => setOpen(r.id)} className="cursor-pointer rounded-md border border-[#dfe1e5] px-3.5 py-1.5 text-xs font-semibold text-[#16181d] hover:border-[#c2500a]">View</button></td>
+                <td className="px-4 py-3 text-right"><button onClick={() => setOpen(r.id)} className="cursor-pointer rounded-md border border-[#dfe1e5] px-3.5 py-1.5 text-xs font-semibold text-[#16181d] hover:border-[#4C3EB0]">View</button></td>
               </tr>); })}</tbody></table></div>}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
             <span>Showing {rows.length === 0 ? 0 : (cur - 1) * PAGE + 1} &ndash; {Math.min(cur * PAGE, rows.length)} of {rows.length} candidate{rows.length === 1 ? '' : 's'}</span>
             {pages > 1 && <nav className="flex items-center gap-1" aria-label="Pages">
               <button type="button" disabled={cur === 1} onClick={() => setPage(cur - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white disabled:opacity-40" aria-label="Previous page"><ChevronLeft className="h-4 w-4" /></button>
-              {pageButtons.map((n, i) => <React.Fragment key={n}>{i > 0 && n - pageButtons[i - 1] > 1 && <span className="px-1">...</span>}<button type="button" onClick={() => setPage(n)} className={`h-8 min-w-8 rounded-lg px-2 text-sm font-semibold ${n === cur ? 'bg-[#F36B21] text-white' : 'border border-slate-200 bg-white text-slate-700 hover:border-[#FA7014]'}`} aria-current={n === cur ? 'page' : undefined}>{n}</button></React.Fragment>)}
+              {pageButtons.map((n, i) => <React.Fragment key={n}>{i > 0 && n - pageButtons[i - 1] > 1 && <span className="px-1">...</span>}<button type="button" onClick={() => setPage(n)} className={`h-8 min-w-8 rounded-lg px-2 text-sm font-semibold ${n === cur ? 'bg-[#6050D0] text-white' : 'border border-slate-200 bg-white text-slate-700 hover:border-[#6050D0]'}`} aria-current={n === cur ? 'page' : undefined}>{n}</button></React.Fragment>)}
               <button type="button" disabled={cur === pages} onClick={() => setPage(cur + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white disabled:opacity-40" aria-label="Next page"><ChevronRight className="h-4 w-4" /></button>
             </nav>}
           </div>

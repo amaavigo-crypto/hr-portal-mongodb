@@ -20,7 +20,7 @@ export const PageHead: React.FC<{ title: string; subtitle: string; children?: Re
 const TONES = {
   green: ['bg-gradient-to-br from-emerald-100/70 to-green-50', 'bg-emerald-100 text-emerald-600'],
   violet: ['bg-gradient-to-br from-violet-100/80 to-indigo-50', 'bg-violet-100 text-violet-600'],
-  orange: ['bg-gradient-to-br from-orange-100/80 to-amber-50', 'bg-orange-100 text-orange-600'],
+  orange: ['bg-gradient-to-br from-brand-100/80 to-brand-50', 'bg-brand-100 text-brand-600'],
   rose: ['bg-gradient-to-br from-rose-100/70 to-red-50', 'bg-rose-100 text-rose-600'],
   blue: ['bg-gradient-to-br from-sky-100/80 to-blue-50', 'bg-sky-100 text-sky-600'],
 } as const;
@@ -120,7 +120,7 @@ export const THead: React.FC<{ cols: string[] }> = ({ cols }) => (
 
 export const pillTone: Record<string, string> = {
   green: 'bg-emerald-50 text-emerald-700', amber: 'bg-amber-50 text-amber-700', rose: 'bg-rose-50 text-rose-700', violet: 'bg-violet-50 text-violet-700',
-  blue: 'bg-sky-50 text-sky-700', slate: 'bg-slate-100 text-slate-600', orange: 'bg-orange-50 text-orange-700',
+  blue: 'bg-sky-50 text-sky-700', slate: 'bg-slate-100 text-slate-600', orange: 'bg-brand-50 text-brand-700',
 };
 export const Pill: React.FC<{ tone?: string; children: React.ReactNode }> = ({ tone = 'slate', children }) => (
   <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${pillTone[tone] || pillTone.slate}`}>{children}</span>

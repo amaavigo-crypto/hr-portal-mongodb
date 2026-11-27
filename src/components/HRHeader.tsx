@@ -57,7 +57,7 @@ export const HRHeader: React.FC<HRHeaderProps> = ({ activeTab, setActiveTab, sug
                   <I className="w-4 h-4" />
                   <span>{t.label}</span>
                   {!!t.count && t.count > 0 && (
-                    <span className={`text-[11px] min-w-[1.25rem] h-5 px-1.5 rounded-full font-bold flex items-center justify-center ${on ? 'bg-white/25 text-white' : 'bg-orange-100 text-orange-600'}`}>
+                    <span className={`text-[11px] min-w-[1.25rem] h-5 px-1.5 rounded-full font-bold flex items-center justify-center ${on ? 'bg-white/25 text-white' : 'bg-brand-100 text-brand-600'}`}>
                       {t.count}
                     </span>
                   )}

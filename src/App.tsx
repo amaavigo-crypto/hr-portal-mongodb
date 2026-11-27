@@ -619,7 +619,7 @@ export default function App() {
               <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="mb-5 inline-flex rounded-xl border border-slate-200 bg-white p-1 text-xs font-bold">
                   {([['acknowledgements', `To acknowledge${employeePendingCount > 0 ? ` (${employeePendingCount})` : ''}`], ['all-documents', 'All documents']] as const).map(([k, label]) => (
-                    <button key={k} type="button" onClick={() => setEmployeeTab(k)} className={`px-4 py-2 rounded-lg transition-colors ${employeeTab === k ? 'bg-[#FA7014] text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{label}</button>
+                    <button key={k} type="button" onClick={() => setEmployeeTab(k)} className={`px-4 py-2 rounded-lg transition-colors ${employeeTab === k ? 'bg-[#6050D0] text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{label}</button>
                   ))}
                 </div>
                 <EmployeePortalView

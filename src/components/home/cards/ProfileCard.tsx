@@ -70,7 +70,7 @@ export const ProfileCard: React.FC<{ fallbackName: string; refreshKey: number }>
 
   return (
     <Card className="overflow-hidden !p-0">
-      <div className="h-16 bg-gradient-to-r from-orange-100 via-orange-50 to-amber-100" />
+      <div className="h-16 bg-gradient-to-r from-brand-100 via-brand-50 to-brand-50" />
       <div className="px-4 pb-4 -mt-8 text-center">
         <div className="flex justify-center"><span className="ring-4 ring-white rounded-full"><Avatar name={name || '?'} size="lg" /></span></div>
         <h2 className="mt-2 text-base font-black text-slate-800">{name}</h2>
@@ -89,7 +89,7 @@ export const ProfileCard: React.FC<{ fallbackName: string; refreshKey: number }>
         {p && !p.reportingManager && !load.error && <p className="py-3 text-xs text-slate-500">No manager is set for you yet. HR approves your requests.</p>}
       </div>
       <div className="border-t border-slate-100 px-4 py-2">
-        <button type="button" className="text-xs font-bold text-[#FA7014] inline-flex items-center gap-1 hover:underline" onClick={() => setDatesOpen(true)}>
+        <button type="button" className="text-xs font-bold text-[#6050D0] inline-flex items-center gap-1 hover:underline" onClick={() => setDatesOpen(true)}>
           <CalendarHeart className="w-3.5 h-3.5" /> My birthday and dates
         </button>
       </div>

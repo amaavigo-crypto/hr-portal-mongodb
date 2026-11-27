@@ -147,14 +147,14 @@ export const LandingContentAdmin: React.FC = () => {
       value,
       placeholder: DEFAULT_TEXT[f.key],
       onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => setText((t) => ({ ...t, [f.key]: e.target.value })),
-      className: `w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:border-[#FA7014] focus:outline-none focus:ring-2 focus:ring-orange-100 ${unsaved ? 'border-amber-300 bg-amber-50/40' : 'border-slate-300'}`,
+      className: `w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:border-[#6050D0] focus:outline-none focus:ring-2 focus:ring-brand-100 ${unsaved ? 'border-amber-300 bg-amber-50/40' : 'border-slate-300'}`,
     };
     return (
       <div key={f.key}>
         <div className="mb-1 flex items-center justify-between gap-2">
           <label className="text-xs font-bold text-slate-700">
             {f.label}
-            {!isDefault && <span className="ml-2 rounded-full bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-[#C2410C]">edited</span>}
+            {!isDefault && <span className="ml-2 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-[#4C3EB0]">edited</span>}
             {unsaved && <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">unsaved</span>}
           </label>
           {!isDefault && (
@@ -189,7 +189,7 @@ export const LandingContentAdmin: React.FC = () => {
     const base = SEO_DEFAULTS[k];
     const url = `${window.location.origin}${current.path === '/' ? '' : current.path}`;
     return (
-      <section key={`seo-${k}`} className="rounded-2xl border border-orange-200 bg-white p-4">
+      <section key={`seo-${k}`} className="rounded-2xl border border-brand-200 bg-white p-4">
         <h3 className="text-sm font-black text-slate-900">Search engines and sharing</h3>
         <p className="mb-3 text-xs text-slate-500">This is what Google, WhatsApp, LinkedIn and other sites read about this page.</p>
         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -206,7 +206,7 @@ export const LandingContentAdmin: React.FC = () => {
               value,
               placeholder: base[f.key] || (f.key === 'ogImage' ? 'None: link previews show no picture' : ''),
               onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => setSeo((all) => ({ ...all, [k]: { ...all[k], [f.key]: e.target.value } })),
-              className: `w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:border-[#FA7014] focus:outline-none focus:ring-2 focus:ring-orange-100 ${unsaved ? 'border-amber-300 bg-amber-50/40' : 'border-slate-300'}`,
+              className: `w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:border-[#6050D0] focus:outline-none focus:ring-2 focus:ring-brand-100 ${unsaved ? 'border-amber-300 bg-amber-50/40' : 'border-slate-300'}`,
             };
             return (
               <div key={f.key}>
@@ -252,7 +252,7 @@ export const LandingContentAdmin: React.FC = () => {
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white/95 p-2.5 backdrop-blur">
         <div className="relative min-w-[220px] flex-1 sm:max-w-sm">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find any text on the site…" className="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-[#FA7014] focus:outline-none focus:ring-2 focus:ring-orange-100" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find any text on the site…" className="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-[#6050D0] focus:outline-none focus:ring-2 focus:ring-brand-100" />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-slate-500">{dirtyCount ? `${dirtyCount} unsaved change${dirtyCount === 1 ? '' : 's'}` : 'All changes saved'}</span>
@@ -262,7 +262,7 @@ export const LandingContentAdmin: React.FC = () => {
             </button>
           )}
           <button onClick={discard} disabled={!dirtyCount || !!busy} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Discard</button>
-          <button onClick={save} disabled={!dirtyCount || !!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-[#FA7014] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#E65A05] disabled:opacity-50">
+          <button onClick={save} disabled={!dirtyCount || !!busy} className="inline-flex items-center gap-1.5 rounded-lg bg-[#6050D0] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#5243BE] disabled:opacity-50">
             {busy === 'save' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save changes
           </button>
         </div>
@@ -276,7 +276,7 @@ export const LandingContentAdmin: React.FC = () => {
               <button
                 key={p.id}
                 onClick={() => { setPage(p.id); setQuery(''); }}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold ${!q && page === p.id ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'}`}
+                className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold ${!q && page === p.id ? 'bg-brand-50 text-[#4C3EB0]' : 'text-slate-700 hover:bg-slate-50'}`}
               >
                 <span className="truncate">{p.label}</span>
                 {n > 0 && <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{n}</span>}

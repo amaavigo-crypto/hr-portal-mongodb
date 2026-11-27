@@ -36,7 +36,7 @@ export const HiringAutomationModule: React.FC<{ currentUser: User }> = () => {
           <Segmented<FlowSection> label="Automation views" value={view === 'flow' ? 'workflows' : view} onChange={(v) => flowNav.setSection(v)} options={[
             { value: 'workflows', label: 'Flows' }, { value: 'runs', label: 'Applicant progress', badge: flow?.counts?.STUCK }, { value: 'activity', label: 'Activity' },
           ]} />
-          {view !== 'flow' && <button type="button" onClick={() => toBuilder(null, true)} className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#c2500a] px-4 text-[13px] font-semibold text-white hover:bg-[#a84308]"><Plus className="h-4 w-4" />New flow</button>}
+          {view !== 'flow' && <button type="button" onClick={() => toBuilder(null, true)} className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#4C3EB0] px-4 text-[13px] font-semibold text-white hover:bg-[#3F3393]"><Plus className="h-4 w-4" />New flow</button>}
         </div>
         {view === 'workflows' && <AutomationHome onOpenFlow={(id) => toBuilder(id, false)} onCreate={(from) => toBuilder(null, true, from)} onShowStuck={() => flowNav.setSection('runs')} />}
         {view === 'flow' && <FlowBuilder key={target.n} onChanged={load} initialFamilyId={target.id} startAdding={target.adding} startFrom={target.from} onBack={toList} />}

@@ -30,13 +30,13 @@ const typeLook = (name = '') => {
   if (/sick|medical/i.test(name)) return { Icon: HeartPulse, cls: 'bg-sky-100 text-sky-600' };
   if (/casual/i.test(name)) return { Icon: Palmtree, cls: 'bg-emerald-100 text-emerald-600' };
   if (/annual|earned|privilege|vacation/i.test(name)) return { Icon: Briefcase, cls: 'bg-violet-100 text-violet-600' };
-  return { Icon: CalendarDays, cls: 'bg-orange-100 text-orange-600' };
+  return { Icon: CalendarDays, cls: 'bg-brand-100 text-brand-600' };
 };
 const BAL_TONES = [
   ['from-emerald-100/70 to-green-50', 'bg-emerald-100 text-emerald-600', 'bg-emerald-500', 'bg-emerald-100'],
   ['from-violet-100/80 to-indigo-50', 'bg-violet-100 text-violet-600', 'bg-violet-600', 'bg-violet-100'],
   ['from-sky-100/80 to-blue-50', 'bg-sky-100 text-sky-600', 'bg-sky-500', 'bg-sky-100'],
-  ['from-orange-100/80 to-amber-50', 'bg-orange-100 text-orange-600', 'bg-orange-400', 'bg-orange-100'],
+  ['from-brand-100/80 to-brand-50', 'bg-brand-100 text-brand-600', 'bg-brand-400', 'bg-brand-100'],
 ];
 const stamp = (iso?: string) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 const dayWord = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;

@@ -43,14 +43,14 @@ export const MoodCard: React.FC<{ showSummary: boolean }> = ({ showSummary }) =>
   };
 
   return (
-    <HomeCard title="How is your mood today?" icon={<Smile className="w-4 h-4 text-[#FA7014]" />} loading={load.loading && !load.data} error={load.error} onRetry={load.reload}>
+    <HomeCard title="How is your mood today?" icon={<Smile className="w-4 h-4 text-[#6050D0]" />} loading={load.loading && !load.data} error={load.error} onRetry={load.reload}>
       <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Your mood today">
         {MOODS.map((m) => {
           const on = current === m.value;
           return (
             <button
               key={m.value} type="button" role="radio" aria-checked={on} disabled={saving || locked} onClick={() => void choose(m.value)}
-              className={`flex flex-col items-center gap-1 rounded-xl border py-2 transition-colors disabled:cursor-default ${on ? 'border-[#FA7014] bg-orange-50' : locked ? 'border-slate-200 bg-slate-50 opacity-50' : 'border-slate-200 bg-slate-50 hover:bg-white'}`}
+              className={`flex flex-col items-center gap-1 rounded-xl border py-2 transition-colors disabled:cursor-default ${on ? 'border-[#6050D0] bg-brand-50' : locked ? 'border-slate-200 bg-slate-50 opacity-50' : 'border-slate-200 bg-slate-50 hover:bg-white'}`}
             >
               <span className="text-2xl" aria-hidden>{m.emoji}</span>
               <span className="text-[10px] font-semibold text-slate-600">{m.label}</span>

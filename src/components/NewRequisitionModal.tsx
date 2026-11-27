@@ -13,7 +13,7 @@ interface Props {
 }
 
 const field =
-  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FA7014]/30 focus:border-[#FA7014]';
+  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6050D0]/30 focus:border-[#6050D0]';
 const label = 'block text-xs font-bold text-slate-600 mb-1';
 
 export const NewRequisitionModal: React.FC<Props> = ({ currentUser, users, existing, onClose, onCreated }) => {
@@ -215,7 +215,7 @@ export const NewRequisitionModal: React.FC<Props> = ({ currentUser, users, exist
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#FA7014] px-4 py-2 text-xs font-bold text-white hover:bg-[#E65A05] disabled:bg-slate-400"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#6050D0] px-4 py-2 text-xs font-bold text-white hover:bg-[#5243BE] disabled:bg-slate-400"
           >
             {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Submit requisition

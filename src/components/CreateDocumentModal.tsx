@@ -353,8 +353,8 @@ Employees should notify their immediate manager via the HR self-service portal a
         {/* HEADER */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FA7014]/20 border border-[#FA7014]/40 flex items-center justify-center shadow-inner">
-              <FileText className="w-5 h-5 text-[#FA7014]" />
+            <div className="w-10 h-10 rounded-xl bg-[#6050D0]/20 border border-[#6050D0]/40 flex items-center justify-center shadow-inner">
+              <FileText className="w-5 h-5 text-[#6050D0]" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Create New Document Master</h2>
@@ -377,8 +377,8 @@ Employees should notify their immediate manager via the HR self-service portal a
         {/* FORM BODY */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
           {error && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-xs text-orange-950 flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-[#FA7014] shrink-0" />
+            <div className="bg-brand-50 border border-brand-200 rounded-xl p-3 text-xs text-brand-950 flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-[#6050D0] shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -391,14 +391,14 @@ Employees should notify their immediate manager via the HR self-service portal a
               </label>
               <div className="font-mono text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl flex items-center justify-between">
                 <span>{previewDocId}</span>
-                <span className="text-[10px] text-[#FA7014] font-sans font-semibold">v1.0</span>
+                <span className="text-[10px] text-[#6050D0] font-sans font-semibold">v1.0</span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">Permanent sequence ID</p>
             </div>
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="input-document-title">
-                Document Title <span className="text-[#FA7014]">*</span>
+                Document Title <span className="text-[#6050D0]">*</span>
               </label>
               <input
                 id="input-document-title"
@@ -406,7 +406,7 @@ Employees should notify their immediate manager via the HR self-service portal a
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Work From Home Policy"
-                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 transition-colors"
+                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 transition-colors"
                 required
               />
             </div>
@@ -416,13 +416,13 @@ Employees should notify their immediate manager via the HR self-service portal a
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="select-document-category">
-                Category <span className="text-[#FA7014]">*</span>
+                Category <span className="text-[#6050D0]">*</span>
               </label>
               <select
                 id="select-document-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as DocumentCategory)}
-                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white cursor-pointer"
+                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white cursor-pointer"
               >
                 {Object.values(DocumentCategory).map((cat) => (
                   <option key={cat} value={cat} className="bg-white text-slate-900 py-1">
@@ -434,13 +434,13 @@ Employees should notify their immediate manager via the HR self-service portal a
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="select-document-confidentiality">
-                Confidentiality Level <span className="text-[#FA7014]">*</span>
+                Confidentiality Level <span className="text-[#6050D0]">*</span>
               </label>
               <select
                 id="select-document-confidentiality"
                 value={confidentiality}
                 onChange={(e) => handleConfidentialityChange(e.target.value as ConfidentialityLevel)}
-                className={`w-full text-sm p-2.5 bg-slate-50 border rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white cursor-pointer ${
+                className={`w-full text-sm p-2.5 bg-slate-50 border rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white cursor-pointer ${
                   !confidentiality ? 'border-slate-300 text-slate-500' : 'border-slate-200 text-slate-900'
                 }`}
                 required
@@ -464,7 +464,7 @@ Employees should notify their immediate manager via the HR self-service portal a
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider" htmlFor="select-document-department">
-                  Department <span className="text-[#FA7014]">*</span>
+                  Department <span className="text-[#6050D0]">*</span>
                 </label>
                 {isDepartmentLocked && (
                   <span className="inline-flex items-center text-[10px] font-semibold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">
@@ -478,7 +478,7 @@ Employees should notify their immediate manager via the HR self-service portal a
                 value={department}
                 disabled={isDepartmentLocked}
                 onChange={(e) => handleDepartmentChange(e.target.value)}
-                className={`w-full text-sm p-2.5 border rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] transition-all ${
+                className={`w-full text-sm p-2.5 border rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] transition-all ${
                   isDepartmentLocked
                     ? 'bg-slate-100/90 border-slate-200 text-slate-600 cursor-not-allowed font-medium'
                     : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white cursor-pointer'
@@ -529,7 +529,7 @@ Employees should notify their immediate manager via the HR self-service portal a
                   disabled={confidentiality === ConfidentialityLevel.INTERNAL}
                   checked={confidentiality === ConfidentialityLevel.INTERNAL ? false : acknowledgementRequired}
                   onChange={(e) => setAcknowledgementRequired(e.target.checked)}
-                  className="w-4 h-4 text-[#FA7014] rounded bg-white border-slate-300 focus:ring-[#FA7014] cursor-pointer disabled:cursor-not-allowed"
+                  className="w-4 h-4 text-[#6050D0] rounded bg-white border-slate-300 focus:ring-[#6050D0] cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div>
                   <span className="text-xs font-bold text-slate-900">Mandatory Employee Acknowledgement</span>
@@ -550,14 +550,14 @@ Employees should notify their immediate manager via the HR self-service portal a
             {/* CREATION DATE */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="input-creation-date">
-                Creation Date <span className="text-[#FA7014]">*</span>
+                Creation Date <span className="text-[#6050D0]">*</span>
               </label>
               <input
                 id="input-creation-date"
                 type="date"
                 value={creationDate}
                 onChange={(e) => setCreationDate(e.target.value)}
-                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white cursor-pointer"
+                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white cursor-pointer"
                 required
               />
               <p className="text-[11px] text-slate-500 mt-1">
@@ -568,14 +568,14 @@ Employees should notify their immediate manager via the HR self-service portal a
             {/* EFFECTIVE FROM DATE */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="input-effective-from">
-                Effective From Date <span className="text-[#FA7014]">*</span>
+                Effective From Date <span className="text-[#6050D0]">*</span>
               </label>
               <input
                 id="input-effective-from"
                 type="date"
                 value={effectiveFrom}
                 onChange={(e) => handleEffectiveFromChange(e.target.value)}
-                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white cursor-pointer"
+                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white cursor-pointer"
                 required
               />
               <p className="text-[11px] text-slate-500 mt-1">
@@ -586,14 +586,14 @@ Employees should notify their immediate manager via the HR self-service portal a
             {/* RE-REVIEW DATE */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="input-review-due-date">
-                Re-review Date <span className="text-[#FA7014]">*</span>
+                Re-review Date <span className="text-[#6050D0]">*</span>
               </label>
               <input
                 id="input-review-due-date"
                 type="date"
                 value={reviewDueDate}
                 onChange={(e) => setReviewDueDate(e.target.value)}
-                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white cursor-pointer"
+                className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white cursor-pointer"
                 required
               />
               <p className="text-[11px] text-slate-500 mt-1">
@@ -612,7 +612,7 @@ Employees should notify their immediate manager via the HR self-service portal a
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief summary of policy intent..."
-              className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] focus:bg-white placeholder:text-slate-400 transition-colors"
+              className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] focus:bg-white placeholder:text-slate-400 transition-colors"
             />
           </div>
 
@@ -620,7 +620,7 @@ Employees should notify their immediate manager via the HR self-service portal a
           <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Document Content / Master File (Word DOCX, Video) <span className="text-[#FA7014]">*</span>
+                Document Content / Master File (Word DOCX, Video) <span className="text-[#6050D0]">*</span>
               </label>
 
               <div className="flex items-center space-x-2">
@@ -641,7 +641,7 @@ Employees should notify their immediate manager via the HR self-service portal a
                 )}
 
                 <label className="cursor-pointer inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-xs hover:bg-slate-50 transition-colors">
-                  <UploadCloud className="w-3.5 h-3.5 text-[#FA7014]" />
+                  <UploadCloud className="w-3.5 h-3.5 text-[#6050D0]" />
                   <span>{fileName ? 'Replace File' : 'Upload File'}</span>
                   <input
                     type="file"
@@ -655,7 +655,7 @@ Employees should notify their immediate manager via the HR self-service portal a
 
             {parsingFile && (
               <div className="text-xs text-slate-700 font-mono bg-white p-3 rounded-xl border border-slate-200 flex items-center space-x-2 shadow-xs">
-                <Clock className="w-4 h-4 animate-spin text-[#FA7014]" />
+                <Clock className="w-4 h-4 animate-spin text-[#6050D0]" />
                 <span>Parsing file, applying corporate header/footer, and preparing intact multi-page preview...</span>
               </div>
             )}
@@ -664,7 +664,7 @@ Employees should notify their immediate manager via the HR self-service portal a
               <div className="space-y-3">
                 <div className="text-xs text-slate-800 font-mono bg-white p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
                   <div className="flex items-center space-x-2 truncate max-w-[75%]">
-                    <FileText className="w-4 h-4 text-[#FA7014] shrink-0" />
+                    <FileText className="w-4 h-4 text-[#6050D0] shrink-0" />
                     <span className="font-bold text-slate-900 truncate">{fileName}</span>
                   </div>
                   <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-sans font-bold flex items-center space-x-1">
@@ -676,7 +676,7 @@ Employees should notify their immediate manager via the HR self-service portal a
                 {/* Content Header */}
                 <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
                   <div className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-slate-900 text-white shadow-xs flex items-center space-x-1.5">
-                    <FileText className="w-3.5 h-3.5 text-[#FA7014]" />
+                    <FileText className="w-3.5 h-3.5 text-[#6050D0]" />
                     <span>Intact Document Preview (Header & Footer Applied)</span>
                   </div>
                 </div>
@@ -728,7 +728,7 @@ Employees should notify their immediate manager via the HR self-service portal a
               id="btn-submit-create-document"
               type="submit"
               disabled={submitting}
-              className="bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md shadow-[#FA7014]/20 flex items-center space-x-2 disabled:opacity-50 transition-all"
+              className="bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md shadow-[#6050D0]/20 flex items-center space-x-2 disabled:opacity-50 transition-all"
             >
               {submitting ? <Clock className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               <span>Create Master & Submit v1.0</span>

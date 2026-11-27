@@ -4,17 +4,17 @@
  */
 .hx {
   --color-violet-50: #f7f7f8;  --color-violet-100: #f0f1f3; --color-violet-200: #e6e8eb; --color-violet-300: #d5d8dd;
-  --color-violet-500: #c2500a; --color-violet-600: #3d434d; --color-violet-700: #2f343c; --color-violet-800: #23272e; --color-violet-900: #16181d;
+  --color-violet-500: #4C3EB0; --color-violet-600: #3d434d; --color-violet-700: #2f343c; --color-violet-800: #23272e; --color-violet-900: #16181d;
   --color-indigo-50: #f7f7f8;  --color-indigo-100: #f0f1f3; --color-indigo-200: #e6e8eb; --color-indigo-300: #d5d8dd;
-  --color-indigo-500: #c2500a; --color-indigo-600: #3d434d; --color-indigo-700: #2f343c; --color-indigo-800: #23272e; --color-indigo-900: #16181d;
+  --color-indigo-500: #4C3EB0; --color-indigo-600: #3d434d; --color-indigo-700: #2f343c; --color-indigo-800: #23272e; --color-indigo-900: #16181d;
 }
 
 /* One orange for main actions, current selections and links. */
-.hx [class~="bg-[#4f46e5]"], .hx [class~="bg-[#6d4cf0]"], .hx [class~="bg-[#FA7014]"], .hx [class~="bg-[#F36B21]"] { background-color: #c2500a; }
-.hx [class~="hover:bg-[#4338ca]"]:hover, .hx [class~="hover:bg-[#5b3ad6]"]:hover, .hx [class~="hover:bg-[#E65A05]"]:hover { background-color: #a84308; }
-.hx [class~="text-[#4f46e5]"], .hx [class~="text-[#6d4cf0]"], .hx [class~="text-[#FA7014]"], .hx [class~="text-[#F36B21]"] { color: #a84308; }
-.hx [class~="border-[#4f46e5]"], .hx [class~="border-[#6d4cf0]"], .hx [class~="border-[#FA7014]"], .hx [class~="border-[#F36B21]"] { border-color: #c2500a; }
-.hx [class~="focus:border-[#4f46e5]"]:focus, .hx [class~="focus:border-[#FA7014]"]:focus, .hx [class~="focus:border-[#6d4cf0]"]:focus { border-color: #c2500a; }
+.hx [class~="bg-[#4f46e5]"], .hx [class~="bg-[#6d4cf0]"], .hx [class~="bg-[#6050D0]"], .hx [class~="bg-[#6050D0]"] { background-color: #4C3EB0; }
+.hx [class~="hover:bg-[#4338ca]"]:hover, .hx [class~="hover:bg-[#5b3ad6]"]:hover, .hx [class~="hover:bg-[#5243BE]"]:hover { background-color: #3F3393; }
+.hx [class~="text-[#4f46e5]"], .hx [class~="text-[#6d4cf0]"], .hx [class~="text-[#6050D0]"], .hx [class~="text-[#6050D0]"] { color: #3F3393; }
+.hx [class~="border-[#4f46e5]"], .hx [class~="border-[#6d4cf0]"], .hx [class~="border-[#6050D0]"], .hx [class~="border-[#6050D0]"] { border-color: #4C3EB0; }
+.hx [class~="focus:border-[#4f46e5]"]:focus, .hx [class~="focus:border-[#6050D0]"]:focus, .hx [class~="focus:border-[#6d4cf0]"]:focus { border-color: #4C3EB0; }
 
 /* White pages, no decorative washes, flat cards with thin borders. */
 .hx [class~="bg-[#F6F7F9]"], .hx [class~="bg-[#F7F8FA]"] { background-color: #fff; }

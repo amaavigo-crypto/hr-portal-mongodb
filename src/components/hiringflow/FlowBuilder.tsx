@@ -51,7 +51,7 @@ const StepPicker: React.FC<{ onPick: (t: StepType) => void; onClose: () => void;
     return '';
   };
   return (
-    <div className="rounded-xl border-2 border-[#FA7014]/50 bg-white p-4 shadow-sm" role="dialog" aria-label="Choose a step to add">
+    <div className="rounded-xl border-2 border-[#6050D0]/50 bg-white p-4 shadow-sm" role="dialog" aria-label="Choose a step to add">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div><h3 className="text-base font-extrabold text-slate-900">What should happen here?</h3><p className="text-xs text-slate-500">Click the one you want. You can change everything about it afterwards.</p></div>
         <button className="p-1.5 rounded-lg hover:bg-slate-100" onClick={onClose} aria-label="Close"><X className="w-5 h-5 text-slate-500" /></button>
@@ -64,7 +64,7 @@ const StepPicker: React.FC<{ onPick: (t: StepType) => void; onClose: () => void;
               const info = STEP_INFO[t]; const why = blocked(t);
               return (
                 <button key={t} type="button" disabled={!!why} onClick={() => onPick(t)} title={why}
-                  className="text-left rounded-xl border border-slate-200 p-3 hover:border-[#FA7014] hover:bg-orange-50/40 disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:bg-white flex gap-3">
+                  className="text-left rounded-xl border border-slate-200 p-3 hover:border-[#6050D0] hover:bg-brand-50/40 disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:bg-white flex gap-3">
                   <span className="text-2xl leading-none" aria-hidden>{info.icon}</span>
                   <span><span className="block text-sm font-bold text-slate-900">{info.label}</span><span className="block text-xs text-slate-600 mt-0.5">{why || info.does}</span>
                     <span className="block text-[11px] mt-1 font-semibold text-slate-500">{info.manual ? 'A person does this' : 'Automatic'}</span></span>
@@ -84,7 +84,7 @@ const ChipRow: React.FC<{ onInsert: (t: string) => void }> = ({ onInsert }) => (
   <div className="flex flex-wrap gap-1 mt-1">
     <span className="text-[11px] text-slate-500 mr-1 self-center">Click to put into the message:</span>
     {PLACEHOLDERS.map((p) => (
-      <button key={p} type="button" onClick={() => onInsert(`{{${p}}}`)} className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 border border-slate-200 hover:bg-orange-100">{p === 'hrName' ? 'HR name' : p}</button>
+      <button key={p} type="button" onClick={() => onInsert(`{{${p}}}`)} className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 border border-slate-200 hover:bg-brand-100">{p === 'hrName' ? 'HR name' : p}</button>
     ))}
   </div>
 );
@@ -116,7 +116,7 @@ const StepCard: React.FC<CardProps> = ({ step, index, flow, people, jobTitles = 
   const eff: Record<string, any> = step.type === 'test' ? testSettings(step) : step.settings || {};
 
   return (
-    <div id={view === 'panel' ? undefined : `step-${step.id}`} className={`rounded-[10px] border bg-white ${open && view === 'row' ? 'border-[#c2500a] ring-1 ring-[#c2500a]' : bad ? 'border-amber-400' : 'border-[#e8e9ec]'}`}>
+    <div id={view === 'panel' ? undefined : `step-${step.id}`} className={`rounded-[10px] border bg-white ${open && view === 'row' ? 'border-[#4C3EB0] ring-1 ring-[#4C3EB0]' : bad ? 'border-amber-400' : 'border-[#e8e9ec]'}`}>
       {view === 'panel' && (
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <h4 className="min-w-0 truncate text-sm font-semibold text-slate-900">Step {index + 1}: {step.title || info.label}</h4>
@@ -361,7 +361,7 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
           <p className="text-sm text-slate-600 mt-1">After someone applies, they go through a list of steps: check them, interview them, make an offer, welcome them. You decide the steps and who does each one. The app does the boring parts (emails, waiting, reminders) by itself.</p>
           <ol className="mt-4 grid gap-2 sm:grid-cols-5 text-center text-xs font-bold">
             {['Candidate applies', 'We score the resume', 'Phone screening', 'Interview', 'Offer and joining'].map((t, i) => (
-              <li key={t} className="rounded-xl bg-orange-50 border border-orange-200 text-slate-800 px-2 py-3"><span className="block text-[#FA7014] text-base">{i + 1}</span>{t}</li>
+              <li key={t} className="rounded-xl bg-brand-50 border border-brand-200 text-slate-800 px-2 py-3"><span className="block text-[#6050D0] text-base">{i + 1}</span>{t}</li>
             ))}
           </ol>
           <p className="text-xs text-slate-500 mt-2">This is the standard process. You can add, remove and change anything afterwards.</p>
@@ -412,8 +412,8 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
     setTimeout(() => document.getElementById(`step-${s.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   };
   const adder = (i: number) => (adding === i ? <StepPicker current={steps} onPick={(t) => insertAt(i, t)} onClose={() => setAdding(null)} /> : (
-    <button type="button" onClick={() => setAdding(i)} className="group mx-auto flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#FA7014] py-0.5" aria-label={`Add a step ${i === 0 ? 'at the start' : `after step ${i}`}`}>
-      <span className="w-6 h-6 rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#FA7014] flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></span>Add a step here
+    <button type="button" onClick={() => setAdding(i)} className="group mx-auto flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#6050D0] py-0.5" aria-label={`Add a step ${i === 0 ? 'at the start' : `after step ${i}`}`}>
+      <span className="w-6 h-6 rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#6050D0] flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></span>Add a step here
     </button>
   ));
 
@@ -483,7 +483,7 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
             {!confirming ? (
               <button className={`${btnBig} w-full`} disabled={!ready || busy} onClick={() => setConfirming(true)}>{publishLabel}</button>
             ) : (
-              <div className="rounded-xl border-2 border-[#FA7014]/50 p-3 text-xs space-y-2">
+              <div className="rounded-xl border-2 border-[#6050D0]/50 p-3 text-xs space-y-2">
                 <p className="font-bold text-slate-900">Publish now?</p>
                 <p className="text-slate-600">New applicants will follow this flow. {live ? `Applicants already in the flow finish on Version ${live.version}.` : ''}</p>
                 <div className="flex gap-2">
@@ -530,7 +530,7 @@ const DesignationPicker: React.FC<{ options: string[]; value: string[]; onChange
         {all.map((d) => {
           const taken = takenBy[key(d)];
           return (
-            <label key={d} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${taken && !has(d) ? 'opacity-50' : 'hover:bg-orange-50 cursor-pointer'}`}>
+            <label key={d} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${taken && !has(d) ? 'opacity-50' : 'hover:bg-brand-50 cursor-pointer'}`}>
               <input type="checkbox" className="w-4 h-4" checked={has(d)} disabled={!!taken && !has(d)} onChange={() => toggle(d)} />
               <span className="min-w-0 truncate">{d}{taken && !has(d) && <span className="text-[11px] text-slate-500"> (in "{taken}")</span>}</span>
             </label>
@@ -604,7 +604,7 @@ const FlowEditor: React.FC<BodyProps & { onBack: () => void }> = ({ family, stat
         <button className={btnGhost} onClick={onBack}><ArrowLeft className="w-4 h-4" />All flows</button>
         <h2 className="text-lg font-extrabold text-slate-900">{family.name}</h2>
         {family.isDefault ? <Pill tone="slate">For every designation without its own flow</Pill> : <Pill tone="blue">{family.designations.join(', ')}</Pill>}
-        {!family.isDefault && !editing && <button className="text-xs font-bold text-[#FA7014] hover:underline" onClick={() => { setDes(family.designations); setNm(family.name); setEditing(true); }}>Change designations or name</button>}
+        {!family.isDefault && !editing && <button className="text-xs font-bold text-[#6050D0] hover:underline" onClick={() => { setDes(family.designations); setNm(family.name); setEditing(true); }}>Change designations or name</button>}
       </div>
       {editing && (
         <Card title="Which designations is this flow for?" subtitle="This takes effect straight away for new applicants. Applicants already in a flow are not moved.">

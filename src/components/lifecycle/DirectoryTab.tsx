@@ -12,7 +12,7 @@ type P = { uid: string; name: string; email: string; empId: string; department: 
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]?.toUpperCase()).join('');
 
 const Avatar: React.FC<{ name: string }> = ({ name }) => (
-  <span className="w-8 h-8 rounded-full bg-[#FA7014]/15 text-[#FA7014] text-[11px] font-bold flex items-center justify-center shrink-0">{initials(name)}</span>
+  <span className="w-8 h-8 rounded-full bg-[#6050D0]/15 text-[#6050D0] text-[11px] font-bold flex items-center justify-center shrink-0">{initials(name)}</span>
 );
 
 const OrgBranch: React.FC<{ node: OrgNode<P>; depth: number; open: Set<string>; toggle: (uid: string) => void; me: string }> = ({ node, depth, open, toggle, me }) => {
@@ -20,7 +20,7 @@ const OrgBranch: React.FC<{ node: OrgNode<P>; depth: number; open: Set<string>; 
   const isOpen = open.has(p.uid);
   return (
     <li>
-      <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${p.uid === me ? 'bg-[#FA7014]/10' : 'hover:bg-slate-50'}`} style={{ marginLeft: depth * 20 }}>
+      <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${p.uid === me ? 'bg-[#6050D0]/10' : 'hover:bg-slate-50'}`} style={{ marginLeft: depth * 20 }}>
         {node.children.length > 0 ? (
           <button type="button" aria-label={isOpen ? 'Collapse' : 'Expand'} onClick={() => toggle(p.uid)} className="w-5 h-5 text-xs font-bold text-slate-500 border border-slate-300 rounded">{isOpen ? '−' : '+'}</button>
         ) : <span className="w-5" />}
@@ -76,13 +76,13 @@ export const DirectoryTab: React.FC<{ canManage: boolean }> = ({ canManage }) =>
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-bold">
           {([['list', 'Directory'], ['chart', 'Org chart']] as const).map(([k, l]) => (
-            <button key={k} onClick={() => setView(k)} className={`px-3 py-1.5 rounded-md ${view === k ? 'bg-[#FA7014] text-white' : 'text-slate-600'}`}>{l}</button>
+            <button key={k} onClick={() => setView(k)} className={`px-3 py-1.5 rounded-md ${view === k ? 'bg-[#6050D0] text-white' : 'text-slate-600'}`}>{l}</button>
           ))}
         </div>
         {view === 'list' && (
           <>
-            <label className="relative min-w-[240px] max-w-md flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-[#FA7014]" placeholder="Search employee by name, email or role…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /></label>
-            <select className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#FA7014]" value={dept} onChange={(e) => { setDept(e.target.value); setPage(1); }}>
+            <label className="relative min-w-[240px] max-w-md flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-[#6050D0]" placeholder="Search employee by name, email or role…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /></label>
+            <select className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#6050D0]" value={dept} onChange={(e) => { setDept(e.target.value); setPage(1); }}>
               <option value="">All Departments</option>
               {depts.map((d) => <option key={d}>{d}</option>)}
             </select>
@@ -119,13 +119,13 @@ export const DirectoryTab: React.FC<{ canManage: boolean }> = ({ canManage }) =>
                         }}>
                           <input autoFocus className={`${input} !py-1 !w-28 text-xs uppercase`} aria-label={`Employee code for ${p.name}`} maxLength={20} value={codeEdit.value}
                             onChange={(e) => setCodeEdit({ uid: p.uid, value: e.target.value })} onKeyDown={(e) => { if (e.key === 'Escape') setCodeEdit(null); }} />
-                          <button type="submit" disabled={busy || !!employeeCodeProblem(codeEdit.value)} className="rounded-md bg-[#FA7014] px-2 py-1 text-[11px] font-bold text-white disabled:opacity-40">Save</button>
+                          <button type="submit" disabled={busy || !!employeeCodeProblem(codeEdit.value)} className="rounded-md bg-[#6050D0] px-2 py-1 text-[11px] font-bold text-white disabled:opacity-40">Save</button>
                           <button type="button" onClick={() => setCodeEdit(null)} className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">Cancel</button>
                         </form>
                       ) : (
                         <div className="flex items-center gap-1 text-slate-400">
                           {p.empId || (data.canEdit ? 'No code' : '')}
-                          {data.canEdit && <button type="button" aria-label={`Change employee code for ${p.name}`} title="Change employee code" disabled={busy} onClick={() => setCodeEdit({ uid: p.uid, value: p.empId })} className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-[#FA7014]"><Pencil className="h-3 w-3" /></button>}
+                          {data.canEdit && <button type="button" aria-label={`Change employee code for ${p.name}`} title="Change employee code" disabled={busy} onClick={() => setCodeEdit({ uid: p.uid, value: p.empId })} className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-[#6050D0]"><Pencil className="h-3 w-3" /></button>}
                         </div>
                       )}
                     </td>
@@ -156,7 +156,7 @@ export const DirectoryTab: React.FC<{ canManage: boolean }> = ({ canManage }) =>
             {pages > 1 && (
               <div className="flex items-center gap-1.5">
                 <button type="button" aria-label="Previous page" disabled={cur === 1} onClick={() => setPage(cur - 1)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"><ChevronLeft className="h-4 w-4" /></button>
-                {Array.from({ length: pages }, (_, i) => i + 1).slice(Math.max(0, cur - 3), Math.max(0, cur - 3) + 5).map((k) => <button key={k} type="button" onClick={() => setPage(k)} className={`h-9 w-9 rounded-lg border text-sm font-semibold cursor-pointer ${k === cur ? 'border-[#F36B21] bg-[#F36B21] text-white' : 'border-slate-200 text-slate-700'}`}>{k}</button>)}
+                {Array.from({ length: pages }, (_, i) => i + 1).slice(Math.max(0, cur - 3), Math.max(0, cur - 3) + 5).map((k) => <button key={k} type="button" onClick={() => setPage(k)} className={`h-9 w-9 rounded-lg border text-sm font-semibold cursor-pointer ${k === cur ? 'border-[#6050D0] bg-[#6050D0] text-white' : 'border-slate-200 text-slate-700'}`}>{k}</button>)}
                 <button type="button" aria-label="Next page" disabled={cur === pages} onClick={() => setPage(cur + 1)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"><ChevronRight className="h-4 w-4" /></button>
               </div>
             )}

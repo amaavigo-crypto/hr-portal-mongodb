@@ -137,13 +137,13 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {i.files.map((f, n) => (
                   <div key={f.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
-                    <button type="button" className="w-14 h-14 rounded-md bg-white border border-slate-200 overflow-hidden flex items-center justify-center text-slate-300 hover:border-[#FA7014]" onClick={() => void open(`${i.label} photo ${n + 1}`, f.id)} aria-label={`View ${i.label} photo ${n + 1}`}>
+                    <button type="button" className="w-14 h-14 rounded-md bg-white border border-slate-200 overflow-hidden flex items-center justify-center text-slate-300 hover:border-[#6050D0]" onClick={() => void open(`${i.label} photo ${n + 1}`, f.id)} aria-label={`View ${i.label} photo ${n + 1}`}>
                       {isPdfUrl(thumbs[f.id]) ? <span className="flex flex-col items-center text-rose-500"><FileText className="w-5 h-5" /><span className="text-[9px] font-black">PDF</span></span> : thumbs[f.id] ? <img src={thumbs[f.id]} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5" />}
                     </button>
                     <div className="text-xs text-slate-700">
                       <div className="font-bold">Photo {n + 1} <span className="font-normal text-slate-400">{f.kb} KB</span></div>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <button type="button" className="font-bold text-[#FA7014] hover:underline disabled:opacity-50" disabled={busy} onClick={() => void open(`${i.label} photo ${n + 1}`, f.id)}>View</button>
+                        <button type="button" className="font-bold text-[#6050D0] hover:underline disabled:opacity-50" disabled={busy} onClick={() => void open(`${i.label} photo ${n + 1}`, f.id)}>View</button>
                         <button type="button" className="font-bold text-slate-600 hover:underline disabled:opacity-50" disabled={busy} onClick={() => pick(i.type, f.id)}>{uploading === f.id ? 'Replacing…' : 'Replace'}</button>
                         <button type="button" className="text-slate-400 hover:text-rose-700 disabled:opacity-50" disabled={busy} onClick={() => void removeFile(f.id)} aria-label={`Remove ${i.label} photo ${n + 1}`}><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -151,7 +151,7 @@ export const EmployeeIdentityPage: React.FC<{ uid?: string }> = ({ uid }) => {
                   </div>
                 ))}
                 {i.files.length < data.maxFiles && (
-                  <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FA7014] px-2 py-1 rounded-lg hover:bg-orange-50 disabled:opacity-50" disabled={busy} onClick={() => pick(i.type)}>
+                  <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6050D0] px-2 py-1 rounded-lg hover:bg-brand-50 disabled:opacity-50" disabled={busy} onClick={() => pick(i.type)}>
                     <ImagePlus className="w-3.5 h-3.5" />{uploading === i.type ? 'Uploading…' : i.files.length ? 'Add back side' : 'Add photo or PDF'}
                   </button>
                 )}

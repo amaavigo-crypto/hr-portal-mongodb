@@ -10,7 +10,7 @@ export const OnLeaveCard: React.FC<{ refreshKey: number }> = ({ refreshKey }) =>
   const load = useLoad(() => homeService.onLeave(scope), [scope, refreshKey]);
   const rows = load.data?.rows || [];
   return (
-    <HomeCard title="Employees on leave" icon={<Palmtree className="w-4 h-4 text-[#FA7014]" />} loading={load.loading && !load.data} error={load.error} onRetry={load.reload} empty={rows.length === 0} emptyText={scope === 'today' ? 'Nobody is on leave today' : 'No upcoming leave'}>
+    <HomeCard title="Employees on leave" icon={<Palmtree className="w-4 h-4 text-[#6050D0]" />} loading={load.loading && !load.data} error={load.error} onRetry={load.reload} empty={rows.length === 0} emptyText={scope === 'today' ? 'Nobody is on leave today' : 'No upcoming leave'}>
       <Tabs value={scope} onChange={setScope} items={[{ value: 'today', label: 'Today' }, { value: 'future', label: 'In future' }]} />
       <ul className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
         {rows.map((r, i) => (

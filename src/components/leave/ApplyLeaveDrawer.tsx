@@ -104,7 +104,7 @@ export const ApplyLeaveDrawer: React.FC<{ me: any; open: boolean; onClose: () =>
                 const sel = b.typeId === typeId;
                 return (
                   <button key={b.typeId} type="button" onClick={() => setTypeId(b.typeId)}
-                    className={`text-left rounded-xl border-2 px-3 py-2.5 transition-colors ${sel ? 'border-[#6d4cf0] bg-orange-50/60' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
+                    className={`text-left rounded-xl border-2 px-3 py-2.5 transition-colors ${sel ? 'border-[#6d4cf0] bg-brand-50/60' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-sm font-bold text-slate-800 truncate">{b.name}</span>
                       {sel && <CheckCircle2 className="w-4 h-4 text-[#6d4cf0] shrink-0" />}

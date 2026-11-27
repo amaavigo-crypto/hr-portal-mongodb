@@ -20,9 +20,9 @@ const readGoogleFlash = (): { result: string; reason: string } | null => {
 };
 
 const input =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-[#FA7014] focus:outline-none focus:ring-2 focus:ring-[#FA7014]/20';
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-[#6050D0] focus:outline-none focus:ring-2 focus:ring-[#6050D0]/20';
 const primaryBtn =
-  'inline-flex items-center gap-2 rounded-xl bg-[#FA7014] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#E65A05] disabled:opacity-60';
+  'inline-flex items-center gap-2 rounded-xl bg-[#6050D0] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#5243BE] disabled:opacity-60';
 const ghostBtn =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50';
 
@@ -126,7 +126,7 @@ export const AdminModule: React.FC<Props> = ({ currentUser, company }) => {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 ${tab === t.key ? 'bg-[#FA7014] text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 ${tab === t.key ? 'bg-[#6050D0] text-white' : 'text-slate-600 hover:bg-slate-50'}`}
           >
             {t.icon} {t.label}
           </button>
@@ -288,7 +288,7 @@ const PeopleTab: React.FC<{ users: User[]; departments: Department[]; roles: Rol
                 <td className="px-3 py-2.5">
                   <div className="flex flex-wrap gap-1">
                     {(u.roleNames || []).map((n) => (
-                      <span key={n} className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-[#C2570C]">{n}</span>
+                      <span key={n} className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-[#4C3EB0]">{n}</span>
                     ))}
                   </div>
                 </td>
@@ -432,7 +432,7 @@ const UserModal: React.FC<{
             {(user ? roles : assignable).map((r) => {
               const allowed = assignable.some((a) => a.id === r.id) || (user?.roleIds || []).includes(r.id);
               return (
-                <label key={r.id} className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${roleIds.includes(r.id) ? 'border-[#FA7014] bg-orange-50' : 'border-slate-200'} ${allowed ? '' : 'opacity-40'}`}>
+                <label key={r.id} className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${roleIds.includes(r.id) ? 'border-[#6050D0] bg-brand-50' : 'border-slate-200'} ${allowed ? '' : 'opacity-40'}`}>
                   <input type="checkbox" checked={roleIds.includes(r.id)} disabled={!allowed} onChange={() => toggle(r.id)} />
                   <span className="font-bold text-slate-800">{r.name}</span>
                 </label>
@@ -744,7 +744,7 @@ const PersonPermissions: React.FC<{ users: User[]; roles: RoleDef[]; company: Co
                 <div className="truncate text-sm font-bold text-slate-900">{u.name}</div>
                 <div className="truncate text-[11px] text-slate-500">{(u.roleNames || []).join(', ') || 'No role'} · {u.email}</div>
               </div>
-              {extra > 0 && <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700">+{extra} extra</span>}
+              {extra > 0 && <span className="shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-700">+{extra} extra</span>}
             </button>
           );
         })}
@@ -801,7 +801,7 @@ const PersonPermissionsModal: React.FC<{ user: User; roles: RoleDef[]; company: 
                   const moduleOff = !!p.module && !company.modules.includes(p.module);
                   const disabled = locked || isAdminUser || self || (!selected.includes(p.key) && !canGrant(p.key));
                   return (
-                    <label key={p.key} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${locked || selected.includes(p.key) ? 'bg-orange-50' : ''} ${disabled && !locked ? 'opacity-40' : ''}`}>
+                    <label key={p.key} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${locked || selected.includes(p.key) ? 'bg-brand-50' : ''} ${disabled && !locked ? 'opacity-40' : ''}`}>
                       <input type="checkbox" className="mt-0.5" checked={locked || selected.includes(p.key)} disabled={disabled} onChange={() => toggle(p.key)} />
                       <span>
                         {p.label}
@@ -887,7 +887,7 @@ const RoleModal: React.FC<{ role: RoleDef | null; company: Company; currentUser:
                   const moduleOff = p.module && !company.modules.includes(p.module);
                   const disabled = !canGrant(p.key);
                   return (
-                    <label key={p.key} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${selected.includes(p.key) ? 'bg-orange-50' : ''} ${disabled ? 'opacity-40' : ''}`}>
+                    <label key={p.key} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${selected.includes(p.key) ? 'bg-brand-50' : ''} ${disabled ? 'opacity-40' : ''}`}>
                       <input type="checkbox" className="mt-0.5" checked={selected.includes(p.key)} disabled={disabled} onChange={() => toggle(p.key)} />
                       <span>
                         <span className="font-semibold text-slate-800">{p.label}</span>

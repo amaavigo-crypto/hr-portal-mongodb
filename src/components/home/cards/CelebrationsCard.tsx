@@ -16,14 +16,14 @@ export const CelebrationsCard: React.FC<{ refreshKey: number }> = ({ refreshKey 
   const d = load.data;
   const rows: Celebrant[] = d ? d[kind] : [];
   return (
-    <HomeCard title="Wish celebration" icon={<PartyPopper className="w-4 h-4 text-[#FA7014]" />} loading={load.loading && !d} error={load.error} onRetry={load.reload}>
+    <HomeCard title="Wish celebration" icon={<PartyPopper className="w-4 h-4 text-[#6050D0]" />} loading={load.loading && !d} error={load.error} onRetry={load.reload}>
       <Tabs value={kind} onChange={setKind} items={[
         { value: 'birthdays', label: 'Birthdays', count: d?.birthdays.length }, { value: 'work', label: 'Work anniversary', count: d?.work.length }, { value: 'marriage', label: 'Marriage', count: d?.marriage.length },
       ]} />
       <div className="flex gap-1 mb-2">
         {RANGES.map((r) => (
           <button key={r.value} type="button" onClick={() => setRange(r.value)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${range === r.value ? 'bg-orange-50 border-[#FA7014] text-[#FA7014]' : 'border-slate-200 text-slate-500'}`}>{r.label}</button>
+            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${range === r.value ? 'bg-brand-50 border-[#6050D0] text-[#6050D0]' : 'border-slate-200 text-slate-500'}`}>{r.label}</button>
         ))}
       </div>
       {rows.length === 0 ? <p className="py-6 text-center text-xs text-slate-400">No celebrations in this period</p> : (

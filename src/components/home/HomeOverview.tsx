@@ -5,7 +5,7 @@ import { Card } from '../leave/ui';
 
 /** Welcome banner: greeting, one line about the product, and a simple building illustration drawn here (no image file). */
 export const WelcomeBanner: React.FC<{ first: string }> = ({ first }) => (
-  <section className="relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 via-orange-50 to-orange-100/60 px-6 py-6 sm:px-8">
+  <section className="relative overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-r from-brand-50 via-brand-50 to-brand-100/60 px-6 py-6 sm:px-8">
     <div className="relative z-10 max-w-xl">
       <p className="text-base font-medium text-slate-700">{first ? `Good morning, ${first}` : 'Welcome back'} <span aria-hidden>👋</span></p>
       <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Welcome to Amaavigo HR</h1>
@@ -13,7 +13,7 @@ export const WelcomeBanner: React.FC<{ first: string }> = ({ first }) => (
     </div>
     <svg className="hidden md:block absolute right-0 bottom-0 h-full w-[420px]" viewBox="0 0 420 150" preserveAspectRatio="xMaxYMax meet" aria-hidden>
       <path d="M0 150 C 60 90 140 120 210 100 C 290 78 340 110 420 70 L420 150 Z" fill="#FDD9BF" opacity=".7" />
-      <g fill="#FA7014">
+      <g fill="#6050D0">
         <rect x="250" y="58" width="62" height="92" rx="3" opacity=".9" />
         <rect x="318" y="30" width="58" height="120" rx="3" />
         <rect x="214" y="96" width="40" height="54" rx="3" opacity=".65" />
@@ -40,7 +40,7 @@ export const HiringDonut: React.FC<{ widget: DashboardWidget; onOpen: (t: Widget
   const R = 52; const C = 2 * Math.PI * R;
   let offset = 0;
   return (
-    <Card title="Hiring" right={widget.target ? <button type="button" onClick={() => onOpen(widget.target!)} className="text-xs font-bold text-[#FA7014] inline-flex items-center gap-1 hover:underline">View <ArrowRight className="w-3 h-3" /></button> : undefined}>
+    <Card title="Hiring" right={widget.target ? <button type="button" onClick={() => onOpen(widget.target!)} className="text-xs font-bold text-[#6050D0] inline-flex items-center gap-1 hover:underline">View <ArrowRight className="w-3 h-3" /></button> : undefined}>
       <div className="flex items-center gap-6">
         <div className="relative w-36 h-36 shrink-0">
           <svg viewBox="0 0 140 140" className="w-full h-full -rotate-90" role="img" aria-label={`${total} requisitions waiting on you`}>
@@ -108,7 +108,7 @@ export const MyTasks: React.FC<{ widgets: DashboardWidget[]; onOpen: (t: WidgetT
         <ul className="divide-y divide-slate-100">
           {rows.map((r) => (
             <li key={r.key}>
-              <button type="button" disabled={!r.target} onClick={() => r.target && onOpen(r.target)} className="w-full flex items-center gap-3 py-1.5 text-left rounded-lg hover:bg-orange-50/60 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default px-1">
+              <button type="button" disabled={!r.target} onClick={() => r.target && onOpen(r.target)} className="w-full flex items-center gap-3 py-1.5 text-left rounded-lg hover:bg-brand-50/60 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default px-1">
                 <span className="w-7 h-7 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><r.Icon className="w-4 h-4" /></span>
                 <span className="flex-1 min-w-0 truncate text-xs font-medium text-slate-800">{r.text}</span>
                 <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold ${tagFor(r.key)[1]}`}>{tagFor(r.key)[0]}</span>

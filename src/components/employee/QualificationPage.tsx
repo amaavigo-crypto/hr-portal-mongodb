@@ -145,13 +145,13 @@ export const QualificationPage: React.FC<{ uid?: string }> = ({ uid }) => {
             const score = [x.percentage && `${x.percentage}%`, x.grade && `Grade ${x.grade}`].filter(Boolean).join(' · ');
             return (
               <li key={x.id} className="pl-5 relative">
-                <span className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${x.isHighest ? 'bg-[#FA7014]' : 'bg-slate-300'}`} aria-hidden />
+                <span className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${x.isHighest ? 'bg-[#6050D0]' : 'bg-slate-300'}`} aria-hidden />
                 <div className="bg-white border border-slate-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm font-bold text-slate-800">{x.qualification}{x.specialization ? ` · ${x.specialization}` : ''}</h3>
-                        {x.isHighest && <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-orange-50 text-[#FA7014] border-orange-200"><Star className="w-3 h-3" />Highest</span>}
+                        {x.isHighest && <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-brand-50 text-[#6050D0] border-brand-200"><Star className="w-3 h-3" />Highest</span>}
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_LOOK[x.status] || STATUS_LOOK.Completed}`}>{x.status}</span>
                       </div>
                       <p className="text-xs text-slate-600 mt-0.5">{[x.instituteName, x.universityName].filter(Boolean).join(' · ')}</p>
@@ -169,11 +169,11 @@ export const QualificationPage: React.FC<{ uid?: string }> = ({ uid }) => {
                   <div className="mt-3 flex items-center gap-2">
                     {x.hasDocument ? (
                       <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700">
-                        <button type="button" className="inline-flex items-center gap-1.5 px-2 py-1 hover:text-[#FA7014]" onClick={() => void view(x)}><FileImage className="w-3.5 h-3.5" />Certificate<span className="text-slate-400">{x.docKb} KB</span></button>
+                        <button type="button" className="inline-flex items-center gap-1.5 px-2 py-1 hover:text-[#6050D0]" onClick={() => void view(x)}><FileImage className="w-3.5 h-3.5" />Certificate<span className="text-slate-400">{x.docKb} KB</span></button>
                         <button type="button" aria-label="Remove certificate" className="px-1.5 py-1 text-slate-400 hover:text-rose-700" onClick={() => void run(async () => { await lifecycleService.deleteQualificationDoc({ uid, id: x.id }); await load(); }, 'Certificate removed')}><Trash2 className="w-3.5 h-3.5" /></button>
                       </span>
                     ) : (
-                      <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FA7014] px-2 py-1 rounded-lg hover:bg-orange-50" disabled={busy} onClick={() => { attachTo.current = x.id; fileInput.current?.click(); }}><Paperclip className="w-3.5 h-3.5" />Attach certificate</button>
+                      <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6050D0] px-2 py-1 rounded-lg hover:bg-brand-50" disabled={busy} onClick={() => { attachTo.current = x.id; fileInput.current?.click(); }}><Paperclip className="w-3.5 h-3.5" />Attach certificate</button>
                     )}
                   </div>
                   {confirm === x.id && (

@@ -26,7 +26,7 @@ export const Surveys: React.FC<{ manage: boolean }> = ({ manage }) => {
                 {s.questions.map((q: any) => (
                   <Field key={q.id} label={q.text}>
                     {q.type === 'scale' ? (
-                      <div className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setAnswers({ ...answers, [s.id]: { ...answers[s.id], [q.id]: n } })} className={`h-8 w-8 rounded-md border text-xs font-bold ${answers[s.id]?.[q.id] === n ? 'border-[#FA7014] bg-[#FA7014] text-white' : 'border-slate-300 bg-white text-slate-600'}`}>{n}</button>)}<span className="ml-2 self-center text-[11px] font-normal text-slate-400">1 = strongly disagree, 5 = strongly agree</span></div>
+                      <div className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setAnswers({ ...answers, [s.id]: { ...answers[s.id], [q.id]: n } })} className={`h-8 w-8 rounded-md border text-xs font-bold ${answers[s.id]?.[q.id] === n ? 'border-[#6050D0] bg-[#6050D0] text-white' : 'border-slate-300 bg-white text-slate-600'}`}>{n}</button>)}<span className="ml-2 self-center text-[11px] font-normal text-slate-400">1 = strongly disagree, 5 = strongly agree</span></div>
                     ) : <textarea className={input} rows={2} value={answers[s.id]?.[q.id] || ''} onChange={(e) => setAnswers({ ...answers, [s.id]: { ...answers[s.id], [q.id]: e.target.value } })} />}
                   </Field>
                 ))}

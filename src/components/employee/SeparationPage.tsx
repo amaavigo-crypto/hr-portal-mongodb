@@ -147,11 +147,11 @@ export const SeparationPage: React.FC<{ uid?: string; onOpenModule: (m: HRAgentM
           <div className="flex flex-wrap items-center gap-2">
             {d.file ? (
               <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700">
-                <button type="button" className="inline-flex items-center gap-1.5 px-2 py-1 hover:text-[#FA7014]" onClick={() => void view()}><FileText className="w-3.5 h-3.5" />{d.file.name}<span className="text-slate-400">{d.file.kb} KB</span></button>
+                <button type="button" className="inline-flex items-center gap-1.5 px-2 py-1 hover:text-[#6050D0]" onClick={() => void view()}><FileText className="w-3.5 h-3.5" />{d.file.name}<span className="text-slate-400">{d.file.kb} KB</span></button>
                 {open && <button type="button" aria-label="Remove document" className="px-1.5 py-1 text-slate-400 hover:text-rose-700" onClick={() => void run(async () => { await lifecycleService.deleteSeparationFile(uid); await load(); }, 'Document removed')}><Trash2 className="w-3.5 h-3.5" /></button>}
               </span>
             ) : open && (
-              <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FA7014] px-2 py-1 rounded-lg hover:bg-orange-50" disabled={busy} onClick={() => fileInput.current?.click()}><Paperclip className="w-3.5 h-3.5" />Attach document</button>
+              <button type="button" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6050D0] px-2 py-1 rounded-lg hover:bg-brand-50" disabled={busy} onClick={() => fileInput.current?.click()}><Paperclip className="w-3.5 h-3.5" />Attach document</button>
             )}
             <span className="ml-auto flex gap-2">
               {d.isSelf && ['SUBMITTED', 'MANAGER_APPROVED'].includes(e.status) && (

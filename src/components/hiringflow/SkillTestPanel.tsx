@@ -34,7 +34,7 @@ export const SkillTestPanel: React.FC<{ jobTitles: string[]; questions: number }
   const setQ = (i: number, patch: Partial<SkillQuestion>) => setDraft((d) => (d || []).map((q, k) => (k === i ? { ...q, ...patch } : q)));
 
   return (
-    <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-3 space-y-3">
+    <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3 space-y-3">
       <div>
         <p className="text-sm font-extrabold text-slate-900">The test questions</p>
         <p className="text-xs text-slate-600">One test per job title, so everyone applying for the same job gets the same questions. The app writes it from the job description. You can read and change every question.</p>

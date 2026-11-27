@@ -105,9 +105,9 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
   return (
     <>
       {!open && (
-        <button type="button" onClick={() => setOpen(true)} aria-label="Open Ask HR" className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#FA7014] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[#e5650f] cursor-pointer">
+        <button type="button" onClick={() => setOpen(true)} aria-label="Open Ask HR" className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#6050D0] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[#5747C6] cursor-pointer">
           <MessageCircle className="h-4 w-4" /> Ask HR
-          {nudge && <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-[#FA7014]" aria-label={`${nudge.count} things need your attention`}>{nudge.count}</span>}
+          {nudge && <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-[#6050D0]" aria-label={`${nudge.count} things need your attention`}>{nudge.count}</span>}
         </button>
       )}
       {open && (
@@ -125,8 +125,8 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
 
           <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
             {nudge && (
-              <div className="rounded-xl border border-orange-300 bg-orange-50 p-3 text-sm">
-                <p className="flex items-center gap-1.5 font-bold text-slate-900"><Bell className="h-4 w-4 text-[#FA7014]" /> {nudge.title.replace(/^Ask HR: /, '')}</p>
+              <div className="rounded-xl border border-brand-300 bg-brand-50 p-3 text-sm">
+                <p className="flex items-center gap-1.5 font-bold text-slate-900"><Bell className="h-4 w-4 text-[#6050D0]" /> {nudge.title.replace(/^Ask HR: /, '')}</p>
                 {nudge.sections.map((s, i) => (
                   <div key={i} className="mt-2">
                     <p className="text-xs font-semibold text-slate-800">{s.heading}</p>
@@ -134,29 +134,29 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
                   </div>
                 ))}
                 <p className="mt-2 text-[11px] text-slate-500">Ask me to open any of these, for example "show me what is waiting for my approval".</p>
-                <button type="button" onClick={dismissNudge} className="mt-2 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-orange-100 cursor-pointer">Got it</button>
+                <button type="button" onClick={dismissNudge} className="mt-2 rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-100 cursor-pointer">Got it</button>
               </div>
             )}
             {msgs.length === 0 && (
               <div>
                 <p className="text-sm text-slate-700">Hi, ask me about leave, attendance, onboarding tasks, exits, approvals, your team or company policies. I only show what your role can see. I can also prepare approvals, leave applications and task updates for you to confirm. HR can ask me to record attendance, adjust a leave balance or close an exception.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-orange-300 hover:text-[#FA7014] cursor-pointer">{s}</button>)}
+                  {suggestionsFor(perms, isAdmin).map((s) => <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-brand-300 hover:text-[#6050D0] cursor-pointer">{s}</button>)}
                 </div>
               </div>
             )}
             {msgs.map((m, i) => m.role === 'user' ? (
-              <div key={i} className="flex justify-end"><p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-[#FA7014] px-3 py-2 text-sm text-white">{m.content}</p></div>
+              <div key={i} className="flex justify-end"><p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-[#6050D0] px-3 py-2 text-sm text-white">{m.content}</p></div>
             ) : (
               <div key={i} className="max-w-[92%]">
                 <p className="whitespace-pre-wrap rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">{m.content}</p>
                 {(m.proposals || []).map((c) => (
-                  <div key={c.id} className={`mt-2 rounded-xl border bg-white p-3 text-sm ${c.state === 'DONE' ? 'border-emerald-300' : c.state === 'FAILED' ? 'border-red-300' : 'border-orange-300'}`}>
+                  <div key={c.id} className={`mt-2 rounded-xl border bg-white p-3 text-sm ${c.state === 'DONE' ? 'border-emerald-300' : c.state === 'FAILED' ? 'border-red-300' : 'border-brand-300'}`}>
                     <p className="font-bold text-slate-900">{c.title}</p>
                     <ul className="mt-1 space-y-0.5 text-xs text-slate-600">{c.lines.map((l, k) => <li key={k}>{l}</li>)}</ul>
                     {!c.state || c.state === 'working' ? (
                       <div className="mt-2.5 flex items-center gap-2">
-                        <button type="button" disabled={c.state === 'working'} onClick={() => void confirmCard(i, c.id)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60 cursor-pointer ${c.destructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#FA7014] hover:bg-[#e5650f]'}`}>
+                        <button type="button" disabled={c.state === 'working'} onClick={() => void confirmCard(i, c.id)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60 cursor-pointer ${c.destructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#6050D0] hover:bg-[#5747C6]'}`}>
                           {c.state === 'working' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}{c.confirmLabel}
                         </button>
                         <button type="button" disabled={c.state === 'working'} onClick={() => dismissCard(i, c.id)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-60 cursor-pointer">Dismiss</button>
@@ -182,7 +182,7 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
                       <button type="button" onClick={() => rate(i, false)} aria-label="Not helpful" className={`rounded p-1 hover:bg-slate-200 cursor-pointer ${m.rated === false ? 'text-red-600' : ''}`}><ThumbsDown className="h-3.5 w-3.5" /></button>
                     </>
                   )}
-                  {m.question && !m.sent && <button type="button" onClick={() => void askHr(i)} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 cursor-pointer ${m.unsure || m.rated === false ? 'border-orange-300 text-[#FA7014]' : 'border-slate-200 hover:border-orange-300'}`}><Mail className="h-3 w-3" /> Ask HR instead</button>}
+                  {m.question && !m.sent && <button type="button" onClick={() => void askHr(i)} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 cursor-pointer ${m.unsure || m.rated === false ? 'border-brand-300 text-[#6050D0]' : 'border-slate-200 hover:border-brand-300'}`}><Mail className="h-3 w-3" /> Ask HR instead</button>}
                   {m.sent && <span>{m.sent}</span>}
                 </div>
               </div>
@@ -197,9 +197,9 @@ export const AskHrPanel: React.FC<{ userId: string; perms?: string[] | null; isA
                 ref={inputRef} value={text} rows={1} maxLength={500} placeholder="Type your question..."
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(text); } }}
-                className="max-h-28 min-h-[40px] flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#FA7014] focus:outline-none focus:ring-2 focus:ring-[#FA7014]/20"
+                className="max-h-28 min-h-[40px] flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-[#6050D0] focus:outline-none focus:ring-2 focus:ring-[#6050D0]/20"
               />
-              <button type="submit" disabled={busy || !text.trim()} aria-label="Send" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FA7014] text-white disabled:opacity-40 cursor-pointer"><Send className="h-4 w-4" /></button>
+              <button type="submit" disabled={busy || !text.trim()} aria-label="Send" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#6050D0] text-white disabled:opacity-40 cursor-pointer"><Send className="h-4 w-4" /></button>
             </div>
             <p className="mt-2 text-[10px] text-slate-400">Ask HR can make mistakes. For anything important, confirm with HR.</p>
           </form>

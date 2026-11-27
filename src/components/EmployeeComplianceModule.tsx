@@ -468,14 +468,14 @@ export const EmployeeComplianceModule: React.FC<EmployeeComplianceModuleProps> =
           className={`p-4 rounded-xl border flex items-center justify-between transition-all ${
             feedbackMessage.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-              : 'bg-orange-50 border-orange-200 text-orange-950'
+              : 'bg-brand-50 border-brand-200 text-brand-950'
           }`}
         >
           <div className="flex items-center space-x-3">
             {feedbackMessage.type === 'success' ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-orange-600 shrink-0" />
+              <AlertCircle className="w-5 h-5 text-brand-600 shrink-0" />
             )}
             <span className="text-sm font-medium">{feedbackMessage.text}</span>
           </div>
@@ -656,8 +656,8 @@ export const EmployeeComplianceModule: React.FC<EmployeeComplianceModuleProps> =
                           <span>100% Compliant</span>
                         </div>
                       ) : (
-                        <div className="bg-orange-100 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-bold text-orange-700">
-                          <Clock className="w-4 h-4 text-orange-500" />
+                        <div className="bg-brand-100 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-bold text-brand-700">
+                          <Clock className="w-4 h-4 text-brand-500" />
                           <span>{pendingCount} Pending</span>
                         </div>
                       )}
@@ -728,7 +728,7 @@ export const EmployeeComplianceModule: React.FC<EmployeeComplianceModuleProps> =
                                       </span>
                                     </span>
                                   ) : (
-                                    <span className="text-orange-600 flex items-center space-x-1 font-medium">
+                                    <span className="text-brand-600 flex items-center space-x-1 font-medium">
                                       <Clock className="w-3.5 h-3.5" />
                                       <span>
                                         {prevAck

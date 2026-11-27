@@ -50,7 +50,7 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
         return (
           <button
             key={t.value} type="button" role="tab" aria-selected={on} onClick={() => onChange(t.value)}
-            className={`px-3 py-2 text-xs font-bold whitespace-nowrap border-b-2 -mb-px transition-colors ${on ? 'border-[#FA7014] text-[#FA7014]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`px-3 py-2 text-xs font-bold whitespace-nowrap border-b-2 -mb-px transition-colors ${on ? 'border-[#6050D0] text-[#6050D0]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
           >
             {t.label}{t.count !== undefined ? ` (${t.count})` : ''}
           </button>
@@ -60,7 +60,7 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
   );
 }
 
-const PALETTE = ['bg-orange-100 text-orange-700', 'bg-sky-100 text-sky-700', 'bg-emerald-100 text-emerald-700', 'bg-violet-100 text-violet-700', 'bg-rose-100 text-rose-700', 'bg-amber-100 text-amber-700'];
+const PALETTE = ['bg-brand-100 text-brand-700', 'bg-sky-100 text-sky-700', 'bg-emerald-100 text-emerald-700', 'bg-violet-100 text-violet-700', 'bg-rose-100 text-rose-700', 'bg-amber-100 text-amber-700'];
 
 export const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || '?';
 

@@ -47,7 +47,7 @@ export const StatusChip: React.FC<{ status: string }> = ({ status }) => {
   return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border whitespace-nowrap ${l.cls}`}><Icon className="w-3 h-3" />{STATUS_LABEL[status] || status}</span>;
 };
 
-const PRI: Record<string, string> = { URGENT: 'text-rose-600', HIGH: 'text-orange-500', NORMAL: 'text-slate-400', LOW: 'text-sky-400' };
+const PRI: Record<string, string> = { URGENT: 'text-rose-600', HIGH: 'text-brand-500', NORMAL: 'text-slate-400', LOW: 'text-sky-400' };
 export const PriorityFlag: React.FC<{ priority: string; label?: boolean }> = ({ priority, label }) => (
   <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${PRI[priority] || PRI.NORMAL}`} title={`${priority.charAt(0)}${priority.slice(1).toLowerCase()} priority`}>
     <AlertCircle className="w-3.5 h-3.5" />{label && priority.charAt(0) + priority.slice(1).toLowerCase()}

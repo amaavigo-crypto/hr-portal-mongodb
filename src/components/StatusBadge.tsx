@@ -29,9 +29,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
         };
       case VersionStatus.REVISION_REQUIRED:
         return {
-          bg: 'bg-orange-100 text-orange-800 border-orange-200',
+          bg: 'bg-brand-100 text-brand-800 border-brand-200',
           label: 'REVISION REQUIRED',
-          icon: <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />,
+          icon: <AlertTriangle className="w-3.5 h-3.5 text-brand-500 shrink-0" />,
         };
       case VersionStatus.REJECTED:
         return {

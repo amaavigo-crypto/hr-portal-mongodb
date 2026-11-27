@@ -59,7 +59,7 @@ const TONES = {
   purple: { tile: 'bg-gradient-to-br from-violet-100/80 to-indigo-50 border-white', icon: 'bg-violet-100 text-violet-600' },
   blue: { tile: 'bg-gradient-to-br from-sky-100/80 to-blue-50 border-white', icon: 'bg-sky-100 text-sky-600' },
   green: { tile: 'bg-gradient-to-br from-emerald-100/70 to-green-50 border-white', icon: 'bg-emerald-100 text-emerald-600' },
-  orange: { tile: 'bg-gradient-to-br from-orange-100/80 to-amber-50 border-white', icon: 'bg-orange-100 text-[#F36B21]' },
+  orange: { tile: 'bg-gradient-to-br from-brand-100/80 to-brand-50 border-white', icon: 'bg-brand-100 text-[#6050D0]' },
 } as const;
 
 const Tile: React.FC<{ label: string; value: string | number; tone: keyof typeof TONES; Icon: React.FC<{ className?: string }>; trend?: React.ReactNode; onClick?: () => void }> = ({ label, value, tone, Icon, trend, onClick }) => {
@@ -170,7 +170,7 @@ export const PipelineChart: React.FC<{ refreshKey: number; onOpen: (t: WidgetTar
           </div>
         </div>
       </div>
-      <div className="mt-2 text-right"><button type="button" onClick={() => onOpen({ module: 'talent-acquisition-overview' })} className="text-[11px] font-bold text-[#F36B21] hover:underline cursor-pointer">Open pipeline <ArrowRight className="inline h-3.5 w-3.5" /></button></div>
+      <div className="mt-2 text-right"><button type="button" onClick={() => onOpen({ module: 'talent-acquisition-overview' })} className="text-[11px] font-bold text-[#6050D0] hover:underline cursor-pointer">Open pipeline <ArrowRight className="inline h-3.5 w-3.5" /></button></div>
     </Card>
   );
 };
@@ -194,7 +194,7 @@ export const QuickActionsGrid: React.FC<{ onOpen: (t: WidgetTarget) => void }> =
       {ACTIONS.map((a) => (
         <button key={a.label} type="button"
           onClick={() => (a.target ? onOpen(a.target) : document.getElementById('home-more')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}
-          className="flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-[11px] font-medium leading-tight text-slate-800 shadow-sm hover:border-[#F36B21]/60 hover:bg-orange-50/40 cursor-pointer">
+          className="flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-[11px] font-medium leading-tight text-slate-800 shadow-sm hover:border-[#6050D0]/60 hover:bg-brand-50/40 cursor-pointer">
           <a.Icon className="h-4 w-4 text-slate-700" />{a.label}
         </button>
       ))}

@@ -63,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('creator')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
                     activeTab === 'creator'
-                      ? 'bg-[#FA7014] text-white shadow-sm'
+                      ? 'bg-[#6050D0] text-white shadow-sm'
                       : 'text-slate-600 hover:bg-white hover:text-slate-900'
                   }`}
                 >
@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
                           currentUser.role === UserRole.REVIEWER
                             ? 'bg-emerald-500'
                             : currentUser.role === UserRole.CREATOR
-                            ? 'bg-[#FA7014]'
+                            ? 'bg-[#6050D0]'
                             : 'bg-amber-500'
                         }`}
                       />

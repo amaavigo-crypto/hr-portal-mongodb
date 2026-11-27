@@ -16,7 +16,7 @@ const stageClass = (s: string) =>
 const shortDate = (iso: string) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 const when = (iso: string) => new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' (IST)';
 
-const box = 'flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#FA7014] focus-within:ring-2 focus-within:ring-[#FA7014]/20';
+const box = 'flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#6050D0] focus-within:ring-2 focus-within:ring-[#6050D0]/20';
 const bare = 'min-w-0 flex-1 bg-transparent py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400';
 const Label: React.FC<{ text: string; required?: boolean; children: React.ReactNode }> = ({ text, required, children }) => (
   <label className="block space-y-1.5">
@@ -45,7 +45,7 @@ export const ReferralsTab: React.FC<{ onOpenInterviews?: () => void }> = ({ onOp
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#F36B21]"><Users className="h-6 w-6" /></span>
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-[#6050D0]"><Users className="h-6 w-6" /></span>
           <div><h2 className="text-xl font-bold text-slate-950">Refer a candidate</h2><p className="text-sm text-slate-600">Know someone great? Refer them for an open role.</p></div>
         </div>
         <Loading error={jobs.error} loading={jobs.loading} />
@@ -68,7 +68,7 @@ export const ReferralsTab: React.FC<{ onOpenInterviews?: () => void }> = ({ onOp
             </Label>
             <Label text="Resume link"><div className={box}><Link2 className="h-4 w-4 text-slate-500" /><input className={bare} value={f.resumeUrl} onChange={(e) => setF({ ...f, resumeUrl: e.target.value })} placeholder="Paste resume link (Google Drive, LinkedIn, etc.)" /></div></Label>
             <Label text="Why are they a good fit?"><div className={`${box} items-start`}><textarea className={`${bare} resize-none`} rows={3} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></div></Label>
-            <button type="button" disabled={busy || !f.requisitionId} onClick={() => run(async () => { await pipelineService.refSubmit(f); setF(empty); await mine.reload(); }, 'Thank you. The referral has been sent to HR.')} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#F36B21] text-base font-bold text-white hover:bg-[#df5d18] disabled:opacity-50 cursor-pointer"><Send className="h-4 w-4" />Submit referral</button>
+            <button type="button" disabled={busy || !f.requisitionId} onClick={() => run(async () => { await pipelineService.refSubmit(f); setF(empty); await mine.reload(); }, 'Thank you. The referral has been sent to HR.')} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#6050D0] text-base font-bold text-white hover:bg-[#5747C6] disabled:opacity-50 cursor-pointer"><Send className="h-4 w-4" />Submit referral</button>
           </div>
         )}
       </section>
@@ -90,16 +90,16 @@ export const ReferralsTab: React.FC<{ onOpenInterviews?: () => void }> = ({ onOp
           </div>
         </Card>
 
-        <Card title={<>My interviews <span className="text-sm font-normal text-slate-600">(upcoming)</span></>} right={onOpenInterviews && <button type="button" onClick={onOpenInterviews} className="text-sm font-bold text-[#F36B21] hover:underline cursor-pointer">View all →</button>}>
+        <Card title={<>My interviews <span className="text-sm font-normal text-slate-600">(upcoming)</span></>} right={onOpenInterviews && <button type="button" onClick={onOpenInterviews} className="text-sm font-bold text-[#6050D0] hover:underline cursor-pointer">View all →</button>}>
           {!ivs.loading && upcoming.length === 0 && <p className="py-2 text-sm text-slate-500">Interviews you are asked to take will show here.</p>}
           <div className="divide-y divide-slate-100">
             {upcoming.map((i) => (
               <div key={i.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#F36B21]"><CalendarDays className="h-5 w-5" /></span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[#6050D0]"><CalendarDays className="h-5 w-5" /></span>
                   <div className="min-w-0"><div className="truncate text-sm font-bold text-slate-900">{i.positionTitle} – {i.round}</div><div className="truncate text-xs text-slate-600">Candidate: {i.candidateName}</div><div className="text-xs text-slate-600">{when(i.startIso)}</div></div>
                 </div>
-                {onOpenInterviews && <button type="button" onClick={onOpenInterviews} className="shrink-0 rounded-lg border border-[#F36B21] px-3 py-2 text-xs font-bold text-[#F36B21] hover:bg-orange-50 cursor-pointer">{!i.iSubmitted ? 'Give feedback' : 'View'}</button>}
+                {onOpenInterviews && <button type="button" onClick={onOpenInterviews} className="shrink-0 rounded-lg border border-[#6050D0] px-3 py-2 text-xs font-bold text-[#6050D0] hover:bg-brand-50 cursor-pointer">{!i.iSubmitted ? 'Give feedback' : 'View'}</button>}
               </div>
             ))}
           </div>

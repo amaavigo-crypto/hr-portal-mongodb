@@ -47,7 +47,7 @@ export const OfferResponsePage: React.FC = () => {
             {!done && info.canRespond && (
               <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
                 <label className="flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" className="mt-1" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} /> I have read the documents above and I accept this offer.</label>
-                <button disabled={busy || !confirm} onClick={() => send('ACCEPT')} className="rounded-lg bg-[#FA7014] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Accept offer</button>
+                <button disabled={busy || !confirm} onClick={() => send('ACCEPT')} className="rounded-lg bg-[#6050D0] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Accept offer</button>
                 <div className="flex gap-2 text-xs">
                   <button className="rounded-lg border border-slate-300 px-3 py-2 font-bold" onClick={() => setMode('NEGOTIATE')}>Ask to discuss</button>
                   <button className="rounded-lg border border-slate-300 px-3 py-2 font-bold" onClick={() => setMode('DECLINE')}>Decline</button>

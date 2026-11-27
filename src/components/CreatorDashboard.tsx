@@ -196,10 +196,10 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
 
       {/* REVISION REQUIRED CALLOUT BANNER IF ANY EXIST */}
       {revisionRequiredVersions.length > 0 && (
-        <div id="banner-revision-required" className="bg-white border-l-4 border-l-orange-400 border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div id="banner-revision-required" className="bg-white border-l-4 border-l-brand-400 border-slate-200 rounded-2xl p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3 w-full">
-              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0 mt-0.5 text-orange-500">
+              <div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center shrink-0 mt-0.5 text-brand-500">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div className="flex-1">
@@ -224,13 +224,13 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
                               {rev.documentId}
                             </span>
                             <span className="font-semibold text-sm text-slate-900">{rev.documentTitle}</span>
-                            <span className="text-xs bg-orange-100 text-orange-700 font-bold px-2 py-0.5 rounded-lg">
+                            <span className="text-xs bg-brand-100 text-brand-700 font-bold px-2 py-0.5 rounded-lg">
                               v{rev.versionNumber} Revision Requested
                             </span>
                           </div>
                           {rev.reviewerComments && (
                             <div className="mt-2 text-xs text-slate-700 flex items-start space-x-2 bg-white p-2.5 rounded-lg border border-slate-200">
-                              <MessageSquare className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />
+                              <MessageSquare className="w-3.5 h-3.5 text-brand-500 shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-semibold text-slate-900">
                                   Reviewer {rev.reviewedByName ? `(${rev.reviewedByName})` : ''} Comment:
@@ -387,7 +387,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
                             </span>
                           </div>
                         ) : needsRevision ? (
-                          <div className="text-[11px] text-orange-600 mt-1.5 flex items-center gap-1 font-semibold">
+                          <div className="text-[11px] text-brand-600 mt-1.5 flex items-center gap-1 font-semibold">
                             <AlertTriangle className="w-3 h-3" />
                             <span>v{needsRevision.versionNumber} revision requested</span>
                           </div>

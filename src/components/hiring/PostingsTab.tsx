@@ -62,7 +62,7 @@ export const PostingsTab: React.FC<{ requisitions: Requisition[] }> = ({ requisi
             <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
               <div className="min-w-0">
                 <div className="font-bold text-slate-800">{p.positionTitle} <span className="font-normal text-slate-400">{p.positionId}</span></div>
-                <div className="text-slate-500">{p.board}{p.postedOn ? ` - ${p.postedOn}` : ''}{p.cost ? ` - INR ${p.cost}` : ''}{p.url && <> - <a className="text-[#FA7014] underline" href={p.url} target="_blank" rel="noreferrer">open</a></>}</div>
+                <div className="text-slate-500">{p.board}{p.postedOn ? ` - ${p.postedOn}` : ''}{p.cost ? ` - INR ${p.cost}` : ''}{p.url && <> - <a className="text-[#6050D0] underline" href={p.url} target="_blank" rel="noreferrer">open</a></>}</div>
               </div>
               <div className="flex items-center gap-2">
                 <Pill tone={p.status === 'LIVE' ? 'green' : p.status === 'CLOSED' ? 'slate' : 'amber'}>{p.status}</Pill>

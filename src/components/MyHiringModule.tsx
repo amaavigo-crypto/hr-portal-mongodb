@@ -24,7 +24,7 @@ export const MyHiringModule: React.FC<{ currentUser: User }> = () => {
       </header>
       <nav className="flex gap-1 border-b border-slate-200" role="tablist" aria-label="My hiring sections">
         {TABS.map((x) => { const on = x.value === tab; return (
-          <button key={x.value} type="button" role="tab" aria-selected={on} onClick={() => setTab(x.value)} className={`-mb-px inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold cursor-pointer ${on ? 'border-[#F36B21] text-[#F36B21]' : 'border-transparent text-slate-700 hover:text-slate-900'}`}><x.Icon className="h-4 w-4" />{x.label}</button>
+          <button key={x.value} type="button" role="tab" aria-selected={on} onClick={() => setTab(x.value)} className={`-mb-px inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold cursor-pointer ${on ? 'border-[#6050D0] text-[#6050D0]' : 'border-transparent text-slate-700 hover:text-slate-900'}`}><x.Icon className="h-4 w-4" />{x.label}</button>
         ); })}
       </nav>
       {tab === 'referrals' ? <ReferralsTab onOpenInterviews={() => setTab('interviews')} /> : <InterviewsTab />}

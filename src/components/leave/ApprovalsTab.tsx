@@ -227,7 +227,7 @@ const ApprovalsList: React.FC<{ reload: () => void }> = ({ reload }) => {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MAX_CHIPS = 3;
 const MONTH_LABEL = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-const chipTone = (l: any) => l.halfDay ? 'bg-violet-100 text-violet-800' : l.status === 'PENDING' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800';
+const chipTone = (l: any) => l.halfDay ? 'bg-violet-100 text-violet-800' : l.status === 'PENDING' ? 'bg-brand-100 text-brand-800' : 'bg-emerald-100 text-emerald-800';
 
 export const TeamCalendar: React.FC = () => {
   const [month, setMonth] = useState(thisMonth());
@@ -304,7 +304,7 @@ export const TeamCalendar: React.FC = () => {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-100 bg-white px-4 py-2.5 text-sm text-slate-800">
-        {[['bg-emerald-500', 'Approved Leave'], ['bg-orange-400', 'Pending Leave'], ['bg-violet-400', 'Partial Day'], ['bg-slate-300', 'Holiday']].map(([c, l]) => <span key={l} className="flex items-center gap-2"><span className={`h-3 w-3 rounded-full ${c}`} />{l}</span>)}
+        {[['bg-emerald-500', 'Approved Leave'], ['bg-brand-400', 'Pending Leave'], ['bg-violet-400', 'Partial Day'], ['bg-slate-300', 'Holiday']].map(([c, l]) => <span key={l} className="flex items-center gap-2"><span className={`h-3 w-3 rounded-full ${c}`} />{l}</span>)}
         <span className="flex items-center gap-2"><span className="h-3.5 w-3.5 rounded-full border-2 border-violet-600" />Today</span>
       </div>
       {error && <Notice tone="error">{error}</Notice>}

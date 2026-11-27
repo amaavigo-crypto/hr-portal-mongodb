@@ -308,7 +308,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
             <div className="flex flex-col">
               <span className="font-extrabold text-sm text-slate-900 tracking-tight flex items-center gap-1.5">
                 HR AI Agent
-                <span className="bg-[#FA7014]/10 text-[#FA7014] text-[9px] px-1.5 py-0.2 rounded font-bold border border-[#FA7014]/20">
+                <span className="bg-[#6050D0]/10 text-[#6050D0] text-[9px] px-1.5 py-0.2 rounded font-bold border border-[#6050D0]/20">
                   Platform
                 </span>
               </span>
@@ -345,11 +345,11 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
             onPointerUp={onDockUp}
             onPointerCancel={onDockUp}
             style={{ top: dockTop }}
-            className="hidden lg:flex fixed left-0 z-40 touch-none select-none bg-white/95 backdrop-blur-xs border border-l-0 border-slate-200 shadow-md py-2 px-3 rounded-r-xl hover:bg-orange-50 hover:text-[#FA7014] hover:border-orange-300 items-center gap-2 text-xs font-bold text-slate-700 transition-colors cursor-pointer group"
+            className="hidden lg:flex fixed left-0 z-40 touch-none select-none bg-white/95 backdrop-blur-xs border border-l-0 border-slate-200 shadow-md py-2 px-3 rounded-r-xl hover:bg-brand-50 hover:text-[#6050D0] hover:border-brand-300 items-center gap-2 text-xs font-bold text-slate-700 transition-colors cursor-pointer group"
             title="Open HR AI Agent side panel (drag to move up or down)"
             aria-label="Open HR AI Agent side panel"
           >
-            <PanelLeftOpen className="w-4 h-4 text-slate-500 group-hover:text-[#FA7014] transition-colors" />
+            <PanelLeftOpen className="w-4 h-4 text-slate-500 group-hover:text-[#6050D0] transition-colors" />
             <span className="text-[11px] font-bold tracking-tight">HR AI Agent</span>
           </button>
         )}
@@ -915,11 +915,11 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                 <ul className="absolute left-0 right-0 top-11 z-50 rounded-xl border border-slate-200 bg-white shadow-lg py-1 overflow-hidden">
                   {pageMatches.map((p) => (
                     <li key={p.id}>
-                      <button type="button" onClick={() => { onSelectModule(p.id); setPageQuery(''); }} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-orange-50 hover:text-[#FA7014] cursor-pointer">{p.label}</button>
+                      <button type="button" onClick={() => { onSelectModule(p.id); setPageQuery(''); }} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-[#6050D0] cursor-pointer">{p.label}</button>
                     </li>
                   ))}
                   <li className={pageMatches.length ? 'border-t border-slate-100' : ''}>
-                    <button type="button" onClick={() => { openAskHr(pageQuery.trim()); setPageQuery(''); }} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-orange-50 hover:text-[#FA7014] cursor-pointer truncate">Ask HR: {pageQuery.trim()}</button>
+                    <button type="button" onClick={() => { openAskHr(pageQuery.trim()); setPageQuery(''); }} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-[#6050D0] cursor-pointer truncate">Ask HR: {pageQuery.trim()}</button>
                   </li>
                 </ul>
               )}
@@ -947,7 +947,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                       <div className="mt-1 text-[11px] text-slate-400">{authLabel}</div>
                     </div>
                     <input ref={photoInput} type="file" accept="image/*" className="hidden" aria-label="Choose a profile photo" onChange={(e) => void choosePhoto(e.target.files?.[0])} />
-                    <button type="button" role="menuitem" onClick={() => photoInput.current?.click()} className="flex w-full items-center gap-2 rounded-lg border-t border-slate-100 px-2 pt-3 pb-2 text-sm font-semibold text-slate-700 hover:text-[#FA7014] cursor-pointer"><Camera className="h-4 w-4" />{photo ? 'Change photo' : 'Upload photo'}</button>
+                    <button type="button" role="menuitem" onClick={() => photoInput.current?.click()} className="flex w-full items-center gap-2 rounded-lg border-t border-slate-100 px-2 pt-3 pb-2 text-sm font-semibold text-slate-700 hover:text-[#6050D0] cursor-pointer"><Camera className="h-4 w-4" />{photo ? 'Change photo' : 'Upload photo'}</button>
                     {photo && <button type="button" role="menuitem" onClick={() => void removePhoto()} className="flex w-full items-center gap-2 rounded-lg px-2 pb-2 text-sm font-semibold text-slate-700 hover:text-rose-600 cursor-pointer">Remove photo</button>}
                     {photoMsg && <p className="px-2 pb-2 text-xs text-slate-600" role="status">{photoMsg}</p>}
                     {onLogout && <button id="btn-sidebar-logout" type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); onLogout(); }} className="flex w-full items-center gap-2 rounded-lg border-t border-slate-100 px-2 pt-3 pb-1 text-sm font-semibold text-slate-700 hover:text-rose-600 cursor-pointer"><LogOut className="h-4 w-4" />Log Out</button>}

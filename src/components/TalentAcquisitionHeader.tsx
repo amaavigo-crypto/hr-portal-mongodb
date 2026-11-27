@@ -43,7 +43,7 @@ export const TalentAcquisitionHeader: React.FC<TalentAcquisitionHeaderProps> = (
                 {isSidebarOpen ? (
                   <PanelLeftClose className="w-5 h-5" />
                 ) : (
-                  <PanelLeftOpen className="w-5 h-5 text-[#FA7014]" />
+                  <PanelLeftOpen className="w-5 h-5 text-[#6050D0]" />
                 )}
               </button>
             )}
@@ -63,13 +63,13 @@ export const TalentAcquisitionHeader: React.FC<TalentAcquisitionHeaderProps> = (
                     {currentUser.name || 'Talent Lead'}
                   </div>
                   {displayId && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-orange-50 text-[#FA7014] font-semibold border border-orange-200">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-50 text-[#6050D0] font-semibold border border-brand-200">
                       {displayId}
                     </span>
                   )}
                 </div>
                 <div className="text-[10px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#FA7014]" />
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#6050D0]" />
                   <span className="truncate max-w-[170px] font-medium" title={currentUser.title || 'Talent Acquisition'}>
                     {currentUser.title || 'Talent Acquisition & Recruitment'}
                   </span>

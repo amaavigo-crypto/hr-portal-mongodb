@@ -13,7 +13,7 @@ interface Props {
 
 const Count: React.FC<{ n: number; label: string; urgent?: boolean }> = ({ n, label, urgent }) => (
   <div>
-    <div className={`text-3xl font-black tabular-nums ${urgent && n > 0 ? 'text-[#FA7014]' : 'text-slate-800'}`}>{n}</div>
+    <div className={`text-3xl font-black tabular-nums ${urgent && n > 0 ? 'text-[#6050D0]' : 'text-slate-800'}`}>{n}</div>
     <div className="text-xs text-slate-500">{label}</div>
   </div>
 );
@@ -79,7 +79,7 @@ export const BODY: Partial<Record<WidgetId, (d: any) => React.ReactNode>> = {
   hiring: (d) => (
     <div className="space-y-1.5">
       {d.waiting.map((w: any) => (
-        <div key={w.status} className="flex items-center justify-between text-xs"><span className="text-slate-700">{w.label}</span><b className="text-[#FA7014]">{w.count}</b></div>
+        <div key={w.status} className="flex items-center justify-between text-xs"><span className="text-slate-700">{w.label}</span><b className="text-[#6050D0]">{w.count}</b></div>
       ))}
       <div className="text-[11px] text-slate-400">{d.open} open requisition{d.open === 1 ? '' : 's'}</div>
     </div>
@@ -98,9 +98,9 @@ export const BODY: Partial<Record<WidgetId, (d: any) => React.ReactNode>> = {
 
 export const WidgetCard: React.FC<{ w: DashboardWidget; onOpen: (t: WidgetTarget) => void }> = ({ w, onOpen }) => (
   <Card title={w.title} subtitle={w.reason}
-    className={w.urgent ? 'border-[#FA7014]/40' : ''}
+    className={w.urgent ? 'border-[#6050D0]/40' : ''}
     right={w.target ? (
-      <button type="button" onClick={() => onOpen(w.target!)} className="text-xs font-bold text-[#FA7014] inline-flex items-center gap-1 hover:underline" aria-label={`Open ${w.title}`}>
+      <button type="button" onClick={() => onOpen(w.target!)} className="text-xs font-bold text-[#6050D0] inline-flex items-center gap-1 hover:underline" aria-label={`Open ${w.title}`}>
         Open <ArrowRight className="w-3 h-3" />
       </button>
     ) : undefined}>
@@ -152,9 +152,9 @@ export const HomeDashboard: React.FC<Props> = ({ fallbackName, onOpen }) => {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {g.widgets.map((w) => (
               <Card key={w.id} title={w.title} subtitle={w.reason}
-                className={w.urgent ? 'border-[#FA7014]/40' : ''}
+                className={w.urgent ? 'border-[#6050D0]/40' : ''}
                 right={w.target ? (
-                  <button type="button" onClick={() => onOpen(w.target!)} className="text-xs font-bold text-[#FA7014] inline-flex items-center gap-1 hover:underline" aria-label={`Open ${w.title}`}>
+                  <button type="button" onClick={() => onOpen(w.target!)} className="text-xs font-bold text-[#6050D0] inline-flex items-center gap-1 hover:underline" aria-label={`Open ${w.title}`}>
                     Open <ArrowRight className="w-3 h-3" />
                   </button>
                 ) : undefined}>

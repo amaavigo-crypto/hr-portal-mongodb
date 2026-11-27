@@ -13,7 +13,7 @@ export const AnnouncementsCard: React.FC<{ kind: AnnouncementKind; canManage: bo
   return (
     <HomeCard
       title={ceo ? 'CEO speak' : 'Announcements'}
-      icon={ceo ? <Quote className="w-4 h-4 text-[#FA7014]" /> : <Megaphone className="w-4 h-4 text-[#FA7014]" />}
+      icon={ceo ? <Quote className="w-4 h-4 text-[#6050D0]" /> : <Megaphone className="w-4 h-4 text-[#6050D0]" />}
       right={canManage ? <button type="button" onClick={onManage} className="p-1 rounded hover:bg-slate-100" aria-label="Manage"><Settings2 className="w-4 h-4 text-slate-500" /></button> : undefined}
       loading={load.loading && !load.data} error={load.error} onRetry={load.reload}
       empty={items.length === 0} emptyText={ceo ? 'No message yet' : 'No announcements'}
@@ -22,7 +22,7 @@ export const AnnouncementsCard: React.FC<{ kind: AnnouncementKind; canManage: bo
         {(ceo ? items.slice(0, 1) : items).map((a) => (
           <li key={a.id} className={ceo ? '' : 'border-b border-slate-100 pb-3 last:border-0'}>
             <div className="flex items-start gap-1.5">
-              {a.pinned && <Pin className="w-3 h-3 mt-1 text-[#FA7014] shrink-0" aria-label="Pinned" />}
+              {a.pinned && <Pin className="w-3 h-3 mt-1 text-[#6050D0] shrink-0" aria-label="Pinned" />}
               <h3 className="text-sm font-bold text-slate-800">{a.title}</h3>
             </div>
             <p className="mt-1 text-xs text-slate-600 whitespace-pre-line">{a.body}</p>

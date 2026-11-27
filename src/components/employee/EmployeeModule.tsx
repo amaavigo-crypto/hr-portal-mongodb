@@ -91,7 +91,7 @@ export const EmployeeModule: React.FC<{ currentUser: User; canPick?: boolean; on
             <h2 className="text-base font-black text-slate-800">{entry.label}</h2>
             <p className="text-xs text-slate-500 mt-1">{entry.hint}</p>
             {link ? (
-              <button type="button" onClick={() => link.open(onOpenModule)} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#FA7014] text-white text-xs font-bold px-4 py-2">
+              <button type="button" onClick={() => link.open(onOpenModule)} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#6050D0] text-white text-xs font-bold px-4 py-2">
                 {link.label}<ExternalLink className="w-3.5 h-3.5" />
               </button>
             ) : (

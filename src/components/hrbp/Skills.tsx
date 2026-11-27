@@ -7,7 +7,7 @@ import { hrbpService } from '../../services/hrbpService';
 type Skill = { name: string; level: 1 | 2 | 3 };
 const LEVELS: [1 | 2 | 3, string][] = [[1, 'Learning'], [2, 'Good'], [3, 'Expert']];
 const STATUS: Record<string, [string, string]> = {
-  NONE: ['Not filled in', 'bg-slate-100 text-slate-700'], SUBMITTED: ['Waiting for confirmation', 'bg-orange-50 text-orange-800'], CONFIRMED: ['Confirmed', 'bg-emerald-50 text-emerald-800'],
+  NONE: ['Not filled in', 'bg-slate-100 text-slate-700'], SUBMITTED: ['Waiting for confirmation', 'bg-brand-50 text-brand-800'], CONFIRMED: ['Confirmed', 'bg-emerald-50 text-emerald-800'],
 };
 
 const SkillEditor: React.FC<{ skills: Skill[]; onChange: (s: Skill[]) => void }> = ({ skills, onChange }) => {
@@ -25,7 +25,7 @@ const SkillEditor: React.FC<{ skills: Skill[]; onChange: (s: Skill[]) => void }>
         {skills.map((s, i) => (
           <div key={s.name} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white py-1 pl-3 pr-1">
             <span className="text-sm font-semibold text-slate-900">{s.name}</span>
-            <select aria-label={`Level for ${s.name}`} value={s.level} onChange={(e) => onChange(skills.map((x, j) => (j === i ? { ...x, level: Number(e.target.value) as 1 | 2 | 3 } : x)))} className="rounded-lg border-0 bg-slate-50 py-1 pl-2 pr-6 text-xs text-slate-700 focus:ring-2 focus:ring-orange-300">
+            <select aria-label={`Level for ${s.name}`} value={s.level} onChange={(e) => onChange(skills.map((x, j) => (j === i ? { ...x, level: Number(e.target.value) as 1 | 2 | 3 } : x)))} className="rounded-lg border-0 bg-slate-50 py-1 pl-2 pr-6 text-xs text-slate-700 focus:ring-2 focus:ring-brand-300">
               {LEVELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
             <button type="button" aria-label={`Remove ${s.name}`} onClick={() => onChange(skills.filter((_, j) => j !== i))} className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700"><X className="h-3.5 w-3.5" /></button>
@@ -34,7 +34,7 @@ const SkillEditor: React.FC<{ skills: Skill[]; onChange: (s: Skill[]) => void }>
       </div>
       <div className="flex gap-2">
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} placeholder="Add skills, separated by commas (e.g. React, Figma, Sales)" aria-label="Add skills"
-          className="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none focus:ring-2 focus:ring-[#FA7014]/25" />
+          className="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-[#4C3EB0] focus:outline-none focus:ring-2 focus:ring-[#6050D0]/25" />
         <button type="button" onClick={add} disabled={!text.trim()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"><Plus className="h-4 w-4" /> Add</button>
       </div>
     </div>
@@ -65,7 +65,7 @@ export const MySkills: React.FC = () => {
       {data.suggested && <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">These are suggestions from your job title and certificates. Check them, add your own, and save.</div>}
       <SkillEditor skills={skills} onChange={setSkills} />
       {note && <p role={note.ok ? 'status' : 'alert'} className={`text-sm ${note.ok ? 'text-emerald-700' : 'text-rose-700'}`}>{note.text}</p>}
-      <button type="button" onClick={save} disabled={busy || skills.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-[#C2410C] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#9A3412] disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save my skills</button>
+      <button type="button" onClick={save} disabled={busy || skills.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-[#4C3EB0] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#3F3393] disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save my skills</button>
     </section>
   );
 };
@@ -103,7 +103,7 @@ export const TeamSkills: React.FC = () => {
             {open === p.uid && (
               <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                 <SkillEditor skills={edit} onChange={setEdit} />
-                <button type="button" onClick={() => confirm(p.uid)} disabled={busy || edit.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-[#C2410C] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#9A3412] disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Confirm these skills</button>
+                <button type="button" onClick={() => confirm(p.uid)} disabled={busy || edit.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-[#4C3EB0] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#3F3393] disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Confirm these skills</button>
               </div>
             )}
           </div>

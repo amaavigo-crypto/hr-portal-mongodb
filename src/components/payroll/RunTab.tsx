@@ -8,7 +8,7 @@ import { PayslipViewer } from './MyPayslips';
 const STEPS = [['DRAFT', 'Draft'], ['APPROVED', 'Approved'], ['LOCKED', 'Locked'], ['PAID', 'Paid']] as const;
 
 const Stat: React.FC<{ label: string; value: string; strong?: boolean }> = ({ label, value, strong }) => (
-  <div className={`rounded-2xl border border-white px-4 py-3 ${strong ? 'bg-orange-50' : 'bg-slate-50'}`}>
+  <div className={`rounded-2xl border border-white px-4 py-3 ${strong ? 'bg-brand-50' : 'bg-slate-50'}`}>
     <div className="text-xs font-semibold text-slate-600">{label}</div>
     <div className="text-xl font-bold text-slate-950 tabular-nums">{value}</div>
   </div>

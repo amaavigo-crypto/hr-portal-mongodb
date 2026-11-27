@@ -13,7 +13,7 @@ export const FilesCard: React.FC<{ onOpen: (t: WidgetTarget) => void; refreshKey
   const cur = tab === 'org' ? org : mine;
   const empty = !cur.data || cur.data.items.length === 0;
   return (
-    <HomeCard title="Important files" icon={<FolderOpen className="w-4 h-4 text-[#FA7014]" />} loading={cur.loading && !cur.data} error={cur.error} onRetry={cur.reload}>
+    <HomeCard title="Important files" icon={<FolderOpen className="w-4 h-4 text-[#6050D0]" />} loading={cur.loading && !cur.data} error={cur.error} onRetry={cur.reload}>
       <Tabs value={tab} onChange={setTab} items={[{ value: 'org', label: 'Organization' }, { value: 'employee', label: 'Employee' }]} />
       {empty ? <p className="py-6 text-center text-xs text-slate-400">No files to show</p> : (
         <ul className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
@@ -26,7 +26,7 @@ export const FilesCard: React.FC<{ onOpen: (t: WidgetTarget) => void; refreshKey
                   <div className="text-[11px] text-slate-500 truncate">{[f.category, `v${f.versionNumber}`, f.date && niceDate(f.date)].filter(Boolean).join(' · ')}</div>
                 </div>
                 {href ? <a href={href} target="_blank" rel="noopener noreferrer" download className="p-1.5 rounded hover:bg-slate-100" aria-label={`Download ${f.title}`}><Download className="w-4 h-4 text-slate-500" /></a>
-                  : <button type="button" className="text-[11px] font-bold text-[#FA7014]" onClick={() => onOpen({ module: 'document-version-control', docTab: 'employee' })}>Open</button>}
+                  : <button type="button" className="text-[11px] font-bold text-[#6050D0]" onClick={() => onOpen({ module: 'document-version-control', docTab: 'employee' })}>Open</button>}
               </li>
             );
           })}
@@ -36,7 +36,7 @@ export const FilesCard: React.FC<{ onOpen: (t: WidgetTarget) => void; refreshKey
                 <div className="text-xs font-bold text-slate-800 truncate">{f.title}</div>
                 <div className="text-[11px] text-slate-500">{f.kind === 'PAYSLIP' ? 'Payslip' : 'Letter'}{f.date ? ` · ${niceDate(f.date)}` : ''}</div>
               </div>
-              <button type="button" className="text-[11px] font-bold text-[#FA7014]" onClick={() => onOpen(f.target)}>Open</button>
+              <button type="button" className="text-[11px] font-bold text-[#6050D0]" onClick={() => onOpen(f.target)}>Open</button>
             </li>
           ))}
         </ul>

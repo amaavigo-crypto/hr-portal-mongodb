@@ -28,7 +28,7 @@ const Stat: React.FC<{ label: string; value: number | string; hint?: string; onC
 const Row: React.FC<{ title: string; detail: string; action: string; onClick: () => void }> = ({ title, detail, action, onClick }) => (
   <li className="flex items-center gap-4 border-b border-[#eef0f2] py-3.5">
     <div className="min-w-0 flex-1"><div className="text-sm font-semibold text-[#16181d]">{title}</div><div className="mt-0.5 truncate text-[13px] text-[#5c626d]">{detail}</div></div>
-    <button type="button" onClick={onClick} className="h-8 shrink-0 cursor-pointer rounded-md border border-[#dfe1e5] px-3.5 text-[13px] font-semibold text-[#16181d] hover:border-[#c2500a]">{action}</button>
+    <button type="button" onClick={onClick} className="h-8 shrink-0 cursor-pointer rounded-md border border-[#dfe1e5] px-3.5 text-[13px] font-semibold text-[#16181d] hover:border-[#4C3EB0]">{action}</button>
   </li>
 );
 
@@ -87,7 +87,7 @@ const HomeBody: React.FC<{ currentUser: User; access: HiringAccess; onNavigate: 
             <section>
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-[#16181d]">Pipeline</h2>
-                <button type="button" onClick={() => onNavigate('talent-acquisition-pipeline')} className="cursor-pointer text-[13px] font-semibold text-[#a84308] hover:underline">View candidates</button>
+                <button type="button" onClick={() => onNavigate('talent-acquisition-pipeline')} className="cursor-pointer text-[13px] font-semibold text-[#3F3393] hover:underline">View candidates</button>
               </div>
               {board.error ? <p className="text-sm text-rose-700" role="alert">{board.error}</p> : STAGES.map((s, i) => (
                 <div key={s} className="grid grid-cols-[96px_minmax(0,1fr)_36px] items-center gap-3 py-1.5 text-[13px]">

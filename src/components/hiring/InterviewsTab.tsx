@@ -28,7 +28,7 @@ export const FeedbackPanel: React.FC<{ interviewId: string; manager: boolean; on
           {(d.criteria as string[]).map((c) => (
             <div key={c} className="flex items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-slate-700">{c}</span>
-              <div className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setRatings({ ...ratings, [c]: n })} className={`h-7 w-7 rounded-md border text-xs font-bold ${ratings[c] === n ? 'border-[#FA7014] bg-[#FA7014] text-white' : 'border-slate-300 bg-white text-slate-600'}`}>{n}</button>)}</div>
+              <div className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setRatings({ ...ratings, [c]: n })} className={`h-7 w-7 rounded-md border text-xs font-bold ${ratings[c] === n ? 'border-[#6050D0] bg-[#6050D0] text-white' : 'border-slate-300 bg-white text-slate-600'}`}>{n}</button>)}</div>
             </div>
           ))}
           <Field label="Recommendation"><select className={input} value={rec} onChange={(e) => setRec(e.target.value)}>{RECS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>

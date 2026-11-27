@@ -24,7 +24,7 @@ const STATUS_STYLE: Record<RequisitionStatus, string> = {
   PENDING_ASSIGNMENT: 'bg-amber-100 text-amber-800',
   PENDING_HR: 'bg-blue-100 text-blue-800',
   PENDING_FOUNDER: 'bg-violet-100 text-violet-800',
-  JD_DRAFT: 'bg-orange-100 text-[#C2570C]',
+  JD_DRAFT: 'bg-brand-100 text-[#4C3EB0]',
   JOB_OPEN: 'bg-emerald-100 text-emerald-800',
   REJECTED: 'bg-rose-100 text-rose-800',
   CLOSED: 'bg-slate-200 text-slate-700',
@@ -40,7 +40,7 @@ const TILE = {
   purple: ['bg-gradient-to-br from-violet-100/80 to-indigo-50', 'bg-violet-100 text-violet-600'],
   blue: ['bg-gradient-to-br from-sky-100/80 to-blue-50', 'bg-sky-100 text-sky-600'],
   green: ['bg-gradient-to-br from-emerald-100/70 to-green-50', 'bg-emerald-100 text-emerald-600'],
-  orange: ['bg-gradient-to-br from-orange-100/80 to-amber-50', 'bg-orange-100 text-[#F36B21]'],
+  orange: ['bg-gradient-to-br from-brand-100/80 to-brand-50', 'bg-brand-100 text-[#6050D0]'],
 } as const;
 
 export const RequisitionsModule: React.FC<Props> = ({ currentUser, users, embedded = false }) => {
@@ -200,7 +200,7 @@ export const RequisitionsModule: React.FC<Props> = ({ currentUser, users, embedd
                     <td className="px-4 py-4 tabular-nums text-slate-800">{r.vacancies}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-slate-800">{fmt(r.createdAt)}</td>
                     <td className="px-4 py-4">{needsMyAction(currentUser, r)
-                      ? <button type="button" onClick={() => setOpenId(r.id)} className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-bold text-[#B94B0D]"><AlertCircle className="h-3.5 w-3.5" />Your turn</button>
+                      ? <button type="button" onClick={() => setOpenId(r.id)} className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-bold text-[#B94B0D]"><AlertCircle className="h-3.5 w-3.5" />Your turn</button>
                       : <button type="button" aria-label={`Open ${r.reqNo}`} onClick={() => setOpenId(r.id)} className="cursor-pointer rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"><MoreHorizontal className="h-5 w-5" /></button>}</td>
                   </tr>))}</tbody>
               </table>

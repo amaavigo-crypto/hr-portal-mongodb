@@ -109,7 +109,7 @@ function markdownToHtml(md: string): string {
       result.push(`<h1 style="font-size: 24px; font-weight: bold; color: #0f172a; margin-top: 16px; margin-bottom: 8px;">${parseInlineMarkdown(trimmed.substring(2))}</h1>`);
     } else if (trimmed.startsWith('## ')) {
       if (inList) { result.push('</ul>'); inList = false; }
-      result.push(`<h2 style="font-size: 18px; font-weight: bold; color: #FA7014; margin-top: 14px; margin-bottom: 6px;">${parseInlineMarkdown(trimmed.substring(3))}</h2>`);
+      result.push(`<h2 style="font-size: 18px; font-weight: bold; color: #6050D0; margin-top: 14px; margin-bottom: 6px;">${parseInlineMarkdown(trimmed.substring(3))}</h2>`);
     } else if (trimmed.startsWith('### ')) {
       if (inList) { result.push('</ul>'); inList = false; }
       result.push(`<h3 style="font-size: 15px; font-weight: bold; color: #334155; margin-top: 12px; margin-bottom: 4px;">${parseInlineMarkdown(trimmed.substring(4))}</h3>`);
@@ -405,7 +405,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
             <select
               onChange={(e) => handleFontFamilyChange(e.target.value)}
               defaultValue=""
-              className="text-xs bg-white border border-slate-200 text-slate-800 rounded-lg px-2 py-1 focus:ring-2 focus:ring-[#FA7014] focus:outline-hidden cursor-pointer"
+              className="text-xs bg-white border border-slate-200 text-slate-800 rounded-lg px-2 py-1 focus:ring-2 focus:ring-[#6050D0] focus:outline-hidden cursor-pointer"
               title="Font Family"
             >
               <option value="" disabled>Font Family</option>
@@ -418,7 +418,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
             <select
               onChange={(e) => handleFontSizeChange(e.target.value)}
               defaultValue=""
-              className="text-xs bg-white border border-slate-200 text-slate-800 rounded-lg px-2 py-1 focus:ring-2 focus:ring-[#FA7014] focus:outline-hidden cursor-pointer"
+              className="text-xs bg-white border border-slate-200 text-slate-800 rounded-lg px-2 py-1 focus:ring-2 focus:ring-[#6050D0] focus:outline-hidden cursor-pointer"
               title="Font Size"
             >
               <option value="" disabled>Font Size</option>
@@ -444,7 +444,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
               className="p-1.5 text-slate-700 hover:text-slate-900 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
               title="Heading 2"
             >
-              <Heading2 className="w-4 h-4 text-[#FA7014]" />
+              <Heading2 className="w-4 h-4 text-[#6050D0]" />
             </button>
             <button
               type="button"
@@ -518,7 +518,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
               className="p-1.5 text-slate-800 hover:bg-white rounded-lg flex items-center space-x-1 transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
               title="Text Color"
             >
-              <Palette className="w-4 h-4 text-[#FA7014]" />
+              <Palette className="w-4 h-4 text-[#6050D0]" />
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
@@ -664,7 +664,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
             className="p-1.5 text-slate-700 hover:text-slate-900 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
             title="Insert Compliance Callout Box"
           >
-            <AlertCircle className="w-4 h-4 text-[#FA7014]" />
+            <AlertCircle className="w-4 h-4 text-[#6050D0]" />
           </button>
           <button
             type="button"
@@ -737,7 +737,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
                   placeholder="e.g. Employee Portal Guide"
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FA7014] focus:outline-hidden"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#6050D0] focus:outline-hidden"
                 />
               </div>
 
@@ -748,7 +748,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
                   placeholder="e.g. https://amaavigo.com/policy-guide"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FA7014] focus:outline-hidden"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#6050D0] focus:outline-hidden"
                 />
               </div>
             </div>
@@ -765,7 +765,7 @@ export const WysiwygDocumentEditor: React.FC<WysiwygDocumentEditorProps> = ({
                 type="button"
                 onClick={handleConfirmInsertLink}
                 disabled={!linkUrl}
-                className="px-4 py-2 bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold rounded-xl shadow-xs disabled:opacity-50"
+                className="px-4 py-2 bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold rounded-xl shadow-xs disabled:opacity-50"
               >
                 Insert Link
               </button>

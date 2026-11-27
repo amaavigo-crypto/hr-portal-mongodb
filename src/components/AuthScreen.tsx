@@ -6,7 +6,7 @@ import { registerCompany, requestPasswordReset, signIn } from '../services/authS
 type Mode = 'signin' | 'signup' | 'forgot';
 
 const field =
-  'w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#FA7014] focus:outline-none focus:ring-2 focus:ring-[#FA7014]/20';
+  'w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#6050D0] focus:outline-none focus:ring-2 focus:ring-[#6050D0]/20';
 
 const Field: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
   <div className="relative">
@@ -66,7 +66,7 @@ export const AuthScreen: React.FC = () => {
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#F8FAFC] lg:h-screen lg:flex-row lg:overflow-hidden">
       <div className="relative flex w-full flex-col items-center justify-center overflow-y-auto px-4 py-8 sm:px-8 lg:h-full lg:w-[58%] xl:w-[60%]">
-        <div className="pointer-events-none absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-[#FA7014]/5 blur-3xl" />
+        <div className="pointer-events-none absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-[#6050D0]/5 blur-3xl" />
 
         <div className="relative z-10 w-full max-w-[460px]">
           <div className="mb-5 text-center">
@@ -145,7 +145,7 @@ export const AuthScreen: React.FC = () => {
             <button
               type="submit"
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FA7014] py-2.5 text-sm font-bold text-white transition hover:bg-[#E65A05] disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#6050D0] py-2.5 text-sm font-bold text-white transition hover:bg-[#5243BE] disabled:opacity-60"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Register company' : 'Send reset link'}
@@ -154,15 +154,15 @@ export const AuthScreen: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
               {mode === 'signin' ? (
                 <>
-                  <button type="button" className="hover:text-[#FA7014]" onClick={() => switchMode('forgot')}>
+                  <button type="button" className="hover:text-[#6050D0]" onClick={() => switchMode('forgot')}>
                     Forgot password?
                   </button>
-                  <button type="button" className="hover:text-[#FA7014]" onClick={() => switchMode('signup')}>
+                  <button type="button" className="hover:text-[#6050D0]" onClick={() => switchMode('signup')}>
                     Register a company
                   </button>
                 </>
               ) : (
-                <button type="button" className="hover:text-[#FA7014]" onClick={() => switchMode('signin')}>
+                <button type="button" className="hover:text-[#6050D0]" onClick={() => switchMode('signin')}>
                   Back to sign in
                 </button>
               )}

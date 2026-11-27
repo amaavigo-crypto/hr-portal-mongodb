@@ -92,7 +92,7 @@ export const EmployeeProfilePage: React.FC<{ uid?: string }> = ({ uid }) => {
             <Avatar name={p.name} size="xl" photo={p.photo} />
             {data.canPhoto && (
               <button type="button" disabled={photoBusy} aria-label={p.photo ? 'Change profile photo' : 'Upload profile photo'} onClick={() => fileRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-slate-300 shadow flex items-center justify-center text-slate-600 hover:text-[#FA7014] disabled:opacity-50">
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-slate-300 shadow flex items-center justify-center text-slate-600 hover:text-[#6050D0] disabled:opacity-50">
                 <Camera className="w-3.5 h-3.5" />
               </button>
             )}

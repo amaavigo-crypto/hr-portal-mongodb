@@ -243,7 +243,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Approver & Governance Portal</h1>
-            <span className="bg-[#FA7014]/10 text-[#FA7014] text-xs px-3 py-0.5 rounded-full font-semibold border border-[#FA7014]/30">
+            <span className="bg-[#6050D0]/10 text-[#6050D0] text-xs px-3 py-0.5 rounded-full font-semibold border border-[#6050D0]/30">
               Authorized Approver Queue
             </span>
           </div>
@@ -253,7 +253,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
         </div>
 
         <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-xs">
-          <Clock className="w-5 h-5 text-[#FA7014]" />
+          <Clock className="w-5 h-5 text-[#6050D0]" />
           <span className="text-xs font-bold text-slate-900">
             {reviewQueue.length} {reviewQueue.length === 1 ? 'Document' : 'Documents'} Waiting for Review
           </span>
@@ -265,14 +265,14 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
         <div
           onClick={() => setActiveView('queue')}
           className={`bg-white p-5 rounded-2xl shadow-sm border transition-all cursor-pointer ${
-            activeView === 'queue' ? 'border-[#FA7014] ring-2 ring-[#FA7014]/20' : 'border-slate-200 hover:border-slate-300'
+            activeView === 'queue' ? 'border-[#6050D0] ring-2 ring-[#6050D0]/20' : 'border-slate-200 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Pending Review</span>
-            <Clock className="w-4 h-4 text-[#FA7014]" />
+            <Clock className="w-4 h-4 text-[#6050D0]" />
           </div>
-          <div className="mt-2 text-2xl font-extrabold text-[#FA7014]">{reviewQueue.length}</div>
+          <div className="mt-2 text-2xl font-extrabold text-[#6050D0]">{reviewQueue.length}</div>
           <div className="text-[11px] text-slate-500 mt-1">Action Required</div>
         </div>
 
@@ -305,7 +305,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
         <div
           onClick={() => setActiveView('consolidated')}
           className={`bg-white p-5 rounded-2xl shadow-sm border transition-all cursor-pointer ${
-            activeView === 'consolidated' ? 'border-[#FA7014] ring-2 ring-[#FA7014]/20' : 'border-slate-200 hover:border-slate-300'
+            activeView === 'consolidated' ? 'border-[#6050D0] ring-2 ring-[#6050D0]/20' : 'border-slate-200 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
@@ -320,7 +320,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
       {/* EMPLOYEE COMPLIANCE BANNER */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-[#FA7014]/10 border border-[#FA7014]/20 flex items-center justify-center shrink-0 text-[#FA7014]">
+          <div className="w-10 h-10 rounded-xl bg-[#6050D0]/10 border border-[#6050D0]/20 flex items-center justify-center shrink-0 text-[#6050D0]">
             <Users className="w-5 h-5" />
           </div>
           <div>
@@ -347,7 +347,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
           onClick={() => setActiveView('queue')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
             activeView === 'queue'
-              ? 'bg-[#FA7014] text-white shadow-sm'
+              ? 'bg-[#6050D0] text-white shadow-sm'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
@@ -388,9 +388,9 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
           <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-[#FA7014]" />
+                <ShieldCheck className="w-5 h-5 text-[#6050D0]" />
                 <h2 className="text-base font-bold text-slate-900">Pending Review Queue (Action Required)</h2>
-                <span className="bg-[#FA7014]/10 text-[#FA7014] border border-[#FA7014]/30 text-xs px-2.5 py-0.5 rounded-full font-bold">
+                <span className="bg-[#6050D0]/10 text-[#6050D0] border border-[#6050D0]/30 text-xs px-2.5 py-0.5 rounded-full font-bold">
                   {reviewQueue.length}
                 </span>
               </div>
@@ -407,7 +407,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                 placeholder="Search queue..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
+                className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -462,7 +462,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
 
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col items-start gap-1">
-                            <span className="font-bold text-xs text-[#FA7014] bg-[#FA7014]/10 border border-[#FA7014]/25 px-2.5 py-1 rounded-lg">
+                            <span className="font-bold text-xs text-[#6050D0] bg-[#6050D0]/10 border border-[#6050D0]/25 px-2.5 py-1 rounded-lg">
                               v{ver.versionNumber}
                             </span>
                             <span className="text-[11px] text-slate-500 font-mono font-medium">
@@ -515,7 +515,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                               title={`Download Version v${ver.versionNumber}`}
                             >
                               {downloadingVersionId === ver.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FA7014]" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6050D0]" />
                               ) : (
                                 <Download className="w-3.5 h-3.5 text-slate-600" />
                               )}
@@ -531,7 +531,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                               <button
                                 id={`btn-review-${ver.id}`}
                                 onClick={() => onOpenReviewModal(ver)}
-                                className="inline-flex items-center space-x-1.5 bg-[#FA7014] hover:bg-[#E65A05] text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-md shadow-[#FA7014]/20 transition-all border border-orange-500/30 cursor-pointer"
+                                className="inline-flex items-center space-x-1.5 bg-[#6050D0] hover:bg-[#5243BE] text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-md shadow-[#6050D0]/20 transition-all border border-brand-500/30 cursor-pointer"
                               >
                                 <GitCompare className="w-3.5 h-3.5" />
                                 <span>Review & Decide</span>
@@ -576,7 +576,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                   placeholder="Search by ID, title, or department..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -592,7 +592,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                 id="filter-category-approver"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#FA7014] cursor-pointer"
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#6050D0] cursor-pointer"
               >
                 <option value="ALL">All Categories</option>
                 {Object.values(DocumentCategory).map((cat) => (
@@ -605,7 +605,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
               <select
                 value={selectedDept}
                 onChange={(e) => setSelectedDept(e.target.value)}
-                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#FA7014]"
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#6050D0]"
               >
                 <option value="ALL">All Departments</option>
                 {departments.map((d) => (
@@ -618,7 +618,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#FA7014]"
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#6050D0]"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="PUBLISHED">Published / Live</option>
@@ -700,7 +700,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
 
                         <td className="px-6 py-4 whitespace-nowrap">
                           {hasPendingReview ? (
-                            <span className="inline-flex items-center space-x-1 text-xs font-semibold text-[#FA7014] bg-[#FA7014]/10 border border-[#FA7014]/30 px-2.5 py-1 rounded-lg">
+                            <span className="inline-flex items-center space-x-1 text-xs font-semibold text-[#6050D0] bg-[#6050D0]/10 border border-[#6050D0]/30 px-2.5 py-1 rounded-lg">
                               <Clock className="w-3.5 h-3.5 animate-pulse" />
                               <span>Pending Review</span>
                             </span>
@@ -733,7 +733,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                                   const pendingVer = docVers.find((v) => v.status === VersionStatus.IN_REVIEW);
                                   if (pendingVer) onOpenReviewModal(pendingVer);
                                 }}
-                                className="inline-flex items-center space-x-1 text-xs font-semibold text-white bg-[#FA7014] hover:bg-[#e0620f] px-3 py-1.5 rounded-lg transition-colors shadow-xs cursor-pointer"
+                                className="inline-flex items-center space-x-1 text-xs font-semibold text-white bg-[#6050D0] hover:bg-[#e0620f] px-3 py-1.5 rounded-lg transition-colors shadow-xs cursor-pointer"
                               >
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 <span>Review v{docVers.find((v) => v.status === VersionStatus.IN_REVIEW)?.versionNumber || ''}</span>
@@ -851,7 +851,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({
                             title={`Download Version v${ver.versionNumber}`}
                           >
                             {downloadingVersionId === ver.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FA7014]" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6050D0]" />
                             ) : (
                               <Download className="w-3.5 h-3.5 text-slate-600" />
                             )}

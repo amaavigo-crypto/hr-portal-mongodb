@@ -130,7 +130,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`-mb-px border-b-2 px-4 py-2 text-sm font-bold ${tab === id ? 'border-[#FA7014] text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-bold ${tab === id ? 'border-[#6050D0] text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
             >
               {label}
             </button>
@@ -184,7 +184,7 @@ export const PlatformAdminView: React.FC<Props> = ({ email, onLogout }) => {
                             <button
                               disabled={busy || !mods.length}
                               onClick={() => run(c, () => platformApi.updateModules(c.id, mods))}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-[#FA7014] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#E65A05] disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-[#6050D0] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#5243BE] disabled:opacity-50"
                             >
                               Save modules
                             </button>

@@ -61,7 +61,7 @@ export const usePipelineData = (days: number, refreshKey: number): PipelineData 
   return { rows, all, reqs, days, loading: board.loading, error: board.error || '', reload: board.reload, trend };
 };
 
-const SELECT = 'h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] outline-none focus:border-[#c2500a]';
+const SELECT = 'h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] outline-none focus:border-[#4C3EB0]';
 
 export const PipelineBoard: React.FC<{ d: PipelineData; onOpenCandidate: (id: string) => void }> = ({ d, onOpenCandidate }) => {
   const [role, setRole] = useState('');
@@ -89,11 +89,11 @@ export const PipelineBoard: React.FC<{ d: PipelineData; onOpenCandidate: (id: st
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] max-w-sm flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input className="h-9 w-full rounded-lg border border-[#dfe1e5] bg-white pl-9 pr-3 text-[13px] outline-none focus:border-[#c2500a]" placeholder="Search by name, email or role" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search candidates" /></div>
+        <div className="relative min-w-[220px] max-w-sm flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input className="h-9 w-full rounded-lg border border-[#dfe1e5] bg-white pl-9 pr-3 text-[13px] outline-none focus:border-[#4C3EB0]" placeholder="Search by name, email or role" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search candidates" /></div>
         <select className={SELECT} value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role"><option value="">All roles</option>{roles.map((x) => <option key={x} value={x}>{x}</option>)}</select>
         {depts.length > 0 && <select className={SELECT} value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department"><option value="">All departments</option>{depts.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
         <select className={SELECT} value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source"><option value="">All sources</option>{sources.map((x) => <option key={x} value={x}>{x}</option>)}</select>
-        {filtered && <button type="button" className="h-9 cursor-pointer px-2 text-[13px] font-semibold text-[#a84308] hover:underline" onClick={() => { setRole(''); setDept(''); setSource(''); setQ(''); }}>Clear filters</button>}
+        {filtered && <button type="button" className="h-9 cursor-pointer px-2 text-[13px] font-semibold text-[#3F3393] hover:underline" onClick={() => { setRole(''); setDept(''); setSource(''); setQ(''); }}>Clear filters</button>}
       </div>
       {d.error && <p className="rounded-lg bg-[#fdeceb] px-4 py-3 text-sm text-[#b42318]" role="alert">{d.error}</p>}
 

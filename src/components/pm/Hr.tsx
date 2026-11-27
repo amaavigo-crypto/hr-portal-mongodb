@@ -171,7 +171,7 @@ export const Reports: React.FC<{ hr: boolean }> = ({ hr }) => {
       </div>
       <Card title="Rating distribution (shared reviews)">
         <div className="space-y-1.5">{Object.entries(data.distribution as Record<string, number>).map(([band, n]) => (
-          <div key={band} className="flex items-center gap-2 text-sm"><span className="w-36 text-slate-600">{band}</span><div className="flex-1 bg-slate-100 rounded h-4"><div className="bg-[#FA7014] h-4 rounded" style={{ width: `${(n / maxDist) * 100}%` }} /></div><span className="w-8 text-right font-bold">{n}</span></div>
+          <div key={band} className="flex items-center gap-2 text-sm"><span className="w-36 text-slate-600">{band}</span><div className="flex-1 bg-slate-100 rounded h-4"><div className="bg-[#6050D0] h-4 rounded" style={{ width: `${(n / maxDist) * 100}%` }} /></div><span className="w-8 text-right font-bold">{n}</span></div>
         ))}</div>
       </Card>
       <Card title="By department">

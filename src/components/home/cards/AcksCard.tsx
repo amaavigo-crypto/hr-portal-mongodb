@@ -11,7 +11,7 @@ export const AcksCard: React.FC<{ onOpen: (t: WidgetTarget) => void; refreshKey:
   const d = load.data;
   const list = d?.allowed ? d[tab] : undefined;
   return (
-    <HomeCard title="Acknowledgements" icon={<ClipboardCheck className="w-4 h-4 text-[#FA7014]" />} loading={load.loading && !d} error={load.error} onRetry={load.reload}
+    <HomeCard title="Acknowledgements" icon={<ClipboardCheck className="w-4 h-4 text-[#6050D0]" />} loading={load.loading && !d} error={load.error} onRetry={load.reload}
       empty={!!d && !d.allowed} emptyText="Nothing to acknowledge">
       <Tabs value={tab} onChange={setTab} items={[{ value: 'active', label: 'Active', count: d?.active?.count }, { value: 'completed', label: 'Completed', count: d?.completed?.count }]} />
       {!list || list.items.length === 0 ? <p className="py-6 text-center text-xs text-slate-400">{tab === 'active' ? 'You are all caught up' : 'Nothing acknowledged yet'}</p> : (
@@ -22,7 +22,7 @@ export const AcksCard: React.FC<{ onOpen: (t: WidgetTarget) => void; refreshKey:
                 <div className="text-xs font-bold text-slate-800 truncate">{a.title}</div>
                 <div className="text-[11px] text-slate-500">v{a.versionNumber}</div>
               </div>
-              {tab === 'active' && <button type="button" className="text-[11px] font-bold text-[#FA7014]" onClick={() => onOpen({ module: 'document-version-control', docTab: 'employee' })}>Review</button>}
+              {tab === 'active' && <button type="button" className="text-[11px] font-bold text-[#6050D0]" onClick={() => onOpen({ module: 'document-version-control', docTab: 'employee' })}>Review</button>}
             </li>
           ))}
         </ul>

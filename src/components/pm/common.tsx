@@ -9,7 +9,7 @@ export const Intro: React.FC<{ title: string; what: string; todo?: string }> = (
   <div className="mb-4">
     <h2 className="text-lg font-extrabold text-slate-900">{title}</h2>
     <p className="text-sm text-slate-600 mt-0.5">{what}</p>
-    {todo && <p className="text-sm text-slate-800 mt-1.5 flex items-start gap-1.5"><Info className="w-4 h-4 mt-0.5 text-[#FA7014] shrink-0" /><span><b>What to do:</b> {todo}</span></p>}
+    {todo && <p className="text-sm text-slate-800 mt-1.5 flex items-start gap-1.5"><Info className="w-4 h-4 mt-0.5 text-[#6050D0] shrink-0" /><span><b>What to do:</b> {todo}</span></p>}
   </div>
 );
 
@@ -31,7 +31,7 @@ export const RatingPick: React.FC<{ value: unknown; onChange: (v: number | 'NO' 
   <div role="radiogroup" aria-label={label || 'Rating'} className="flex flex-wrap gap-1.5">
     {[1, 2, 3, 4, 5].map((n) => (
       <button key={n} type="button" role="radio" aria-checked={value === n} disabled={disabled} title={RATING_HELP[n]} onClick={() => onChange(value === n ? null : n)}
-        className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold text-left leading-tight transition-colors disabled:opacity-60 ${value === n ? 'bg-[#FA7014] border-[#FA7014] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
+        className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold text-left leading-tight transition-colors disabled:opacity-60 ${value === n ? 'bg-[#6050D0] border-[#6050D0] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
         <span className="text-sm">{n}</span><span className="block text-[10px] font-medium opacity-90">{RATING_WORDS[n]}</span>
       </button>
     ))}

@@ -316,8 +316,8 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
         {/* MODAL HEADER */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FA7014]/20 border border-[#FA7014]/40 flex items-center justify-center shadow-inner">
-              <ShieldCheck className="w-6 h-6 text-[#FA7014]" />
+            <div className="w-10 h-10 rounded-xl bg-[#6050D0]/20 border border-[#6050D0]/40 flex items-center justify-center shadow-inner">
+              <ShieldCheck className="w-6 h-6 text-[#6050D0]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
@@ -331,7 +331,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                       : version.status === VersionStatus.REVISION_REQUIRED
                       ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                      : 'bg-[#FA7014]/20 text-[#FA7014] border-[#FA7014]/30'
+                      : 'bg-[#6050D0]/20 text-[#6050D0] border-[#6050D0]/30'
                   }`}
                 >
                   v{version.versionNumber} ({version.status.replace('_', ' ')})
@@ -341,7 +341,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 Submitted by <span className="text-slate-200 font-semibold">{creator.name}</span>
                 {creator.title && <span className="text-slate-400"> ({creator.title})</span>} on{' '}
                 {formatISTDate(version.createdAt)} • Comparison Baseline:{' '}
-                <span className="text-[#FA7014] font-semibold">
+                <span className="text-[#6050D0] font-semibold">
                   {activeBaseline
                     ? `v${activeBaseline.versionNumber} (${activeBaseline.status.replace('_', ' ')})`
                     : 'Initial Baseline'}
@@ -359,7 +359,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
               title={`Download Version v${version.versionNumber} (${version.fileName || 'PDF'})`}
             >
               {isDownloading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FA7014]" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6050D0]" />
               ) : (
                 <Download className="w-3.5 h-3.5 text-slate-300" />
               )}
@@ -425,7 +425,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
             </div>
             <div>
               <span className="text-slate-500">Revised Effective Date:</span>{' '}
-              <span className="font-bold text-[#FA7014] font-mono">{formatDDMMYYYY(version.effectiveFrom || version.createdAt)}</span>
+              <span className="font-bold text-[#6050D0] font-mono">{formatDDMMYYYY(version.effectiveFrom || version.createdAt)}</span>
             </div>
             <div>
               <span className="text-slate-500">Re-review Date:</span>{' '}
@@ -446,7 +446,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
               onClick={() => setActiveTab('sideBySide')}
               className={`pb-3 text-xs font-bold transition-all border-b-2 flex items-center space-x-1.5 ${
                 activeTab === 'sideBySide'
-                  ? 'border-[#FA7014] text-[#FA7014]'
+                  ? 'border-[#6050D0] text-[#6050D0]'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -459,7 +459,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
               onClick={() => setActiveTab('summary')}
               className={`pb-3 text-xs font-bold transition-all border-b-2 flex items-center space-x-1.5 ${
                 activeTab === 'summary'
-                  ? 'border-[#FA7014] text-[#FA7014]'
+                  ? 'border-[#6050D0] text-[#6050D0]'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -472,14 +472,14 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
               onClick={() => setActiveTab('fullText')}
               className={`pb-3 text-xs font-bold transition-all border-b-2 flex items-center space-x-1.5 ${
                 activeTab === 'fullText'
-                  ? 'border-[#FA7014] text-[#FA7014]'
+                  ? 'border-[#6050D0] text-[#6050D0]'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Full Submitted Document</span>
               {inlineComments.length > 0 && (
-                <span className="bg-[#FA7014] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-1">
+                <span className="bg-[#6050D0] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-1">
                   {inlineComments.length}
                 </span>
               )}
@@ -491,7 +491,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {loading ? (
             <div className="py-20 text-center text-slate-500">
-              <Clock className="w-8 h-8 mx-auto mb-2 animate-spin text-[#FA7014]" />
+              <Clock className="w-8 h-8 mx-auto mb-2 animate-spin text-[#6050D0]" />
               <span>Analyzing version differences and extracting diffs...</span>
             </div>
           ) : (
@@ -502,14 +502,14 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                   {/* Baseline Header Notice & Comparison Target Selector */}
                   <div className="bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-700 flex flex-wrap items-center justify-between shadow-2xs gap-3">
                     <div className="flex items-center space-x-2.5">
-                      <Info className="w-4 h-4 text-[#FA7014] shrink-0" />
+                      <Info className="w-4 h-4 text-[#6050D0] shrink-0" />
                       <span className="font-semibold text-slate-900">Comparing against:</span>
                       {candidateBaselines.length > 1 ? (
                         <select
                           id="select-comparison-baseline"
                           value={selectedBaselineId}
                           onChange={(e) => setSelectedBaselineId(e.target.value)}
-                          className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FA7014]/30 focus:border-[#FA7014] cursor-pointer"
+                          className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6050D0]/30 focus:border-[#6050D0] cursor-pointer"
                         >
                           {candidateBaselines.map((b) => {
                             const isPrevDraft = b.id === version.previousVersionId;
@@ -537,7 +537,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                           onClick={() => setSideBySideMode('cards')}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
                             sideBySideMode === 'cards'
-                              ? 'bg-white text-[#FA7014] font-bold shadow-2xs'
+                              ? 'bg-white text-[#6050D0] font-bold shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                           }`}
                         >
@@ -548,7 +548,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                           onClick={() => setSideBySideMode('lines')}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
                             sideBySideMode === 'lines'
-                              ? 'bg-white text-[#FA7014] font-bold shadow-2xs'
+                              ? 'bg-white text-[#6050D0] font-bold shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                           }`}
                         >
@@ -568,7 +568,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                       {/* Sub-filter Bar */}
                       <div className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                         <div className="font-bold text-slate-900 flex items-center space-x-2">
-                          <Split className="w-4 h-4 text-[#FA7014]" />
+                          <Split className="w-4 h-4 text-[#6050D0]" />
                           <span>Full Document Side-by-Side Comparison with Point Highlights</span>
                         </div>
                         <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl font-semibold shrink-0">
@@ -584,11 +584,11 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                             All Document Points ({pointDiffs.length})
                           </button>
                           <button
-                            id="btn-sb-filter-[#FA7014]"
+                            id="btn-sb-filter-[#6050D0]"
                             onClick={() => setSummaryFilter('modified')}
                             className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                               summaryFilter === 'modified'
-                                ? 'bg-white text-[#FA7014] font-bold shadow-2xs'
+                                ? 'bg-white text-[#6050D0] font-bold shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
@@ -605,7 +605,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                             {/* Point Card Top Header */}
                             <div className="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between text-xs font-bold">
                               <div className="flex items-center space-x-2">
-                                <span className="bg-[#FA7014] px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase text-white">
+                                <span className="bg-[#6050D0] px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase text-white">
                                   {pt.pointNumber}
                                 </span>
                                 <span className="text-slate-200 truncate max-w-lg">{pt.title}</span>
@@ -660,8 +660,8 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                               </div>
 
                               {/* Right Column: New Revision */}
-                              <div className={`p-4 ${pt.type === 'added' ? 'bg-emerald-50/40' : pt.type === 'modified' ? 'bg-orange-50/40' : 'bg-white'}`}>
-                                <div className="text-[11px] font-bold text-[#FA7014] uppercase tracking-wider mb-2 flex items-center justify-between">
+                              <div className={`p-4 ${pt.type === 'added' ? 'bg-emerald-50/40' : pt.type === 'modified' ? 'bg-brand-50/40' : 'bg-white'}`}>
+                                <div className="text-[11px] font-bold text-[#6050D0] uppercase tracking-wider mb-2 flex items-center justify-between">
                                   <span>NEW REVISION (v{version.versionNumber})</span>
                                   {pt.type === 'added' && <span className="text-emerald-600 font-semibold">[Added]</span>}
                                 </div>
@@ -669,7 +669,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                                   {pt.newWords && pt.newWords.length > 0 ? (
                                     pt.newWords.map((w, wi) =>
                                       w.isAdded ? (
-                                        <span key={wi} className="bg-orange-200/90 text-slate-900 font-bold px-0.5 rounded">
+                                        <span key={wi} className="bg-brand-200/90 text-slate-900 font-bold px-0.5 rounded">
                                           {w.text}
                                         </span>
                                       ) : (
@@ -696,7 +696,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                           <span>{activeBaseline ? `v${activeBaseline.versionNumber} (${activeBaseline.status.replace('_', ' ')})` : 'Baseline Not Set'}</span>
                         </div>
                         <div className="flex items-center space-x-2 pl-4 border-l border-slate-800 flex-wrap gap-y-1">
-                          <span className="bg-[#FA7014] px-2 py-0.5 rounded text-[11px] text-white font-bold">NEW VERSION</span>
+                          <span className="bg-[#6050D0] px-2 py-0.5 rounded text-[11px] text-white font-bold">NEW VERSION</span>
                           <span>v{version.versionNumber} (In Review)</span>
                         </div>
                       </div>
@@ -710,14 +710,14 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                             left?.type === 'removed'
                               ? 'bg-slate-100 text-slate-500 line-through'
                               : left?.type === 'modified'
-                              ? 'bg-orange-50/70 text-slate-800 font-medium'
+                              ? 'bg-brand-50/70 text-slate-800 font-medium'
                               : 'bg-white text-slate-700';
 
                           const rightBg =
                             right?.type === 'added'
-                              ? 'bg-orange-50 text-slate-900 font-medium'
+                              ? 'bg-brand-50 text-slate-900 font-medium'
                               : right?.type === 'modified'
-                              ? 'bg-orange-50/70 text-slate-900 font-medium'
+                              ? 'bg-brand-50/70 text-slate-900 font-medium'
                               : 'bg-white text-slate-700';
 
                           return (
@@ -757,7 +757,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
-                        <Sparkles className="w-4 h-4 text-[#FA7014]" />
+                        <Sparkles className="w-4 h-4 text-[#6050D0]" />
                         <span>Creator Change Summary & Justification</span>
                       </h3>
                       <span className="text-[11px] font-mono text-slate-500">
@@ -774,14 +774,14 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                     <div className="mb-4 pb-3 border-b border-slate-200 flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                          <Sparkles className="w-4 h-4 text-[#FA7014]" />
+                          <Sparkles className="w-4 h-4 text-[#6050D0]" />
                           <span>Executive Version Transition Summary (v{activeBaseline?.versionNumber || '1.0'} → v{version.versionNumber})</span>
                         </h4>
                         <p className="text-xs text-slate-500 mt-0.5">
                           High-level point-by-point summary highlighting key policy alterations between baseline and new revision.
                         </p>
                       </div>
-                      <span className="bg-orange-50 text-[#FA7014] border border-orange-200 text-[11px] font-bold px-2.5 py-1 rounded-lg">
+                      <span className="bg-brand-50 text-[#6050D0] border border-brand-200 text-[11px] font-bold px-2.5 py-1 rounded-lg">
                         {pointDiffs.filter((p) => p.type !== 'unchanged').length} Point Change(s) Detected
                       </span>
                     </div>
@@ -796,7 +796,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                           .filter((p) => p.type !== 'unchanged')
                           .map((pt, idx) => (
                             <div key={`exec-sum-${pt.id || idx}`} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-start space-x-3 text-xs leading-relaxed">
-                              <span className="bg-[#FA7014] text-white font-extrabold text-[11px] px-2 py-0.5 rounded shrink-0">
+                              <span className="bg-[#6050D0] text-white font-extrabold text-[11px] px-2 py-0.5 rounded shrink-0">
                                 {pt.pointNumber}
                               </span>
                               <div className="flex-1">
@@ -815,15 +815,15 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
               {activeTab === 'fullText' && (
                 <div className="space-y-4">
                   {isApprover && !isAlreadyDecided && (
-                    <div className="bg-orange-50/80 border border-orange-200 rounded-xl p-3 text-xs text-slate-800 flex flex-wrap items-center justify-between shadow-2xs gap-3">
+                    <div className="bg-brand-50/80 border border-brand-200 rounded-xl p-3 text-xs text-slate-800 flex flex-wrap items-center justify-between shadow-2xs gap-3">
                       <div className="flex items-center space-x-2">
-                        <MessageSquare className="w-4 h-4 text-[#FA7014] shrink-0" />
+                        <MessageSquare className="w-4 h-4 text-[#6050D0] shrink-0" />
                         <span>
                           <strong>Approver Inline Revision Mode:</strong> Select any text passage in the Word document with your mouse to attach specific revision comments and instructions for HR before requesting revisions.
                         </span>
                       </div>
                       {inlineComments.length > 0 && (
-                        <span className="bg-[#FA7014] text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0">
+                        <span className="bg-[#6050D0] text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0">
                           {inlineComments.length} Comment{inlineComments.length > 1 ? 's' : ''} Attached
                         </span>
                       )}
@@ -833,7 +833,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                   {version.status === VersionStatus.REVISION_REQUIRED && inlineComments.length > 0 && !isApprover && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-950 flex items-center justify-between shadow-2xs gap-3">
                       <div className="flex items-center space-x-2">
-                        <AlertTriangle className="w-4 h-4 text-[#FA7014] shrink-0" />
+                        <AlertTriangle className="w-4 h-4 text-[#6050D0] shrink-0" />
                         <span>
                           <strong>Approver Revision Comments:</strong> The approver highlighted {inlineComments.length} specific passage(s) requiring revision. Review the highlighted sections and notes in the right sidebar.
                         </span>
@@ -919,7 +919,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 <button
                   id="btn-close-decided-modal"
                   onClick={onClose}
-                  className="inline-flex items-center space-x-1.5 bg-[#FA7014] hover:bg-[#E65A05] text-white font-bold px-5 py-2 rounded-xl text-xs transition-all shadow-md shadow-[#FA7014]/20 cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 bg-[#6050D0] hover:bg-[#5243BE] text-white font-bold px-5 py-2 rounded-xl text-xs transition-all shadow-md shadow-[#6050D0]/20 cursor-pointer"
                 >
                   <span>Close Window</span>
                 </button>
@@ -947,7 +947,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 <button
                   id="btn-open-approve-confirm"
                   onClick={() => setShowApproveConfirm(true)}
-                  className="inline-flex items-center space-x-2 bg-[#FA7014] hover:bg-[#E65A05] text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md shadow-[#FA7014]/20 cursor-pointer"
+                  className="inline-flex items-center space-x-2 bg-[#6050D0] hover:bg-[#5243BE] text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md shadow-[#6050D0]/20 cursor-pointer"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
                   <span>Approve & Auto-Publish</span>
@@ -968,7 +968,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
               <button
                 id="btn-close-readonly-compare-modal"
                 onClick={onClose}
-                className="inline-flex items-center space-x-1.5 bg-[#FA7014] hover:bg-[#E65A05] text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-[#FA7014]/20 cursor-pointer"
+                className="inline-flex items-center space-x-1.5 bg-[#6050D0] hover:bg-[#5243BE] text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-[#6050D0]/20 cursor-pointer"
               >
                 <span>Close Comparison</span>
               </button>
@@ -981,7 +981,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
       {showApproveConfirm && isApprover && (
         <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 text-[#FA7014] flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-xl bg-brand-50 border border-brand-200 text-[#6050D0] flex items-center justify-center mb-4">
               <CheckCircle2 className="w-7 h-7" />
             </div>
 
@@ -996,17 +996,17 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
 
             <ul className="mt-3 space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
               <li className="flex items-start space-x-2">
-                <Check className="w-3.5 h-3.5 text-[#FA7014] mt-0.5 shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#6050D0] mt-0.5 shrink-0" />
                 <span>
                   <strong>Append & Save Dynamic Header/Footer:</strong> Injects official corporate header (Amaavigo, Document Name, Version, Effective Date: {formatDDMMYYYY(version.effectiveFrom || new Date())}) and approval footer (Created by: {version.createdByName || master?.createdByName || 'Amee Shah'}, Approved by: {currentUser.name}, Approved Date: {formatDDMMYYYY(new Date())}) directly into the saved file.
                 </span>
               </li>
               <li className="flex items-center space-x-2">
-                <Check className="w-3.5 h-3.5 text-[#FA7014] shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#6050D0] shrink-0" />
                 <span>Lock file and make version immutable with updated SHA-256 hash</span>
               </li>
               <li className="flex items-center space-x-2">
-                <Check className="w-3.5 h-3.5 text-[#FA7014] shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#6050D0] shrink-0" />
                 <span>
                   Supersede previous published version (
                   {master?.currentPublishedVersionNumber ? `v${master.currentPublishedVersionNumber}` : 'None'}
@@ -1014,7 +1014,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 </span>
               </li>
               <li className="flex items-start space-x-2">
-                <Check className="w-3.5 h-3.5 text-[#FA7014] mt-0.5 shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#6050D0] mt-0.5 shrink-0" />
                 <span>
                   {master?.confidentiality === ConfidentialityLevel.INTERNAL
                     ? '🔒 Internal Company Document: Access restricted to HR & Approvers. No employee emails will be sent and document is hidden from Employee Portal.'
@@ -1028,7 +1028,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 </span>
               </li>
               <li className="flex items-center space-x-2">
-                <Check className="w-3.5 h-3.5 text-[#FA7014] shrink-0" />
+                <Check className="w-3.5 h-3.5 text-[#6050D0] shrink-0" />
                 <span>Write immutable audit logs with SHA-256 hash</span>
               </li>
             </ul>
@@ -1041,7 +1041,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 value={approvalNotes}
                 onChange={(e) => setApprovalNotes(e.target.value)}
                 rows={2}
-                className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
+                className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] placeholder:text-slate-400"
                 placeholder="Compliance review notes..."
               />
             </div>
@@ -1057,7 +1057,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 id="btn-confirm-approve"
                 disabled={isApproving}
                 onClick={handleApprove}
-                className="bg-[#FA7014] hover:bg-[#E65A05] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-[#FA7014]/20 flex items-center space-x-1.5 disabled:opacity-50"
+                className="bg-[#6050D0] hover:bg-[#5243BE] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-[#6050D0]/20 flex items-center space-x-1.5 disabled:opacity-50"
               >
                 {isApproving ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 <span>Authorize & Publish Now</span>
@@ -1072,7 +1072,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
         <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
             <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center mb-4">
-              <AlertTriangle className="w-7 h-7 text-[#FA7014]" />
+              <AlertTriangle className="w-7 h-7 text-[#6050D0]" />
             </div>
 
             <h3 className="text-lg font-bold text-slate-900">
@@ -1085,19 +1085,19 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
 
             {/* Attached inline comments preview if any */}
             {inlineComments.length > 0 && (
-              <div className="mt-3 bg-orange-50/70 border border-orange-200 rounded-xl p-3 space-y-2">
+              <div className="mt-3 bg-brand-50/70 border border-brand-200 rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-900">
                   <span className="flex items-center space-x-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-[#FA7014]" />
+                    <MessageSquare className="w-3.5 h-3.5 text-[#6050D0]" />
                     <span>Attached Text Comments ({inlineComments.length}):</span>
                   </span>
-                  <span className="text-[10px] text-[#FA7014] bg-white px-2 py-0.5 rounded-full border border-orange-200 font-bold">
+                  <span className="text-[10px] text-[#6050D0] bg-white px-2 py-0.5 rounded-full border border-brand-200 font-bold">
                     Sent to HR
                   </span>
                 </div>
                 <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1">
                   {inlineComments.map((c, idx) => (
-                    <div key={c.id || idx} className="bg-white p-2 rounded-lg border border-orange-100 text-[11px]">
+                    <div key={c.id || idx} className="bg-white p-2 rounded-lg border border-brand-100 text-[11px]">
                       <div className="text-slate-500 font-serif italic line-clamp-1 mb-0.5">
                         "{c.selectedText}"
                       </div>
@@ -1110,7 +1110,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
 
             <div className="mt-4">
               <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="input-rejection-comments">
-                Rejection Notes & Guidance {inlineComments.length > 0 ? '(Optional summary)' : <span className="text-[#FA7014]">*</span>}
+                Rejection Notes & Guidance {inlineComments.length > 0 ? '(Optional summary)' : <span className="text-[#6050D0]">*</span>}
               </label>
               <textarea
                 id="input-rejection-comments"
@@ -1120,7 +1120,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                   setRejectionError('');
                 }}
                 rows={3}
-                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] placeholder:text-slate-400"
                 placeholder={
                   inlineComments.length > 0
                     ? `Optional summary: The ${inlineComments.length} inline revision comment(s) above will automatically be returned to HR...`
@@ -1128,7 +1128,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 }
               />
               {rejectionError && (
-                <p className="text-xs text-orange-600 font-medium mt-1">{rejectionError}</p>
+                <p className="text-xs text-brand-600 font-medium mt-1">{rejectionError}</p>
               )}
             </div>
 
@@ -1145,7 +1145,7 @@ export const ReviewDocumentModal: React.FC<ReviewDocumentModalProps> = ({
                 onClick={handleReject}
                 className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
               >
-                {isRejecting ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5 text-[#FA7014]" />}
+                {isRejecting ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5 text-[#6050D0]" />}
                 <span>Send Revision Request to HR</span>
               </button>
             </div>

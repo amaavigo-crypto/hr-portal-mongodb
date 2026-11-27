@@ -5,7 +5,7 @@ import { hasPerm } from '../../shared/permissions';
 import { csvToObjects } from '../../shared/csv';
 import { applicationsService, ApplicationItem, ApplicationSettings } from '../services/applicationsService';
 
-const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FA7014]/40';
+const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6050D0]/40';
 const btnCls = 'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-colors disabled:opacity-50';
 
 export const ApplicationsModule: React.FC<{ currentUser: User }> = ({ currentUser }) => {
@@ -152,7 +152,7 @@ export const ApplicationsModule: React.FC<{ currentUser: User }> = ({ currentUse
           </div>
           <button
             disabled={busy}
-            className={`${btnCls} border-[#FA7014] bg-[#FA7014] text-white`}
+            className={`${btnCls} border-[#6050D0] bg-[#6050D0] text-white`}
             onClick={() =>
               run(async () => {
                 const r = await applicationsService.saveSettings(origins.split('\n').map((x) => x.trim()).filter(Boolean), prefix);
@@ -184,7 +184,7 @@ export const ApplicationsModule: React.FC<{ currentUser: User }> = ({ currentUse
           <div className="flex flex-wrap gap-2">
             <button
               disabled={busy}
-              className={`${btnCls} border-[#FA7014] bg-[#FA7014] text-white`}
+              className={`${btnCls} border-[#6050D0] bg-[#6050D0] text-white`}
               onClick={() =>
                 run(async () => {
                   const r = await applicationsService.add(form);
@@ -238,7 +238,7 @@ export const ApplicationsModule: React.FC<{ currentUser: User }> = ({ currentUse
                 <td className="p-2">
                   <div className="font-semibold text-slate-800">{a.name}</div>
                   <div className="text-slate-500">{a.email}{a.mobile ? ` · ${a.mobile}` : ''}</div>
-                  {a.resumeUrl && <a className="text-[#FA7014] underline" href={a.resumeUrl} target="_blank" rel="noopener noreferrer">Resume</a>}
+                  {a.resumeUrl && <a className="text-[#6050D0] underline" href={a.resumeUrl} target="_blank" rel="noopener noreferrer">Resume</a>}
                 </td>
                 <td className="p-2">{a.designation}</td>
                 <td className="p-2">{a.source}</td>

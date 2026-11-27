@@ -9,15 +9,15 @@ import { inr, inrShort } from '../../../shared/projectPlanner';
 
 const card = 'rounded-2xl border border-slate-200 bg-white';
 const label = 'block text-[13px] font-semibold text-slate-800';
-const field = 'mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#C2410C] focus:outline-none focus:ring-2 focus:ring-[#FA7014]/25';
-const primary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#C2410C] px-5 py-3 text-sm font-bold text-white hover:bg-[#9A3412] disabled:opacity-50 transition-colors';
+const field = 'mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#4C3EB0] focus:outline-none focus:ring-2 focus:ring-[#6050D0]/25';
+const primary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#4C3EB0] px-5 py-3 text-sm font-bold text-white hover:bg-[#3F3393] disabled:opacity-50 transition-colors';
 const ghost = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50 transition-colors';
 const lines = (t: string) => t.split('\n').map((x) => x.trim()).filter(Boolean);
 const niceDate = (d?: string) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—');
 const STATUS: Record<string, [string, string]> = {
-  BRIEF: ['Check the brief', 'bg-sky-50 text-sky-800'], DRAFT: ['Draft', 'bg-orange-50 text-orange-800'], APPROVING: ['Approving', 'bg-orange-50 text-orange-800'], APPROVED: ['Approved', 'bg-emerald-50 text-emerald-800'],
+  BRIEF: ['Check the brief', 'bg-sky-50 text-sky-800'], DRAFT: ['Draft', 'bg-brand-50 text-brand-800'], APPROVING: ['Approving', 'bg-brand-50 text-brand-800'], APPROVED: ['Approved', 'bg-emerald-50 text-emerald-800'],
 };
-const PHASE_TINTS = ['#BFDBFE', '#E9D5FF', '#FED7AA', '#BBF7D0', '#FDE68A', '#FBCFE8', '#C7D2FE', '#A5F3FC', '#FECACA', '#D9F99D'];
+const PHASE_TINTS = ['#BFDBFE', '#E9D5FF', '#D7D2F7', '#BBF7D0', '#FDE68A', '#FBCFE8', '#C7D2FE', '#A5F3FC', '#FECACA', '#D9F99D'];
 const AVATAR_TINTS = ['#FDE7D6', '#DBEAFE', '#DCFCE7', '#F3E8FF', '#FEF3C7', '#E0F2FE', '#FCE7F3', '#E2E8F0'];
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
 const tintFor = (s: string) => AVATAR_TINTS[[...s].reduce((n, ch) => n + ch.charCodeAt(0), 0) % AVATAR_TINTS.length];
@@ -41,11 +41,11 @@ const PlanList: React.FC<{ onNew: () => void; onOpen: (id: string) => void }> = 
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4 rounded-3xl bg-[#0F172A] p-6 text-white md:p-8">
         <div className="max-w-xl">
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#FA7014]">AI project planner</p>
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#6050D0]">AI project planner</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight md:text-3xl">Turn a brief into a staffed, costed plan</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-300">Upload a project document or describe it. The planner picks people by skills and availability, drafts phases and tasks, and works out cost, budget and profit. Nothing is assigned until you approve.</p>
         </div>
-        <button type="button" onClick={onNew} disabled={data && !data.aiEnabled} className="inline-flex items-center gap-2 rounded-xl bg-[#FA7014] px-5 py-3 text-sm font-bold text-[#0F172A] hover:bg-[#fb8a3c] disabled:opacity-50"><Plus className="h-4 w-4" /> New project</button>
+        <button type="button" onClick={onNew} disabled={data && !data.aiEnabled} className="inline-flex items-center gap-2 rounded-xl bg-[#6050D0] px-5 py-3 text-sm font-bold text-[#0F172A] hover:bg-[#7A6CE0] disabled:opacity-50"><Plus className="h-4 w-4" /> New project</button>
       </div>
       {data && !data.aiEnabled && <Err text="AI is not set up for this portal yet (OPENAI_API_KEY is missing), so new plans cannot be made." />}
       <Err text={error} />
@@ -53,10 +53,10 @@ const PlanList: React.FC<{ onNew: () => void; onOpen: (id: string) => void }> = 
       {data && data.items.length === 0 && <div className={`${card} p-10 text-center text-sm text-slate-600`}>No plans yet. Start with <b>New project</b>.</div>}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {(data?.items || []).map((p: any) => (
-          <button key={p.id} type="button" onClick={() => onOpen(p.id)} className={`${card} group p-5 text-left transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md`}>
+          <button key={p.id} type="button" onClick={() => onOpen(p.id)} className={`${card} group p-5 text-left transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md`}>
             <div className="flex items-center justify-between gap-3">
               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS[p.status]?.[1] || 'bg-slate-100 text-slate-700'}`}>{STATUS[p.status]?.[0] || p.status}</span>
-              <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#C2410C]" />
+              <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#4C3EB0]" />
             </div>
             <p className="mt-3 text-lg font-bold text-slate-900">{p.name}</p>
             <p className="mt-1 text-xs text-slate-600">{p.startDate ? `${niceDate(p.startDate)} to ${niceDate(p.endDate)}` : 'Dates not set'}{p.team ? ` · ${p.team} people` : ''}</p>
@@ -109,7 +109,7 @@ const NewProject: React.FC<{ onBack: () => void; onMade: (id: string) => void }>
       <div className="flex flex-wrap gap-6">
         <section className="min-w-0 flex-[999_1_560px] space-y-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#C2410C]">New project</p>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#4C3EB0]">New project</p>
             <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Share the project however you have it</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">You will check what was understood before any plan is made.</p>
           </div>
@@ -120,8 +120,8 @@ const NewProject: React.FC<{ onBack: () => void; onMade: (id: string) => void }>
           </div>
           {mode === 'file' ? (
             <div className={`${card} space-y-5 p-6`}>
-              <label onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files?.[0]); }} className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center hover:border-orange-300 hover:bg-orange-50/40">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100"><Upload className="h-6 w-6 text-[#C2410C]" /></span>
+              <label onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files?.[0]); }} className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center hover:border-brand-300 hover:bg-brand-50/40">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100"><Upload className="h-6 w-6 text-[#4C3EB0]" /></span>
                 <span className="text-base font-semibold text-slate-900">Drop the project document here, or browse</span>
                 <span className="text-xs text-slate-600">PDF, Word (.docx) or text, up to 3 MB. Proposals, client briefs, budget notes.</span>
                 <input type="file" accept=".pdf,.docx,.txt,.md" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
@@ -167,7 +167,7 @@ const Steps: React.FC = () => (
       <p className="text-lg font-bold">What happens next</p>
       <ol className="mt-4 space-y-4">
         {[['Read the brief', 'Goals, budget, deadline, deliverables and the skills needed. You check and correct it.'], ['Match your people', 'Scored on skill fit, who is free (leave, notice, other projects) and cost.'], ['Draft the plan', 'Phases, tasks with owners, timeline, risks, and cost against budget and price.'], ['You approve', 'One click creates the project in Tasks and assigns the work.']].map(([t, b], i) => (
-          <li key={t} className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FA7014] text-xs font-bold text-[#0F172A]">{i + 1}</span><div><p className="text-sm font-semibold">{t}</p><p className="mt-0.5 text-xs leading-relaxed text-slate-300">{b}</p></div></li>
+          <li key={t} className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#6050D0] text-xs font-bold text-[#0F172A]">{i + 1}</span><div><p className="text-sm font-semibold">{t}</p><p className="mt-0.5 text-xs leading-relaxed text-slate-300">{b}</p></div></li>
         ))}
       </ol>
     </div>
@@ -229,12 +229,12 @@ const BriefEditor: React.FC<{ plan: any; onSaved: (p: any) => void; onCancel?: (
   };
   if (busy === 'build') return (
     <div className="mx-auto max-w-xl rounded-3xl bg-[#0F172A] p-8 text-white">
-      <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#FA7014]">Building the plan</p>
+      <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#6050D0]">Building the plan</p>
       <p className="mt-2 text-2xl font-black">{f.name}</p>
       <ol className="mt-6 space-y-3">
         {BUILD_STEPS.map((s, i) => (
           <li key={s} className={`flex items-center gap-3 text-sm transition ${i <= step ? 'text-white' : 'text-slate-500'}`}>
-            {i < step ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : i === step ? <Loader2 className="h-5 w-5 animate-spin text-[#FA7014]" /> : <span className="h-5 w-5 rounded-full border-2 border-slate-600" />}{s}
+            {i < step ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : i === step ? <Loader2 className="h-5 w-5 animate-spin text-[#6050D0]" /> : <span className="h-5 w-5 rounded-full border-2 border-slate-600" />}{s}
           </li>
         ))}
       </ol>
@@ -245,7 +245,7 @@ const BriefEditor: React.FC<{ plan: any; onSaved: (p: any) => void; onCancel?: (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#C2410C]">Step 1 of 2 · Check the brief</p>
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#4C3EB0]">Step 1 of 2 · Check the brief</p>
           <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Is this what the project is?</h2>
           <p className="mt-1 text-sm text-slate-600">{plan.source?.type === 'file' ? `Read from ${plan.source.fileName}. ` : ''}Fix anything that is wrong. The plan is built from exactly this.</p>
         </div>
@@ -338,7 +338,7 @@ const PlanView: React.FC<{ plan: any; setPlan: (p: any) => void; onEdit: () => v
       </div>
 
       {confirming && (
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-orange-300 bg-orange-50 p-5">
+        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-brand-300 bg-brand-50 p-5">
           <div className="min-w-0 flex-[1_1_360px]">
             <p className="font-bold text-slate-900">Approve this plan?</p>
             <p className="mt-1 text-sm text-slate-700">This creates a "{plan.name}" board in Tasks with {p.tasks.filter((t: any) => t.ownerUid).length} tasks, assigns them, books each person's time for these dates and sends one email per person.</p>
@@ -355,7 +355,7 @@ const PlanView: React.FC<{ plan: any; setPlan: (p: any) => void; onEdit: () => v
           <div className="relative h-[104px] w-[104px]">
             <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label={c.margin !== null ? `Margin ${ringLabel}` : `Budget used ${ringLabel}`}>
               <circle cx="52" cy="52" r="40" fill="none" stroke="#1E293B" strokeWidth="12" />
-              <circle cx="52" cy="52" r="40" fill="none" stroke={c.margin !== null && c.margin < 0 ? '#F87171' : '#FA7014'} strokeWidth="12" strokeLinecap="round" strokeDasharray={`${(ringPct / 100) * 251.3} 251.3`} transform="rotate(-90 52 52)" style={{ transition: 'stroke-dasharray 0.8s ease' }} />
+              <circle cx="52" cy="52" r="40" fill="none" stroke={c.margin !== null && c.margin < 0 ? '#F87171' : '#6050D0'} strokeWidth="12" strokeLinecap="round" strokeDasharray={`${(ringPct / 100) * 251.3} 251.3`} transform="rotate(-90 52 52)" style={{ transition: 'stroke-dasharray 0.8s ease' }} />
             </svg>
             <span className="absolute inset-0 flex items-center justify-center text-xl font-black">{ringLabel}</span>
           </div>
@@ -382,8 +382,8 @@ const PlanView: React.FC<{ plan: any; setPlan: (p: any) => void; onEdit: () => v
 
       <div role="tablist" aria-label="Plan sections" className="flex flex-wrap gap-1 border-b border-slate-200">
         {TABS.map((t) => (
-          <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px inline-flex items-center gap-2 border-b-[3px] px-4 py-3 text-sm transition ${tab === t ? 'border-[#FA7014] font-bold text-slate-900' : 'border-transparent font-medium text-slate-600 hover:text-slate-900'}`}>
-            {t}{counts[t] && <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${tab === t ? 'bg-orange-100 text-orange-900' : 'bg-slate-100 text-slate-600'}`}>{counts[t]}</span>}
+          <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px inline-flex items-center gap-2 border-b-[3px] px-4 py-3 text-sm transition ${tab === t ? 'border-[#6050D0] font-bold text-slate-900' : 'border-transparent font-medium text-slate-600 hover:text-slate-900'}`}>
+            {t}{counts[t] && <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${tab === t ? 'bg-brand-100 text-brand-900' : 'bg-slate-100 text-slate-600'}`}>{counts[t]}</span>}
           </button>
         ))}
       </div>
@@ -405,13 +405,13 @@ const PlanView: React.FC<{ plan: any; setPlan: (p: any) => void; onEdit: () => v
   );
 };
 
-const TONE: Record<string, [string, string]> = { good: ['bg-emerald-50', 'bg-emerald-600'], warn: ['bg-orange-50', 'bg-orange-600'], bad: ['bg-rose-50', 'bg-rose-600'] };
+const TONE: Record<string, [string, string]> = { good: ['bg-emerald-50', 'bg-emerald-600'], warn: ['bg-brand-50', 'bg-brand-600'], bad: ['bg-rose-50', 'bg-rose-600'] };
 
 const Overview: React.FC<{ plan: any }> = ({ plan }) => (
   <div className="flex flex-wrap gap-6">
     <div className="min-w-0 flex-[999_1_560px] space-y-6">
       <div className={`${card} p-7`}>
-        <p className="mb-3 text-sm font-bold text-[#C2410C]">In short</p>
+        <p className="mb-3 text-sm font-bold text-[#4C3EB0]">In short</p>
         <p className="text-[17px] leading-relaxed text-slate-800">{plan.plan.summary || plan.brief.summary}</p>
         <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-900">{plan.headline}</p>
       </div>
@@ -444,20 +444,20 @@ const Team: React.FC<{ plan: any; setPlan: (p: any) => void; locked: boolean }> 
         {plan.team.map((a: any) => {
           const pc = cost(a.key);
           return (
-            <article key={a.key} className={`${card} flex flex-col gap-4 p-5 ${!a.uid ? 'border-dashed border-orange-300 bg-orange-50/50' : ''}`}>
+            <article key={a.key} className={`${card} flex flex-col gap-4 p-5 ${!a.uid ? 'border-dashed border-brand-300 bg-brand-50/50' : ''}`}>
               <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold text-slate-900" style={{ background: a.uid ? tintFor(a.name) : '#FFEDD5' }}>{a.uid ? initials(a.name) : <Users className="h-5 w-5 text-orange-700" />}</span>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold text-slate-900" style={{ background: a.uid ? tintFor(a.name) : '#EAE7FB' }}>{a.uid ? initials(a.name) : <Users className="h-5 w-5 text-brand-700" />}</span>
                 <div className="min-w-0"><p className="truncate font-bold text-slate-900">{a.uid ? a.name : 'Nobody found'}</p><p className="truncate text-xs text-slate-600">{a.role}{a.title ? ` · ${a.title}` : ''}</p></div>
               </div>
               {a.uid && (
                 <div>
                   <div className="mb-1.5 flex justify-between text-xs text-slate-600"><span>Skill fit</span><span className="font-bold text-slate-900">{a.fit}%</span></div>
-                  <div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-[#FA7014] transition-all duration-700" style={{ width: `${a.fit}%` }} /></div>
+                  <div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-[#6050D0] transition-all duration-700" style={{ width: `${a.fit}%` }} /></div>
                 </div>
               )}
               <div className="flex flex-wrap gap-1.5">
                 {a.matched.map((s: string) => <span key={s} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{s}</span>)}
-                {a.missing.map((s: string) => <span key={s} className="rounded-full border border-orange-300 px-2.5 py-1 text-xs text-orange-800">needs {s}</span>)}
+                {a.missing.map((s: string) => <span key={s} className="rounded-full border border-brand-300 px-2.5 py-1 text-xs text-brand-800">needs {s}</span>)}
               </div>
               {a.notes.length > 0 && <ul className="space-y-1 text-xs text-slate-600">{a.notes.map((n: string) => <li key={n}>• {n}</li>)}</ul>}
               <div className="mt-auto grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
@@ -489,7 +489,7 @@ const SwapPicker: React.FC<{ plan: any; seat: any; onDone: (p: any) => void }> =
       {!rows && !error && <p className="flex items-center gap-2 p-2 text-xs text-slate-500"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding people...</p>}
       {rows?.length === 0 && <p className="p-2 text-xs text-slate-600">Nobody else has free time in this window.</p>}
       {rows?.map((r) => (
-        <button key={r.uid} type="button" disabled={!!busy || r.uid === seat.uid} onClick={() => choose(r.uid)} className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-orange-50 disabled:opacity-50">
+        <button key={r.uid} type="button" disabled={!!busy || r.uid === seat.uid} onClick={() => choose(r.uid)} className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-brand-50 disabled:opacity-50">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold" style={{ background: tintFor(r.name) }}>{initials(r.name)}</span>
           <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{r.name}{r.uid === seat.uid ? ' (current)' : ''}</span><span className="block truncate text-xs text-slate-600">{r.title || 'No title'} · {r.free}% free{r.leaveDays ? ` · ${r.leaveDays}d leave` : ''}</span></span>
           <span className="text-xs font-bold text-slate-900">{busy === r.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : `${r.fit}%`}</span>
@@ -543,7 +543,7 @@ const Budget: React.FC<{ plan: any }> = ({ plan }) => {
           {c.byPhase.map((b: any, i: number) => (
             <div key={b.name} className="grid grid-cols-[120px_1fr_100px] items-center gap-3 text-sm">
               <span className="truncate font-semibold">{b.name}</span>
-              <div className="h-2.5 rounded-full bg-slate-100"><div className="h-2.5 rounded-full transition-all duration-700" style={{ width: `${(b.amount / max) * 100}%`, background: i % 2 ? '#FED7AA' : '#FA7014' }} /></div>
+              <div className="h-2.5 rounded-full bg-slate-100"><div className="h-2.5 rounded-full transition-all duration-700" style={{ width: `${(b.amount / max) * 100}%`, background: i % 2 ? '#D7D2F7' : '#6050D0' }} /></div>
               <span className="text-right font-semibold">{inr(b.amount)}</span>
             </div>
           ))}
@@ -581,7 +581,7 @@ const Tasks: React.FC<{ plan: any }> = ({ plan }) => {
               <tr key={t.key} className="border-t border-slate-100 align-top">
                 <td className="px-6 py-3.5"><p className="font-semibold text-slate-900">{t.title}</p>{t.description && <p className="mt-0.5 text-xs text-slate-600">{t.description}</p>}</td>
                 <td className="px-3 py-3.5"><span className="whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold text-slate-900" style={{ background: phaseTint.get(t.phase) }}>{t.phase}</span></td>
-                <td className="px-3 py-3.5">{t.ownerName ? <span className="inline-flex items-center gap-2 whitespace-nowrap"><span className="flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-bold" style={{ background: tintFor(t.ownerName) }}>{initials(t.ownerName)}</span>{t.ownerName}</span> : <span className="text-xs text-orange-800">No owner (gap)</span>}</td>
+                <td className="px-3 py-3.5">{t.ownerName ? <span className="inline-flex items-center gap-2 whitespace-nowrap"><span className="flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-bold" style={{ background: tintFor(t.ownerName) }}>{initials(t.ownerName)}</span>{t.ownerName}</span> : <span className="text-xs text-brand-800">No owner (gap)</span>}</td>
                 <td className="whitespace-nowrap px-3 py-3.5 text-slate-700">{t.days} day{t.days === 1 ? '' : 's'}</td>
                 <td className="whitespace-nowrap px-6 py-3.5 text-slate-700">{niceDate(t.dueDate)}</td>
               </tr>
@@ -594,7 +594,7 @@ const Tasks: React.FC<{ plan: any }> = ({ plan }) => {
   );
 };
 
-const RISK: Record<string, string> = { High: 'bg-rose-100 text-rose-900', Medium: 'bg-orange-100 text-orange-900', Low: 'bg-emerald-100 text-emerald-900' };
+const RISK: Record<string, string> = { High: 'bg-rose-100 text-rose-900', Medium: 'bg-brand-100 text-brand-900', Low: 'bg-emerald-100 text-emerald-900' };
 const Risks: React.FC<{ plan: any }> = ({ plan }) => (
   plan.plan.risks.length === 0 ? <div className={`${card} p-8 text-sm text-slate-600`}>No risks were listed. Re-plan to ask again.</div> : (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

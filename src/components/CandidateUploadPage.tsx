@@ -146,7 +146,7 @@ export const CandidateUploadPage: React.FC = () => {
         type="button"
         onClick={submit}
         disabled={submitting || missing.length > 0 || needEm}
-        className="w-full py-3 rounded-xl bg-[#FA7014] text-white font-bold text-sm disabled:bg-slate-300 cursor-pointer"
+        className="w-full py-3 rounded-xl bg-[#6050D0] text-white font-bold text-sm disabled:bg-slate-300 cursor-pointer"
       >
         {submitting ? 'Submitting…' : needEm && !missing.length ? 'Add an emergency contact' : missing.length ? `Upload ${missing.length} more required document${missing.length > 1 ? 's' : ''}` : 'Submit documents'}
       </button>

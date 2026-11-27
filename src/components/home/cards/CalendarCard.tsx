@@ -58,7 +58,7 @@ export const CalendarCard: React.FC<{ refreshKey: number }> = ({ refreshKey }) =
 
   return (
     <HomeCard
-      title="Calendar" icon={<CalendarDays className="w-4 h-4 text-[#FA7014]" />} right={nav}
+      title="Calendar" icon={<CalendarDays className="w-4 h-4 text-[#6050D0]" />} right={nav}
       loading={load.loading && !cal} error={load.error} onRetry={load.reload}
       empty={!!cal && !cal.configured} emptyText="Leave and attendance is not set up yet" emptyHint="HR sets it up under Leave & Attendance."
     >
@@ -74,7 +74,7 @@ export const CalendarCard: React.FC<{ refreshKey: number }> = ({ refreshKey }) =
                 <div key={d.date} className="flex justify-center">
                   <span
                     title={l.label ? `${d.date}: ${l.label}` : d.date}
-                    className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-xs font-semibold ${l.cell} ${today ? 'ring-2 ring-[#FA7014]' : ''}`}
+                    className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-xs font-semibold ${l.cell} ${today ? 'ring-2 ring-[#6050D0]' : ''}`}
                   >
                     {Number(d.date.slice(8))}
                   </span>

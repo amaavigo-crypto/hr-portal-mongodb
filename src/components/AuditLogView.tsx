@@ -158,7 +158,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ users }) => {
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case AuditAction.REVIEW_REJECTED:
       case AuditAction.REVISION_REQUESTED:
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-brand-100 text-brand-800 border-brand-200';
       case AuditAction.DOCUMENT_DELETED:
       case AuditAction.ALL_DOCUMENTS_CLEARED:
         return 'bg-rose-50 text-rose-700 border-rose-300';

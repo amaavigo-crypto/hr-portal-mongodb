@@ -26,7 +26,7 @@ export const ReviewScreen: React.FC<{ id: string; back: () => void }> = ({ id, b
       </div>
       {!['ON_HOLD', 'DEFERRED'].includes(rv.status) && (
         <ol className="flex flex-wrap gap-1.5" aria-label="Progress">{STEPS.map((s, i) => (
-          <li key={s.key} className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${i < cur ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : i === cur ? 'bg-[#FA7014] border-[#FA7014] text-white' : 'bg-white border-slate-200 text-slate-400'}`}>{i < cur ? <Check className="w-3 h-3" /> : <span>{i + 1}</span>}{s.label}</li>
+          <li key={s.key} className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${i < cur ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : i === cur ? 'bg-[#6050D0] border-[#6050D0] text-white' : 'bg-white border-slate-200 text-slate-400'}`}>{i < cur ? <Check className="w-3 h-3" /> : <span>{i + 1}</span>}{s.label}</li>
         ))}</ol>
       )}
       {rv.status === 'ON_HOLD' && <Notice tone="warn">This review is waiting for approved targets. It starts by itself once they are approved.</Notice>}
@@ -114,7 +114,7 @@ const ManagerForm: React.FC<{ rv: any; evidence: any[]; checkins: any[]; canAi: 
       {rv.selfSkipped && <Notice tone="info">{rv.name} did not do the self-review by {rv.selfDue}. You can continue without it.</Notice>}
       <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-xl px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <span>Results <b>{score(live.results)}</b></span><span>Behaviour <b>{score(live.behaviour)}</b></span><span>SOP <b>{live.sop === null ? 'left out' : score(live.sop)}</b></span>
-        <span>Overall <b className="text-[#FA7014]">{score(live.overall)}</b> {live.overall !== null && <span className="text-slate-500">({live.band})</span>}</span>
+        <span>Overall <b className="text-[#6050D0]">{score(live.overall)}</b> {live.overall !== null && <span className="text-slate-500">({live.band})</span>}</span>
         {live.criticalBreach && <span className="text-rose-700 font-bold flex items-center gap-1"><AlertTriangle className="w-4 h-4" />Critical SOP breach: HR must look at it</span>}
       </div>
       <Card title="1. Results (KPIs)" subtitle="Their own rating is shown in grey. The recorded work for the quarter is under each KPI.">
@@ -171,7 +171,7 @@ const ReadOnly: React.FC<{ rv: any; evidence: any[] }> = ({ rv, evidence }) => {
         <Card title="Score">
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             <span>Results <b>{score(rv.score.results)}</b></span><span>Behaviour <b>{score(rv.score.behaviour)}</b></span><span>SOP <b>{rv.score.sop === null ? 'left out' : score(rv.score.sop)}</b></span>
-            <span>Overall <b className="text-[#FA7014] text-base">{score(rv.score.overall)}</b> ({rv.score.band})</span>
+            <span>Overall <b className="text-[#6050D0] text-base">{score(rv.score.overall)}</b> ({rv.score.band})</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Weights used: results {rv.score.used.results}%, behaviour {rv.score.used.behaviour}%, SOP {rv.score.used.sop}%.</p>
         </Card>

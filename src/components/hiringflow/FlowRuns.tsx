@@ -110,7 +110,7 @@ export const FlowRuns: React.FC<{ people: FlowState['people']; onChanged?: () =>
       {(counts.STUCK || 0) > 0 && <p className="text-[13px] font-semibold text-[#b42318]">{counts.STUCK} applicant{counts.STUCK === 1 ? ' needs' : 's need'} you. They are at the top.</p>}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <button key={f.key} onClick={() => setFilter(f.key)} aria-pressed={filter === f.key} className={`h-8 cursor-pointer rounded-full border px-3 text-[13px] ${filter === f.key ? 'border-[#c2500a] bg-[#fdf1e9] font-semibold text-[#8f3a06]' : 'border-[#dfe1e5] text-[#3d434d] hover:border-[#c2500a]'}`}>
+          <button key={f.key} onClick={() => setFilter(f.key)} aria-pressed={filter === f.key} className={`h-8 cursor-pointer rounded-full border px-3 text-[13px] ${filter === f.key ? 'border-[#4C3EB0] bg-[#F1EFFC] font-semibold text-[#3F3393]' : 'border-[#dfe1e5] text-[#3d434d] hover:border-[#4C3EB0]'}`}>
             {f.label} {f.key ? `(${counts[f.key] || 0})` : `(${rows.length})`}
           </button>
         ))}

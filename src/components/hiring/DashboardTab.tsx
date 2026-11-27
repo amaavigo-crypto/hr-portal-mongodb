@@ -7,7 +7,7 @@ const Stat: React.FC<{ label: string; value: React.ReactNode; hint?: string }> =
   <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div><div className="mt-1 text-2xl font-black text-slate-900">{value}</div>{hint && <div className="text-[11px] text-slate-500">{hint}</div>}</div>
 );
 const Bar: React.FC<{ label: string; value: number; max: number; suffix?: string }> = ({ label, value, max, suffix = '' }) => (
-  <div className="flex items-center gap-2 text-xs"><div className="w-32 truncate text-slate-700">{label}</div><div className="h-3 flex-1 rounded bg-slate-100"><div className="h-3 rounded bg-[#FA7014]" style={{ width: `${max ? Math.max(2, (value / max) * 100) : 0}%` }} /></div><div className="w-20 text-right font-bold text-slate-800">{value}{suffix}</div></div>
+  <div className="flex items-center gap-2 text-xs"><div className="w-32 truncate text-slate-700">{label}</div><div className="h-3 flex-1 rounded bg-slate-100"><div className="h-3 rounded bg-[#6050D0]" style={{ width: `${max ? Math.max(2, (value / max) * 100) : 0}%` }} /></div><div className="w-20 text-right font-bold text-slate-800">{value}{suffix}</div></div>
 );
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString('en-IN')}`;
 

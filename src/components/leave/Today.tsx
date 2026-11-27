@@ -123,7 +123,7 @@ export const Today: React.FC<{ me: any; reload: () => void; onApply: (typeId?: s
   const onLeaveToday = (mine || []).some((r) => r.status === 'APPROVED' && r.from <= me.today && r.to >= me.today);
   const holiday = (me.holidays || []).find((h: any) => h.date === me.today && !h.optional);
   const statusText = state !== 'out' ? (late ? 'Late' : 'Present') : onLeaveToday ? 'On Leave' : holiday ? 'Holiday' : 'Not checked in';
-  const statusTone = statusText === 'Present' ? ['bg-gradient-to-br from-emerald-100/80 to-green-50 border-emerald-100', 'text-emerald-600', 'text-emerald-600'] : statusText === 'Late' ? ['bg-gradient-to-br from-amber-100/80 to-orange-50 border-amber-100', 'text-amber-600', 'text-amber-600'] : ['bg-gradient-to-br from-slate-100 to-slate-50 border-slate-200', 'text-slate-500', 'text-slate-700'];
+  const statusTone = statusText === 'Present' ? ['bg-gradient-to-br from-emerald-100/80 to-green-50 border-emerald-100', 'text-emerald-600', 'text-emerald-600'] : statusText === 'Late' ? ['bg-gradient-to-br from-amber-100/80 to-amber-50 border-amber-100', 'text-amber-600', 'text-amber-600'] : ['bg-gradient-to-br from-slate-100 to-slate-50 border-slate-200', 'text-slate-500', 'text-slate-700'];
 
   const punch = (kind: 'in' | 'out') => run(async () => {
     if (kind === 'in') await leaveService.checkIn(); else await leaveService.checkOut();

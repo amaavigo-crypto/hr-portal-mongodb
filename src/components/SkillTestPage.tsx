@@ -85,7 +85,7 @@ export const SkillTestPage: React.FC = () => {
               <li>Please do this on your own, without help from other people or tools.</li>
               <li>Start before {info.expiresOn}.</li>
             </ul>
-            <button disabled={busy} onClick={start} className="rounded-lg bg-[#FA7014] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busy ? 'Starting...' : 'Start the test'}</button>
+            <button disabled={busy} onClick={start} className="rounded-lg bg-[#6050D0] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busy ? 'Starting...' : 'Start the test'}</button>
           </div>
         )}
         {running && q && (
@@ -97,7 +97,7 @@ export const SkillTestPage: React.FC = () => {
             <p className="text-base font-bold text-slate-900 whitespace-pre-wrap">{q.q}</p>
             <div className="space-y-2" role="radiogroup" aria-label="Answers">
               {q.options.map((o, k) => (
-                <label key={k} className={`flex items-start gap-3 rounded-lg border p-3 text-sm cursor-pointer ${answers[q.id] === k ? 'border-[#FA7014] bg-orange-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                <label key={k} className={`flex items-start gap-3 rounded-lg border p-3 text-sm cursor-pointer ${answers[q.id] === k ? 'border-[#6050D0] bg-brand-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                   <input type="radio" className="mt-1" name={`q-${q.id}`} checked={answers[q.id] === k} onChange={() => choose(q.id, k)} />
                   <span><b className="mr-1">{LETTERS[k]}.</b>{o}</span>
                 </label>
@@ -107,10 +107,10 @@ export const SkillTestPage: React.FC = () => {
               <button className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold disabled:opacity-40" disabled={i === 0} onClick={() => setI(i - 1)}>Back</button>
               {i < qs.length - 1
                 ? <button className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-bold text-white" onClick={() => setI(i + 1)}>Next</button>
-                : <button disabled={busy} className="rounded-lg bg-[#FA7014] px-4 py-2 text-xs font-bold text-white disabled:opacity-50" onClick={() => { if (answered === qs.length || window.confirm(`You have answered ${answered} of ${qs.length} questions. Hand in anyway?`)) submit(); }}>{busy ? 'Handing in...' : 'Hand in the test'}</button>}
+                : <button disabled={busy} className="rounded-lg bg-[#6050D0] px-4 py-2 text-xs font-bold text-white disabled:opacity-50" onClick={() => { if (answered === qs.length || window.confirm(`You have answered ${answered} of ${qs.length} questions. Hand in anyway?`)) submit(); }}>{busy ? 'Handing in...' : 'Hand in the test'}</button>}
             </div>
             <div className="flex flex-wrap gap-1 pt-1" aria-label="Jump to a question">
-              {qs.map((x, k) => <button key={x.id} onClick={() => setI(k)} aria-label={`Question ${k + 1}${answers[x.id] !== undefined ? ' answered' : ''}`} className={`h-7 w-7 rounded text-[11px] font-bold border ${k === i ? 'border-[#FA7014] text-[#FA7014]' : answers[x.id] !== undefined ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-300 text-slate-600'}`}>{k + 1}</button>)}
+              {qs.map((x, k) => <button key={x.id} onClick={() => setI(k)} aria-label={`Question ${k + 1}${answers[x.id] !== undefined ? ' answered' : ''}`} className={`h-7 w-7 rounded text-[11px] font-bold border ${k === i ? 'border-[#6050D0] text-[#6050D0]' : answers[x.id] !== undefined ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-300 text-slate-600'}`}>{k + 1}</button>)}
             </div>
           </div>
         )}

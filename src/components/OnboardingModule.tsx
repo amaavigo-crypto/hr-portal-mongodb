@@ -13,7 +13,7 @@ import {
 const badge = (status: string) => {
   if (status === 'ONBOARDED') return 'bg-emerald-50 text-emerald-700';
   if (status === 'REJECTED' || status === 'HR_STOPPED') return 'bg-rose-50 text-rose-700';
-  if (status === 'DOCS_REQUESTED') return 'bg-orange-50 text-orange-700';
+  if (status === 'DOCS_REQUESTED') return 'bg-brand-50 text-brand-700';
   if (status === 'DOCS_SUBMITTED') return 'bg-sky-50 text-sky-700';
   if (status === 'ACCOUNTS_PENDING') return 'bg-amber-50 text-amber-700';
   if (status === 'READY_FOR_JOINING') return 'bg-violet-50 text-violet-700';
@@ -133,7 +133,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
   });
   const countStatus = (statuses: string[]) => items.filter((it) => statuses.includes(it.status)).length;
   const metrics = [
-    { label: 'New joiners', value: items.length, tone: 'bg-orange-50', icon: 'bg-orange-100 text-orange-600', Icon: UserPlus },
+    { label: 'New joiners', value: items.length, tone: 'bg-brand-50', icon: 'bg-brand-100 text-brand-600', Icon: UserPlus },
     { label: 'In progress', value: countStatus(['DOCS_REQUESTED', 'DOCS_SUBMITTED', 'PRIOR_EMPLOYEE_REVIEW']), tone: 'bg-sky-50', icon: 'bg-sky-100 text-sky-600', Icon: ClipboardList },
     { label: 'Ready for joining', value: countStatus(['READY_FOR_JOINING', 'ACCOUNTS_PENDING']), tone: 'bg-emerald-50', icon: 'bg-emerald-100 text-emerald-600', Icon: UserCheck },
     { label: 'Onboarded', value: countStatus(['ONBOARDED']), tone: 'bg-emerald-50', icon: 'bg-emerald-100 text-emerald-600', Icon: CheckCircle2 },
@@ -147,7 +147,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
   const docDone = d ? docDefs.filter((x) => d.docs?.[x.key]).length : 0;
   const accountDone = (key: string, fields: string[]) => fields.length > 0 && fields.every((f) => (d?.accounts?.[key]?.[f] || '').trim());
   const accDone = d ? accountDefs.filter((x) => accountDone(x.key, x.fields)).length : 0;
-  const field = 'rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#FA7014]';
+  const field = 'rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#6050D0]';
 
   return (
     <div className="flex-1 w-full min-w-0 max-w-[1600px] mx-auto px-4 sm:px-6 xl:px-8 py-6 space-y-5 bg-[#F6F7F9]">
@@ -157,8 +157,8 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
           <p className="mt-1 text-sm text-slate-600">Manage new joiners, track document submission and set up accounts.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={load} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 hover:border-[#FA7014] hover:text-[#FA7014] cursor-pointer"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />Refresh</button>
-          <button type="button" disabled={visibleItems.length === 0} onClick={() => exportCsv(visibleItems)} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 hover:border-[#FA7014] hover:text-[#FA7014] disabled:opacity-50 cursor-pointer"><Download className="h-4 w-4" />Export</button>
+          <button type="button" onClick={load} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 hover:border-[#6050D0] hover:text-[#6050D0] cursor-pointer"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />Refresh</button>
+          <button type="button" disabled={visibleItems.length === 0} onClick={() => exportCsv(visibleItems)} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 hover:border-[#6050D0] hover:text-[#6050D0] disabled:opacity-50 cursor-pointer"><Download className="h-4 w-4" />Export</button>
         </div>
       </header>
 
@@ -203,7 +203,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
                     <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-500">{loading ? 'Loading…' : 'No onboardings yet.'}</td></tr>
                   )}
                   {rows.map((it) => (
-                    <tr key={it.id} onClick={() => setOpenId(it.id)} className={`cursor-pointer hover:bg-slate-50 ${openId === it.id ? 'bg-orange-50/60' : ''}`}>
+                    <tr key={it.id} onClick={() => setOpenId(it.id)} className={`cursor-pointer hover:bg-slate-50 ${openId === it.id ? 'bg-brand-50/60' : ''}`}>
                       <td className="px-4 py-3 font-medium text-slate-700">{it.employeeId}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3"><Avatar name={it.name} /><div className="min-w-0"><div className="truncate font-bold text-slate-900">{it.name}</div><div className="truncate text-xs text-slate-500">{it.email}</div></div></div>
@@ -222,7 +222,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
                 <div className="flex items-center gap-1.5">
                   <button type="button" aria-label="Previous page" disabled={cur === 1} onClick={() => setPage(cur - 1)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"><ChevronLeft className="h-4 w-4" /></button>
                   {Array.from({ length: pages }, (_, i) => i + 1).slice(Math.max(0, cur - 3), Math.max(0, cur - 3) + 5).map((n) => (
-                    <button key={n} type="button" onClick={() => setPage(n)} className={`h-9 w-9 rounded-lg border text-sm font-semibold cursor-pointer ${n === cur ? 'border-[#F36B21] bg-[#F36B21] text-white' : 'border-slate-200 text-slate-700'}`}>{n}</button>
+                    <button key={n} type="button" onClick={() => setPage(n)} className={`h-9 w-9 rounded-lg border text-sm font-semibold cursor-pointer ${n === cur ? 'border-[#6050D0] bg-[#6050D0] text-white' : 'border-slate-200 text-slate-700'}`}>{n}</button>
                   ))}
                   <button type="button" aria-label="Next page" disabled={cur === pages} onClick={() => setPage(cur + 1)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"><ChevronRight className="h-4 w-4" /></button>
                 </div>
@@ -246,7 +246,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
             </div>
             <nav className="mt-4 flex gap-1 border-b border-slate-200 px-5" role="tablist">
               {TABS.map((t) => (
-                <button key={t.key} type="button" role="tab" aria-selected={drawerTab === t.key} onClick={() => setDrawerTab(t.key)} className={`-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold cursor-pointer ${drawerTab === t.key ? 'border-[#F36B21] text-[#F36B21]' : 'border-transparent text-slate-700 hover:text-slate-900'}`}>{t.label}</button>
+                <button key={t.key} type="button" role="tab" aria-selected={drawerTab === t.key} onClick={() => setDrawerTab(t.key)} className={`-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold cursor-pointer ${drawerTab === t.key ? 'border-[#6050D0] text-[#6050D0]' : 'border-transparent text-slate-700 hover:text-slate-900'}`}>{t.label}</button>
               ))}
             </nav>
 
@@ -266,7 +266,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
                         <pre className="mt-2 bg-white border border-amber-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(d.candidate, null, 2)}</pre>
                       </details>
                       <div className="flex gap-2">
-                        <button type="button" disabled={busy} onClick={() => run(() => onboardingService.decidePrior(currentUser, d.id, 'PROCEED'), 'Moving forward. Document request sent.')} className="px-3 py-2 rounded-lg bg-[#FA7014] text-white text-xs font-bold cursor-pointer disabled:opacity-50">Move forward</button>
+                        <button type="button" disabled={busy} onClick={() => run(() => onboardingService.decidePrior(currentUser, d.id, 'PROCEED'), 'Moving forward. Document request sent.')} className="px-3 py-2 rounded-lg bg-[#6050D0] text-white text-xs font-bold cursor-pointer disabled:opacity-50">Move forward</button>
                         <button type="button" disabled={busy} onClick={() => run(() => onboardingService.decidePrior(currentUser, d.id, 'STOP'), 'Process stopped.')} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold cursor-pointer disabled:opacity-50">Stop process</button>
                       </div>
                     </div>
@@ -328,7 +328,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
                           <li key={def.key} className="px-3 py-2.5 flex items-center justify-between gap-3">
                             <span>{def.label}{!def.required && <span className="text-slate-400"> (optional)</span>}</span>
                             {f ? (
-                              <button type="button" onClick={() => onboardingService.openFile(currentUser, d.id, def.key).catch((e) => setNote(e.message))} className="text-[#FA7014] font-bold inline-flex items-center gap-1 cursor-pointer text-xs">
+                              <button type="button" onClick={() => onboardingService.openFile(currentUser, d.id, def.key).catch((e) => setNote(e.message))} className="text-[#6050D0] font-bold inline-flex items-center gap-1 cursor-pointer text-xs">
                                 {f.fileName} <ExternalLink className="w-3 h-3" />
                               </button>
                             ) : (
@@ -372,7 +372,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
                       ))}
                     </div>
                     {d.status !== 'ONBOARDED' && (
-                      <button type="button" disabled={busy} onClick={() => run(() => onboardingService.saveAccounts(currentUser, d.id, accounts), 'Accounts saved.')} className="mt-3 px-4 py-2.5 rounded-xl bg-[#F36B21] text-white text-sm font-bold cursor-pointer disabled:opacity-50">Save accounts</button>
+                      <button type="button" disabled={busy} onClick={() => run(() => onboardingService.saveAccounts(currentUser, d.id, accounts), 'Accounts saved.')} className="mt-3 px-4 py-2.5 rounded-xl bg-[#6050D0] text-white text-sm font-bold cursor-pointer disabled:opacity-50">Save accounts</button>
                     )}
                     {d.status === 'READY_FOR_JOINING' && (
                       <p className="mt-2 text-xs text-emerald-700">Checklist complete. Welcome and credentials emails go out at 9:00 AM IST on {d.onboardingDate}.</p>
@@ -385,7 +385,7 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
             </div>
           </section>
         ) : (
-          <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center"><div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-[#F36B21]"><UserCheck className="h-5 w-5" /></div><h2 className="mt-3 text-sm font-bold text-slate-800">Joiner details</h2><p className="mt-1 text-xs text-slate-500">Select a person from the list to review documents, account setup and onboarding history.</p></section>
+          <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center"><div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-[#6050D0]"><UserCheck className="h-5 w-5" /></div><h2 className="mt-3 text-sm font-bold text-slate-800">Joiner details</h2><p className="mt-1 text-xs text-slate-500">Select a person from the list to review documents, account setup and onboarding history.</p></section>
         )}
       </div>
     </div>

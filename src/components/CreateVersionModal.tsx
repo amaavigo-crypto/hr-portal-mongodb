@@ -360,8 +360,8 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
         {/* HEADER */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FA7014]/20 border border-[#FA7014]/40 flex items-center justify-center shadow-inner">
-              <GitBranch className="w-5 h-5 text-[#FA7014]" />
+            <div className="w-10 h-10 rounded-xl bg-[#6050D0]/20 border border-[#6050D0]/40 flex items-center justify-center shadow-inner">
+              <GitBranch className="w-5 h-5 text-[#6050D0]" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Create New Document Version</h2>
@@ -382,8 +382,8 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
         {/* FORM */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
           {error && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-xs text-orange-950 flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-[#FA7014] shrink-0" />
+            <div className="bg-brand-50 border border-brand-200 rounded-xl p-3 text-xs text-brand-950 flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-[#6050D0] shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -425,13 +425,13 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
           {/* TARGET DOCUMENT SELECTOR */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="select-target-document">
-              Select Document Master to Revise <span className="text-[#FA7014]">*</span>
+              Select Document Master to Revise <span className="text-[#6050D0]">*</span>
             </label>
             <select
               id="select-target-document"
               value={selectedDocId}
               onChange={(e) => setSelectedDocId(e.target.value)}
-              className="w-full text-sm p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] font-medium cursor-pointer"
+              className="w-full text-sm p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] font-medium cursor-pointer"
             >
               {documents.map((doc) => {
                 const docInReviewVer = versions.find(
@@ -465,9 +465,9 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 
           {/* REVISION REQUESTED / REVIEWER FEEDBACK BANNER */}
           {rejectedVersion && !isInReview && (
-            <div className="bg-[#FA7014]/5 border-l-4 border-l-[#FA7014] border-slate-200 rounded-2xl p-4 text-xs shadow-xs space-y-2">
+            <div className="bg-[#6050D0]/5 border-l-4 border-l-[#6050D0] border-slate-200 rounded-2xl p-4 text-xs shadow-xs space-y-2">
               <div className="flex items-center space-x-2 text-slate-900 font-bold">
-                <AlertTriangle className="w-4 h-4 text-[#FA7014]" />
+                <AlertTriangle className="w-4 h-4 text-[#6050D0]" />
                 <span>Addressing Reviewer Feedback on v{rejectedVersion.versionNumber}</span>
               </div>
               {rejectedVersion.reviewerComments && (
@@ -481,17 +481,17 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
-                      <MessageSquare className="w-4 h-4 text-[#FA7014]" />
+                      <MessageSquare className="w-4 h-4 text-[#6050D0]" />
                       <span>Approver's Text Selection Comments ({rejectedVersion.inlineComments.length}):</span>
                     </span>
-                    <span className="text-[10px] text-[#FA7014] bg-orange-50 border border-orange-200 font-bold px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] text-[#6050D0] bg-brand-50 border border-brand-200 font-bold px-2 py-0.5 rounded-md">
                       Changes Required
                     </span>
                   </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {rejectedVersion.inlineComments.map((c, ci) => (
                       <div key={c.id || ci} className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/70 text-xs flex items-start space-x-2.5">
-                        <span className="bg-[#FA7014] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0 mt-0.5">
+                        <span className="bg-[#6050D0] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0 mt-0.5">
                           #{ci + 1}
                         </span>
                         <div className="flex-1 min-w-0">
@@ -518,13 +518,13 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
           )}
 
           {/* EFFECTIVE DATE (TAKEN & ADDED FIRST FOR REVISION AS REQUESTED) */}
-          <div className="bg-orange-50/40 border-2 border-orange-200/90 rounded-2xl p-4 space-y-3 shadow-xs">
+          <div className="bg-brand-50/40 border-2 border-brand-200/90 rounded-2xl p-4 space-y-3 shadow-xs">
             <div>
               <div className="flex items-center space-x-2">
                 <label className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5" htmlFor="input-revision-effective-date">
-                  <Calendar className="w-4 h-4 text-[#FA7014]" />
+                  <Calendar className="w-4 h-4 text-[#6050D0]" />
                   <span>Effective Date for Revision</span>
-                  <span className="text-[#FA7014] font-black">*</span>
+                  <span className="text-[#6050D0] font-black">*</span>
                 </label>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
@@ -539,7 +539,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   type="date"
                   value={effectiveFrom}
                   onChange={(e) => handleEffectiveFromChange(e.target.value)}
-                  className="w-full text-sm font-semibold p-2.5 bg-white border border-slate-300 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] shadow-xs cursor-pointer"
+                  className="w-full text-sm font-semibold p-2.5 bg-white border border-slate-300 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] shadow-xs cursor-pointer"
                   required
                 />
               </div>
@@ -549,7 +549,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleEffectiveFromChange(new Date().toISOString().split('T')[0])}
-                  className="text-[11px] font-semibold px-2.5 py-1.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  className="text-[11px] font-semibold px-2.5 py-1.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
                 >
                   Today
                 </button>
@@ -560,7 +560,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                     d.setDate(d.getDate() + 7);
                     handleEffectiveFromChange(d.toISOString().split('T')[0]);
                   }}
-                  className="text-[11px] font-semibold px-2.5 py-1.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  className="text-[11px] font-semibold px-2.5 py-1.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
                 >
                   +7 Days
                 </button>
@@ -571,7 +571,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                     d.setMonth(d.getMonth() + 1, 1);
                     handleEffectiveFromChange(d.toISOString().split('T')[0]);
                   }}
-                  className="text-[11px] font-semibold px-2.5 py-1.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  className="text-[11px] font-semibold px-2.5 py-1.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
                 >
                   1st Next Month
                 </button>
@@ -579,12 +579,12 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
             </div>
 
             {/* RE-REVIEW DATE (JUST BELOW EFFECTIVE FROM DATE) */}
-            <div className="pt-3 border-t border-orange-200/80">
+            <div className="pt-3 border-t border-brand-200/80">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
                 <label className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5" htmlFor="input-revision-rereview-date">
-                  <Calendar className="w-4 h-4 text-[#FA7014]" />
+                  <Calendar className="w-4 h-4 text-[#6050D0]" />
                   <span>Re-review Date</span>
-                  <span className="text-[#FA7014] font-black">*</span>
+                  <span className="text-[#6050D0] font-black">*</span>
                 </label>
                 <div className="flex items-center space-x-1.5">
                   <button
@@ -594,7 +594,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                       base.setMonth(base.getMonth() + 6);
                       setReviewDueDate(base.toISOString().split('T')[0]);
                     }}
-                    className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
+                    className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
                   >
                     +6 Months
                   </button>
@@ -605,7 +605,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                       base.setFullYear(base.getFullYear() + 1);
                       setReviewDueDate(base.toISOString().split('T')[0]);
                     }}
-                    className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
+                    className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
                   >
                     +1 Year (Annual)
                   </button>
@@ -616,7 +616,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                       base.setFullYear(base.getFullYear() + 2);
                       setReviewDueDate(base.toISOString().split('T')[0]);
                     }}
-                    className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-orange-50 text-slate-700 hover:text-[#FA7014] border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
+                    className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-[#6050D0] border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
                   >
                     +2 Years
                   </button>
@@ -633,7 +633,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                     type="date"
                     value={reviewDueDate}
                     onChange={(e) => setReviewDueDate(e.target.value)}
-                    className="w-full text-sm font-semibold p-2.5 bg-white border border-slate-300 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] shadow-xs cursor-pointer"
+                    className="w-full text-sm font-semibold p-2.5 bg-white border border-slate-300 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] shadow-xs cursor-pointer"
                     required
                   />
                 </div>
@@ -678,10 +678,10 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   New Revision Target
                 </span>
                 <div className="font-mono text-base font-extrabold text-slate-900 mt-0.5 flex items-center space-x-1.5">
-                  <span className="text-[#FA7014]">v{calculatedNextVersion}</span>
+                  <span className="text-[#6050D0]">v{calculatedNextVersion}</span>
                   <span className="text-xs font-normal font-sans text-slate-500">({revisionType})</span>
                 </div>
-                <div className="text-[11px] text-[#FA7014] font-semibold mt-0.5">
+                <div className="text-[11px] text-[#6050D0] font-semibold mt-0.5">
                   Effective: {formatDDMMYYYY(effectiveFrom)}
                 </div>
               </div>
@@ -691,13 +691,13 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
           {/* REVISION TYPE SELECTOR (Minor vs Major) */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Revision Magnitude <span className="text-[#FA7014]">*</span>
+              Revision Magnitude <span className="text-[#6050D0]">*</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label
                 className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start space-x-3 ${
                   revisionType === VersionType.MINOR
-                    ? 'border-[#FA7014] bg-orange-50/40 shadow-xs'
+                    ? 'border-[#6050D0] bg-brand-50/40 shadow-xs'
                     : 'border-slate-200 hover:border-slate-300 bg-slate-50'
                 }`}
               >
@@ -707,7 +707,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   value={VersionType.MINOR}
                   checked={revisionType === VersionType.MINOR}
                   onChange={() => setRevisionType(VersionType.MINOR)}
-                  className="mt-1 text-[#FA7014] focus:ring-[#FA7014] cursor-pointer"
+                  className="mt-1 text-[#6050D0] focus:ring-[#6050D0] cursor-pointer"
                 />
                 <div>
                   <div className="font-bold text-xs text-slate-900">
@@ -722,7 +722,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               <label
                 className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start space-x-3 ${
                   revisionType === VersionType.MAJOR
-                    ? 'border-[#FA7014] bg-orange-50/40 shadow-xs'
+                    ? 'border-[#6050D0] bg-brand-50/40 shadow-xs'
                     : 'border-slate-200 hover:border-slate-300 bg-slate-50'
                 }`}
               >
@@ -732,7 +732,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   value={VersionType.MAJOR}
                   checked={revisionType === VersionType.MAJOR}
                   onChange={() => setRevisionType(VersionType.MAJOR)}
-                  className="mt-1 text-[#FA7014] focus:ring-[#FA7014] cursor-pointer"
+                  className="mt-1 text-[#6050D0] focus:ring-[#6050D0] cursor-pointer"
                 />
                 <div>
                   <div className="font-bold text-xs text-slate-900">
@@ -750,7 +750,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
           <div>
             <div className="mb-1.5">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider" htmlFor="input-change-summary">
-                Change Summary / Release Notes <span className="text-[#FA7014]">*</span>
+                Change Summary / Release Notes <span className="text-[#6050D0]">*</span>
               </label>
             </div>
 
@@ -760,7 +760,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               onChange={(e) => setChangeSummary(e.target.value)}
               rows={2}
               placeholder="Detail specifically what was changed from the previous published baseline..."
-              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#FA7014] placeholder:text-slate-400"
+              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6050D0] placeholder:text-slate-400"
               required
             />
           </div>
@@ -770,7 +770,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
             <div className="border border-slate-200 rounded-2xl p-4 bg-white shadow-2xs space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-[#FA7014]" />
+                  <Sparkles className="w-4 h-4 text-[#6050D0]" />
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                     Updated Document Header for v{calculatedNextVersion}
                   </span>
@@ -783,7 +783,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               {/* Dynamic Header Table */}
               {mimeType?.startsWith('video/') || fileName?.toLowerCase().match(/\.(mp4|webm|mov|m4v|mkv|avi|ogv)$/) ? (
                 <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-start space-x-2.5">
-                  <Sparkles className="w-4 h-4 text-[#FA7014] shrink-0 mt-0.5" />
+                  <Sparkles className="w-4 h-4 text-[#6050D0] shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold block text-slate-900">Video Asset Version Governance</span>
                     <p className="text-slate-600 text-[11px] mt-0.5">
@@ -823,7 +823,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
           <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider" htmlFor="textarea-revised-content">
-                Document Content / File (Word DOCX, Video) <span className="text-[#FA7014]">*</span>
+                Document Content / File (Word DOCX, Video) <span className="text-[#6050D0]">*</span>
               </label>
 
               <div className="flex items-center space-x-2">
@@ -840,7 +840,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 )}
 
                 <label className="cursor-pointer inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-xs hover:bg-slate-50 transition-colors">
-                  <UploadCloud className="w-3.5 h-3.5 text-[#FA7014]" />
+                  <UploadCloud className="w-3.5 h-3.5 text-[#6050D0]" />
                   <span>Upload File</span>
                   <input
                     type="file"
@@ -854,7 +854,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 
             {parsingFile && (
               <div className="text-xs text-slate-700 font-mono bg-white p-3 rounded-xl border border-slate-200 flex items-center space-x-2 shadow-xs">
-                <Clock className="w-4 h-4 animate-spin text-[#FA7014]" />
+                <Clock className="w-4 h-4 animate-spin text-[#6050D0]" />
                 <span>Parsing file, applying corporate header/footer, and preparing intact multi-page preview...</span>
               </div>
             )}
@@ -863,7 +863,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               <div className="space-y-3">
                 <div className="text-xs text-slate-800 font-mono bg-white p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
                   <div className="flex items-center space-x-2 truncate max-w-[75%]">
-                    <FileText className="w-4 h-4 text-[#FA7014] shrink-0" />
+                    <FileText className="w-4 h-4 text-[#6050D0] shrink-0" />
                     <span className="font-bold text-slate-900 truncate">{fileName}</span>
                   </div>
                   <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-sans font-bold flex items-center space-x-1">
@@ -875,7 +875,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 {/* Content Header */}
                 <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
                   <div className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-slate-900 text-white shadow-xs flex items-center space-x-1.5">
-                    <FileText className="w-3.5 h-3.5 text-[#FA7014]" />
+                    <FileText className="w-3.5 h-3.5 text-[#6050D0]" />
                     <span>Intact Revision Preview (Header & Footer Applied)</span>
                   </div>
                 </div>
@@ -930,7 +930,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               className={`text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md flex items-center space-x-2 transition-all ${
                 isInReview || isDocumentPermanentlyRejected
                   ? 'bg-slate-400 opacity-60 cursor-not-allowed shadow-none'
-                  : 'bg-[#FA7014] hover:bg-[#E65A05] shadow-[#FA7014]/20'
+                  : 'bg-[#6050D0] hover:bg-[#5243BE] shadow-[#6050D0]/20'
               }`}
               title={
                 isInReview
