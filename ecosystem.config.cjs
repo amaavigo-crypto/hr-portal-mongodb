@@ -28,7 +28,7 @@ module.exports = {
     },
     {
       ...base,
-      name: 'hr-portal-staging',
+      name: 'hr-staging',
       env: { NODE_ENV: 'production', PORT: 3001 },
       out_file: './logs/staging-out.log',
       error_file: './logs/staging-error.log',
