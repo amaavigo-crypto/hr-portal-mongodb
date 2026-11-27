@@ -6,7 +6,7 @@ import { governanceEngine } from './src/services/governance';
 import { auditService } from './src/services/audit';
 import { defaultStorageProvider } from './src/services/storage';
 import { defaultEmailProvider } from './src/services/email';
-import { dispatchLiveEmail, getEmailConfigStatus } from './src/services/serverEmail';
+import { routeEmail } from './api/_lib/emailGate';
 import { routeHiring } from './api/_lib/hiringRouter.js';
 import { routeApply } from './api/_lib/applicationsApi';
 import { routeHrbp } from './api/_lib/hrbpApi.js';
@@ -127,42 +127,10 @@ async function startServer() {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Live Email Provider Status
-  app.get('/api/email/config', (req, res) => {
-    res.json(getEmailConfigStatus());
-  });
-
-  // Outbound Live Email Dispatch Endpoint
-  app.post('/api/email/send', async (req, res) => {
-    try {
-      const result = await dispatchLiveEmail(req.body);
-      res.json(result);
-    } catch (err: any) {
-      console.error('Email sending error in /api/email/send:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  // Send Direct Live Test Email
-  app.post('/api/email/test', async (req, res) => {
-    try {
-      const { to = 'parth@amaavigo.in', recipientName = 'Parth' } = req.body;
-      const result = await dispatchLiveEmail({
-        to,
-        recipientName,
-        subject: `[Live Test Verification] Amaavigo HR Governance Email Dispatcher`,
-        body: `Dear ${recipientName},\n\nThis is a live test notification from your Amaavigo HR Document Governance & Version Control System.\n\nYour email (${to}) is active in the employee database. Whenever a new company policy or mandatory document is published, you will receive real-time notifications with summary changelogs and compliance acknowledgment links.\n\nBest regards,\nHR Governance & Compliance Automation Team`,
-        metadata: {
-          documentId: 'TEST-SYSTEM-LIVE',
-          documentTitle: 'Live Notification Verification',
-          versionNumber: '1.0',
-          acknowledgementRequired: true,
-        },
-      });
-      res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
-    }
+  // Email from the browser: who may send what is decided in api/_lib/emailGate.ts (shared with api/email on Vercel).
+  app.all('/api/email/:action', async (req, res) => {
+    const { status, json } = await routeEmail({ method: req.method, action: req.params.action, body: req.body, headers: req.headers as Record<string, any> });
+    res.status(status).json(json);
   });
 
   // ----------------------------------------------------

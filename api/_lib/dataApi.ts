@@ -52,6 +52,7 @@ interface Policy {
 const POLICIES: Record<string, Policy> = {
   documents: { create: ['doc.create'], update: ['doc.create', 'doc.review', 'doc.publish'], delete: ['doc.delete'], immutable: ['id'] },
   versions: { create: ['doc.create'], update: ['doc.create', 'doc.review', 'doc.publish'], delete: ['doc.delete', 'doc.create'], immutable: ['id'] },
+  // Anyone's actions are logged, but who did it and when are written by the server (stampAudit), never by the browser.
   auditLogs: { create: 'member', update: false, delete: false },
   acknowledgments: {
     create: ['doc.acknowledge', 'doc.create', 'doc.publish', 'doc.review'],
@@ -81,6 +82,32 @@ function allowed(c: AuthContext, rule: string[] | 'member' | false | undefined):
   if (rule === undefined || rule === 'member') return isActive(c);
   if (rule === false) return false;
   return holdsAny(c, rule);
+}
+
+/** People who may read the whole company audit trail. Everyone else reads only the entries about their own actions. */
+export const AUDIT_READ_PERMS = ['audit.view', 'doc.create', 'doc.review', 'doc.publish'];
+const readsAllAudit = (c: AuthContext) => c.isCompanyAdmin || holdsAny(c, AUDIT_READ_PERMS);
+const ownAudit = (c: AuthContext, rec: Record<string, any>) => rec.actorUid === c.uid || rec.performedById === c.uid;
+
+/** Replaces who / when / from where with what the server knows, so a log entry cannot be written in someone else's name. */
+async function stampAudit(c: AuthContext, data: Record<string, any>, headers: Record<string, any>): Promise<Record<string, any>> {
+  const snap = await adminDb().collection('employees').doc(c.uid).get();
+  const me = snap.exists && snap.get('companyId') === c.companyId ? (snap.data() as Record<string, any>) : null;
+  const forwarded = String(headers?.['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const now = new Date().toISOString();
+  return {
+    ...data,
+    actorUid: c.uid,
+    actorEmail: c.email,
+    performedById: c.uid,
+    performedByName: String(me?.name || c.email),
+    performedByRole: String(me?.role || 'EMPLOYEE'),
+    performedAt: now,
+    recordedAt: now,
+    // The nearest proxy adds the real address last; anything before it came from the caller.
+    ipAddress: String(headers?.['x-real-ip'] || forwarded[forwarded.length - 1] || ''),
+    userAgent: String(headers?.['user-agent'] || '').slice(0, 300),
+  };
 }
 
 const deny = (what: string) => new AuthError(403, `Not permitted: ${what}`);
@@ -128,6 +155,7 @@ async function get(b: any, c: AuthContext): Promise<DataResult> {
   const policy = policyFor(collection);
   if (!inMyCompany(c, rec)) return hidden;
   if (policy.read && !holdsAny(c, policy.read)) throw deny(`reading ${collection}`);
+  if (collection === 'auditLogs' && !readsAllAudit(c) && !ownAudit(c, rec!)) return hidden;
   return ok({ exists: true, id, data: rec });
 }
 
@@ -152,16 +180,18 @@ async function list(b: any, c: AuthContext): Promise<DataResult> {
     q = q.where(field, '==', v);
   }
   const snap = await q.limit(MAX_DOCS).get();
-  return ok({ docs: snap.docs.map((d: any) => ({ id: d.id, data: d.data() })) });
+  let docs = snap.docs.map((d: any) => ({ id: d.id, data: d.data() }));
+  if (collection === 'auditLogs' && !readsAllAudit(c)) docs = docs.filter((d: any) => ownAudit(c, d.data));
+  return ok({ docs });
 }
 
 /** Writes: `set` creates or replaces (merge optional), `update` changes fields of an existing record. */
-async function write(action: 'set' | 'update', b: any, c: AuthContext): Promise<DataResult> {
+async function write(action: 'set' | 'update', b: any, c: AuthContext, headers: Record<string, any>): Promise<DataResult> {
   const collection = str(b.collection, 'collection');
   const policy = policyFor(collection);
   const id = str(b.id, 'id');
   if (!ID_RE.test(id)) return fail(400, 'Invalid id.');
-  const data = checkPayload(b.data);
+  let data = checkPayload(b.data);
   if (!isActive(c)) throw new AuthError(403, 'Your company is not active.');
 
   const ref = adminDb().collection(collection).doc(id);
@@ -175,6 +205,10 @@ async function write(action: 'set' | 'update', b: any, c: AuthContext): Promise<
   if (!allowed(c, policy[kind])) throw deny(`${kind === 'create' ? 'creating' : 'changing'} ${collection}`);
 
   if (data.companyId !== undefined && data.companyId !== c.companyId) throw deny('writing into another company');
+  if (collection === 'auditLogs') {
+    if (current) throw deny('audit logs cannot be changed');
+    data = await stampAudit(c, data, headers);
+  }
   const merged = action === 'set' && !b.merge ? { ...data } : { ...(current || {}), ...data };
   merged.companyId = c.companyId;
 
@@ -182,7 +216,6 @@ async function write(action: 'set' | 'update', b: any, c: AuthContext): Promise<
     for (const f of policy.immutable || []) {
       if (merged[f] !== current![f]) throw deny(`changing ${f}`);
     }
-    if (collection === 'auditLogs') throw deny('audit logs cannot be changed');
     if (collection === 'acknowledgments' && current!.status === 'ACKNOWLEDGED' && merged.status === 'PENDING') {
       throw deny('an acknowledgment cannot go back to pending');
     }
@@ -223,8 +256,8 @@ export async function routeData(r: DataRequest): Promise<DataResult> {
     switch (r.action) {
       case 'data-get': return await get(b, c);
       case 'data-list': return await list(b, c);
-      case 'data-set': return await write('set', b, c);
-      case 'data-update': return await write('update', b, c);
+      case 'data-set': return await write('set', b, c, r.headers);
+      case 'data-update': return await write('update', b, c, r.headers);
       case 'data-delete': return await remove(b, c);
       default: return fail(404, `Unknown data action "${r.action}".`);
     }

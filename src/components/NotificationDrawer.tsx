@@ -47,9 +47,6 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
     }
   }, [isOpen]);
 
-  const [testEmail, setTestEmail] = useState('parth@amaavigo.in');
-  const [testName, setTestName] = useState('Parth');
-
   const handleSendTest = async () => {
     setIsSendingTest(true);
     setTestResult(null);
@@ -57,17 +54,14 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
       const response = await apiFetch('/api/email/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: testEmail,
-          recipientName: testName || 'Team Member',
-        }),
+        body: JSON.stringify({}),
       });
 
       const res = await response.json();
       if (res.success) {
         setTestResult({
           success: true,
-          message: `Live email dispatched directly to ${testEmail} via ${res.provider || 'Gmail SMTP'}.`,
+          message: `Test email sent to ${res.sentTo || 'your own address'} via ${res.provider || 'email'}.`,
         });
         loadData();
       } else {
@@ -119,7 +113,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-[#6050D0] animate-pulse"></span>
               <span className="text-xs font-semibold text-slate-700">
-                Active Provider: <span className="text-slate-900 font-bold">{providerConfig?.activeProvider || 'Gmail SMTP (automation@amaavigo.com)'}</span>
+                Active Provider: <span className="text-slate-900 font-bold">{providerConfig?.activeProvider || 'Checking...'}</span>
               </span>
             </div>
             <button
@@ -135,71 +129,27 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
             <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2 animate-in fade-in duration-150">
               <div className="flex items-center space-x-2 text-slate-900 font-semibold">
                 <ShieldCheck className="w-4 h-4 text-[#6050D0]" />
-                <span>Gmail SMTP Authenticated & Active</span>
+                <span>{providerConfig?.isConfigured ? 'Email is set up' : 'Email is not set up'}</span>
               </div>
               <div className="bg-slate-50 p-2.5 rounded font-mono text-[11px] space-y-1 text-slate-700 border border-slate-200">
-                <div><strong>Sender Email:</strong> automation@amaavigo.com</div>
-                <div><strong>Host:</strong> smtp.gmail.com (Port 587/465)</div>
-                <div><strong>Auth Method:</strong> Dedicated Google App Password</div>
-                <div><strong>Recipients:</strong> Any corporate or employee address (e.g. parth@amaavigo.in)</div>
+                <div><strong>Sender:</strong> {providerConfig?.senderFrom || 'Not set up'}</div>
+                <div><strong>Recipients:</strong> only people in your own company</div>
               </div>
             </div>
           )}
 
-          {/* Quick Action: Send Test Email */}
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-700">
-                Send Live Test via Gmail SMTP:
-              </span>
-              <div className="flex items-center space-x-1.5">
-                <button
-                  type="button"
-                  onClick={() => { setTestEmail('parth@amaavigo.in'); setTestName('Parth'); }}
-                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
-                    testEmail === 'parth@amaavigo.in'
-                      ? 'bg-[#6050D0]/10 text-[#6050D0] border-[#6050D0]/30 font-bold'
-                      : 'bg-white text-slate-600 border-slate-200 hover:text-slate-900'
-                  }`}
-                >
-                  parth@amaavigo.in
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setTestEmail('automation@amaavigo.com'); setTestName('Admin'); }}
-                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
-                    testEmail === 'automation@amaavigo.com'
-                      ? 'bg-[#6050D0]/10 text-[#6050D0] border-[#6050D0]/30 font-bold'
-                      : 'bg-white text-slate-600 border-slate-200 hover:text-slate-900'
-                  }`}
-                >
-                  automation@amaavigo.com
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="email"
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                placeholder="Recipient email address..."
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#6050D0]"
-              />
-              <button
-                id="btn-send-test-live-email"
-                onClick={handleSendTest}
-                disabled={isSendingTest || !testEmail}
-                className="bg-[#6050D0] hover:bg-[#5243BE] disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 shadow-sm shadow-[#6050D0]/20 transition-all shrink-0"
-              >
-                {isSendingTest ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>{isSendingTest ? 'Sending...' : 'Send Live Email'}</span>
-              </button>
-            </div>
+          {/* Send a test message. It only ever goes to the signed-in administrator. */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-[11px] font-semibold text-slate-700">Send a test email to your own address</span>
+            <button
+              id="btn-send-test-live-email"
+              onClick={handleSendTest}
+              disabled={isSendingTest}
+              className="bg-[#6050D0] hover:bg-[#5243BE] disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 shadow-sm shadow-[#6050D0]/20 transition-all shrink-0"
+            >
+              {isSendingTest ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              <span>{isSendingTest ? 'Sending...' : 'Send test'}</span>
+            </button>
           </div>
 
           {testResult && (
@@ -285,7 +235,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
               <div className="border-b border-slate-100 pb-2 text-slate-600">
                 <div><strong className="text-slate-900">Subject:</strong> {selectedNotif.subject}</div>
                 <div><strong className="text-slate-900">To:</strong> {selectedNotif.recipientName} &lt;{selectedNotif.recipientEmail}&gt;</div>
-                <div><strong className="text-slate-900">From:</strong> automation@amaavigo.com</div>
+                <div><strong className="text-slate-900">From:</strong> {providerConfig?.senderFrom || 'Your portal mailbox'}</div>
                 <div><strong className="text-slate-900">Sent:</strong> {formatIST(selectedNotif.sentAt)}</div>
                 <div><strong className="text-slate-900">Delivery Status:</strong> <span className="text-[#6050D0] font-bold">{selectedNotif.status} (Delivered via Gmail SMTP)</span></div>
               </div>

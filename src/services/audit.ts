@@ -97,7 +97,8 @@ export class AuditService {
       newValue: details.newValue,
       reason: details.reason,
       source: details.source || 'WEB_APP',
-      ipAddress: details.ipAddress || '192.168.1.100',
+      // The server stamps the real address, actor and time when it stores the entry (api/_lib/dataApi.ts).
+      ipAddress: details.ipAddress || '',
       userAgent: details.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Node-Express-Server'),
     };
 
