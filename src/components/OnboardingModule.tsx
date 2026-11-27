@@ -151,8 +151,8 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
 
   return (
     <div className="flex-1 w-full min-w-0 max-w-[1600px] mx-auto px-4 sm:px-6 xl:px-8 py-6 space-y-5 bg-[#F6F7F9]">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <header className="hx-bar flex flex-wrap items-start justify-between gap-4">
+        <div className="hx-title">
           <h1 className="text-3xl font-bold tracking-tight text-slate-950">Onboarding</h1>
           <p className="mt-1 text-sm text-slate-600">Manage new joiners, track document submission and set up accounts.</p>
         </div>
@@ -167,8 +167,8 @@ export const OnboardingModule: React.FC<{ currentUser: User }> = ({ currentUser 
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {metrics.map((m) => (
-          <div key={m.label} className={`flex items-center gap-4 rounded-2xl border border-white p-4 ${m.tone}`}>
-            <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${m.icon}`}><m.Icon className="h-5 w-5" /></span>
+          <div key={m.label} className="flex items-center gap-3 rounded-xl border border-[#e8e9ec] bg-white p-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f2f4] text-[#3d434d]"><m.Icon className="h-5 w-5" /></span>
             <div><div className="text-sm font-semibold text-slate-700">{m.label}</div><div className="text-3xl font-bold text-slate-950">{loading && items.length === 0 ? '—' : m.value}</div></div>
           </div>
         ))}

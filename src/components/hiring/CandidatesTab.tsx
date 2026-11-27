@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarClock, ChevronLeft, ChevronRight, ClipboardList, Eye, FileText, Handshake, ListFilter, Search, UserCheck, Users } from 'lucide-react';
+import { CalendarClock, ChevronLeft, ChevronRight, ClipboardList, FileText, ListFilter, Search, X } from 'lucide-react';
 import { Avatar } from '../home/parts';
 import { pipelineService } from '../../services/pipelineService';
 import { User } from '../../types';
 import { CandidateAi } from './AiTab';
-import { Card, Drawer, EmptyState, Field, Notice, btnGhost, btnPrimary, input, useRunner } from '../leave/ui';
+import { Card, EmptyState, Field, Notice, btnGhost, btnPrimary, input, useRunner } from '../leave/ui';
 import { Loading, Pill, useLoad } from '../common/loadUi';
 import { FeedbackPanel } from './InterviewsTab';
+import { SidePanel } from './shell/SidePanel';
+import { STAGES, stageOf } from './PipelineBoard';
 
 const when = (iso: string) => new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
 const stageTone = (s: string) => (s === 'Selected' ? 'green' : s === 'Rejected' ? 'red' : s === 'On Hold' ? 'amber' : s.startsWith('Interview') ? 'blue' : 'slate') as 'green' | 'red' | 'amber' | 'blue' | 'slate';
@@ -29,6 +31,9 @@ const ScoreBlock: React.FC<{ score: any }> = ({ score }) => (
   </div>
 );
 
+type PanelTab = 'overview' | 'screening' | 'interviews';
+const PANEL_TABS: [PanelTab, string][] = [['overview', 'Overview'], ['screening', 'Screening and tests'], ['interviews', 'Interviews']];
+
 export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () => void; onChanged: () => void }> = ({ id, users, onClose, onChanged }) => {
   const d = useLoad(() => pipelineService.candidate(id), [id]);
   const { run, busy, note } = useRunner();
@@ -41,6 +46,7 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
   const google = useLoad(() => pipelineService.googleStatus(), []);
   const [conflict, setConflict] = useState<any[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [view, setView] = useState<PanelTab>('overview');
   const reload = async () => { await d.reload(); onChanged(); };
   const staff = users.filter((u) => u.active !== false).sort((x, y) => x.name.localeCompare(y.name));
   const schedule = (force = false) => run(async () => {
@@ -54,65 +60,113 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
     }
   }, 'Interview scheduled. The schedule email and calendar invite went to the candidate, the panel and any guests.');
 
+  const interviewsList: any[] = d.data?.interviews || [];
+  const next = a ? nextStep({ status: a.status, screening: d.data.screening, assessmentsPending: (d.data.assessments || []).filter((x: any) => x.status !== 'SCORED').length, nextInterview: interviewsList.filter((i) => i.status !== 'CANCELLED' && i.status !== 'COMPLETED' && Date.parse(i.startIso) > Date.now()).map((i) => i.startIso).sort()[0] }) : null;
+  const stage = a ? stageOf(a.status) : null;
+
   return (
-    <Drawer open onClose={onClose} title={a?.name || 'Candidate'} subtitle={a ? `${a.designation} - ${a.email}` : ''}>
-      <Loading error={d.error} loading={d.loading} />
+    <SidePanel label={a?.name || 'Candidate'} onClose={onClose}
+      header={(
+        <>
+          <div className="flex items-start gap-3">
+            <Avatar name={a?.name || '?'} />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-lg font-semibold text-[#16181d]">{a?.name || 'Candidate'}</h2>
+              {a && <p className="truncate text-[13px] text-[#5c626d]">{a.designation} · {a.email}</p>}
+            </div>
+            <button type="button" onClick={onClose} aria-label="Close" className="cursor-pointer rounded-md p-1.5 text-[#5c626d] hover:bg-[#f1f2f4]"><X className="h-5 w-5" /></button>
+          </div>
+          {a && (
+            <>
+              <div className="flex flex-wrap items-center gap-2"><Pill tone={stageTone(a.status)}>{a.status}</Pill>{d.data.referral && <Pill tone="blue">Referred by {d.data.referral.by}</Pill>}{a.resumeUrl && <a className="text-xs text-[#FA7014] underline" href={a.resumeUrl} target="_blank" rel="noreferrer">Resume</a>}</div>
+              {stage !== null && (
+                <ol className="mt-3 grid grid-cols-5 gap-1.5" aria-label={`Stage: ${STAGES[stage]}`}>
+                  {STAGES.map((label, i) => (
+                    <li key={label} aria-current={i === stage ? 'step' : undefined}>
+                      <span className={`block h-1 rounded ${i < stage ? 'bg-[#3d434d]' : i === stage ? 'bg-[#c2500a]' : 'bg-[#e8e9ec]'}`} />
+                      <span className={`mt-1.5 block truncate text-[11px] ${i === stage ? 'font-semibold text-[#16181d]' : 'text-[#5c626d]'}`}>{label}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <div className="-mb-px mt-3 flex gap-6" role="tablist" aria-label="Candidate sections">
+                {PANEL_TABS.map(([k, label]) => (
+                  <button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => setView(k)} className={`h-10 cursor-pointer border-b-2 text-[13px] ${view === k ? 'border-[#c2500a] font-semibold text-[#16181d]' : 'border-transparent font-medium text-[#5c626d] hover:text-[#16181d]'}`}>{label}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+      footer={a && a.status !== 'Rejected' ? (
+        <div className="flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={() => setView('screening')} className="h-9 cursor-pointer rounded-lg border border-[#dfe1e5] bg-white px-4 text-[13px] font-semibold text-[#16181d] hover:border-[#c2500a]">Screening and tests</button>
+          <button type="button" onClick={() => setView('interviews')} className="h-9 cursor-pointer rounded-lg bg-[#c2500a] px-4 text-[13px] font-semibold text-white hover:bg-[#a84308]">Schedule interview</button>
+        </div>
+      ) : undefined}>
+      <Loading error={d.error} loading={d.loading && !d.data} />
       {note && <Notice tone={note.tone}>{note.text}</Notice>}
       {a && d.data && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2"><Pill tone={stageTone(a.status)}>{a.status}</Pill>{d.data.referral && <Pill tone="blue">Referred by {d.data.referral.by}</Pill>}{a.resumeUrl && <a className="text-xs text-[#FA7014] underline" href={a.resumeUrl} target="_blank" rel="noreferrer">Resume</a>}</div>
+          {view === 'overview' && (
+            <>
+              {next && <div className="rounded-lg bg-[#fdf1e9] px-4 py-3"><p className="text-xs font-semibold text-[#8f3a06]">Next step</p><p className="text-sm text-[#16181d]">{next.text} <span className="text-[#5c626d]">· {next.sub}</span></p></div>}
+            <Card title="Score" right={a.resumeUrl ? <button className={btnGhost} disabled={busy} onClick={() => run(async () => { await pipelineService.extractResume(id); await reload(); }, 'Resume read.')}>Read resume</button> : undefined}>
+              <ScoreBlock score={d.data.score} />
+              {d.data.resumeFacts && <p className="mt-2 text-xs text-slate-500">From the resume: {d.data.resumeFacts.years ? `${d.data.resumeFacts.years} years mentioned. ` : ''}Skills found: {d.data.resumeFacts.skillsFound.join(', ') || 'none'}. Missing: {d.data.resumeFacts.skillsMissing.join(', ') || 'none'}.</p>}
+            </Card>
 
-          <Card title="Score" right={a.resumeUrl ? <button className={btnGhost} disabled={busy} onClick={() => run(async () => { await pipelineService.extractResume(id); await reload(); }, 'Resume read.')}>Read resume</button> : undefined}>
-            <ScoreBlock score={d.data.score} />
-            {d.data.resumeFacts && <p className="mt-2 text-xs text-slate-500">From the resume: {d.data.resumeFacts.years ? `${d.data.resumeFacts.years} years mentioned. ` : ''}Skills found: {d.data.resumeFacts.skillsFound.join(', ') || 'none'}. Missing: {d.data.resumeFacts.skillsMissing.join(', ') || 'none'}.</p>}
-          </Card>
+            <CandidateAi applicationId={id} onChanged={reload} />
 
-          <CandidateAi applicationId={id} onChanged={reload} />
-
-          <Card title="Candidate details">
-            <div className="grid gap-3 md:grid-cols-2">
-              {([['currentCtcLpa', 'Current CTC (LPA)'], ['expectedCtcLpa', 'Expected CTC (LPA)'], ['totalExperienceYears', 'Total experience (years)'], ['employersCount', 'Employers so far'], ['noticePeriod', 'Notice period'], ['qualification', 'Qualification'], ['portfolioUrl', 'Portfolio link']] as const).map(([k, l]) => (
-                <Field key={k} label={l}><input className={input} value={val(k)} onChange={(e) => setFields({ ...fields, [k]: e.target.value })} /></Field>
-              ))}
-            </div>
-            <button className={`${btnPrimary} mt-3`} disabled={busy || !Object.keys(fields).length} onClick={() => run(async () => { await pipelineService.candSave({ applicationId: id, ...fields }); setFields({}); await reload(); }, 'Saved.')}>Save details</button>
-          </Card>
-
-          <Card title="HR screening" subtitle={d.data.screening ? `Last: ${d.data.screening.outcome.toLowerCase()} by ${d.data.screening.screenedBy}` : 'Record the screening call. Pass shortlists, fail rejects, hold parks the candidate.'}>
-            <div className="grid gap-3 md:grid-cols-3">
-              <Field label="Outcome"><select className={input} value={scr.outcome} onChange={(e) => setScr({ ...scr, outcome: e.target.value })}><option value="PASS">Pass</option><option value="HOLD">Hold</option><option value="FAIL">Fail</option></select></Field>
-              <Field label="Communication (0-100)"><input className={input} type="number" min={0} max={100} value={scr.communication} onChange={(e) => setScr({ ...scr, communication: e.target.value })} /></Field>
-              <Field label="Notice period"><input className={input} value={scr.noticePeriod} onChange={(e) => setScr({ ...scr, noticePeriod: e.target.value })} /></Field>
-              <Field label="Current CTC (LPA)"><input className={input} type="number" value={scr.currentCtcLpa} onChange={(e) => setScr({ ...scr, currentCtcLpa: e.target.value })} /></Field>
-              <Field label="Expected CTC (LPA)"><input className={input} type="number" value={scr.expectedCtcLpa} onChange={(e) => setScr({ ...scr, expectedCtcLpa: e.target.value })} /></Field>
-            </div>
-            <Field label="Notes"><textarea className={`${input} mt-2`} rows={2} value={scr.notes} onChange={(e) => setScr({ ...scr, notes: e.target.value })} /></Field>
-            <button className={`${btnPrimary} mt-3`} disabled={busy} onClick={() => run(async () => { await pipelineService.screenSave({ applicationId: id, outcome: scr.outcome, notes: scr.notes, communication: scr.communication, answers: { currentCtcLpa: scr.currentCtcLpa, expectedCtcLpa: scr.expectedCtcLpa, noticePeriod: scr.noticePeriod } }); await reload(); }, 'Screening saved.')}>Save screening</button>
-          </Card>
-
-          <Card title="Assessments">
-            {d.data.assessments.length === 0 && <p className="text-xs text-slate-500">None assigned.</p>}
-            {d.data.assessments.map((x: any) => (
-              <div key={x.id} className="flex items-center justify-between gap-2 border-b border-slate-100 py-2 text-xs">
-                <div><div className="font-bold text-slate-800">{x.title}</div><div className="text-slate-500">pass mark {x.passScore} / {x.maxScore}{x.dueOn ? ` - due ${x.dueOn}` : ''}</div></div>
-                {x.status === 'SCORED' ? <Pill tone={x.result === 'PASS' ? 'green' : 'red'}>{x.score} - {x.result.toLowerCase()}</Pill> : (
-                  <form className="flex gap-1" onSubmit={(e) => { e.preventDefault(); const v = (e.currentTarget.elements.namedItem('s') as HTMLInputElement).value; run(async () => { await pipelineService.assessResult({ id: x.id, score: v }); await reload(); }, 'Result saved.'); }}>
-                    <input name="s" type="number" min={0} max={x.maxScore} className={`${input} w-20`} placeholder="Score" /><button className={btnGhost}>Save</button>
-                  </form>
-                )}
+            <Card title="Candidate details">
+              <div className="grid gap-3 md:grid-cols-2">
+                {([['currentCtcLpa', 'Current CTC (LPA)'], ['expectedCtcLpa', 'Expected CTC (LPA)'], ['totalExperienceYears', 'Total experience (years)'], ['employersCount', 'Employers so far'], ['noticePeriod', 'Notice period'], ['qualification', 'Qualification'], ['portfolioUrl', 'Portfolio link']] as const).map(([k, l]) => (
+                  <Field key={k} label={l}><input className={input} value={val(k)} onChange={(e) => setFields({ ...fields, [k]: e.target.value })} /></Field>
+                ))}
               </div>
-            ))}
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <Field label="Title"><input className={input} value={asg.title} onChange={(e) => setAsg({ ...asg, title: e.target.value })} /></Field>
-              <Field label="Type"><select className={input} value={asg.type} onChange={(e) => setAsg({ ...asg, type: e.target.value })}><option>TECHNICAL</option><option>APTITUDE</option><option>ASSIGNMENT</option><option>OTHER</option></select></Field>
-              <Field label="Due date"><input className={input} type="date" value={asg.dueOn} onChange={(e) => setAsg({ ...asg, dueOn: e.target.value })} /></Field>
-              <Field label="Max score"><input className={input} type="number" value={asg.maxScore} onChange={(e) => setAsg({ ...asg, maxScore: e.target.value })} /></Field>
-              <Field label="Pass mark"><input className={input} type="number" value={asg.passScore} onChange={(e) => setAsg({ ...asg, passScore: e.target.value })} /></Field>
-              <Field label="Test link"><input className={input} value={asg.link} onChange={(e) => setAsg({ ...asg, link: e.target.value })} placeholder="https://" /></Field>
-            </div>
-            <button className={`${btnPrimary} mt-3`} disabled={busy || !asg.title} onClick={() => run(async () => { await pipelineService.assessAssign({ applicationId: id, ...asg }); setAsg({ ...asg, title: '', link: '' }); await reload(); }, 'Assigned. The candidate has been emailed.')}>Assign and email</button>
-          </Card>
+              <button className={`${btnPrimary} mt-3`} disabled={busy || !Object.keys(fields).length} onClick={() => run(async () => { await pipelineService.candSave({ applicationId: id, ...fields }); setFields({}); await reload(); }, 'Saved.')}>Save details</button>
+            </Card>
+            </>
+          )}
+          {view === 'screening' && (
+            <>
+            <Card title="HR screening" subtitle={d.data.screening ? `Last: ${d.data.screening.outcome.toLowerCase()} by ${d.data.screening.screenedBy}` : 'Record the screening call. Pass shortlists, fail rejects, hold parks the candidate.'}>
+              <div className="grid gap-3 md:grid-cols-3">
+                <Field label="Outcome"><select className={input} value={scr.outcome} onChange={(e) => setScr({ ...scr, outcome: e.target.value })}><option value="PASS">Pass</option><option value="HOLD">Hold</option><option value="FAIL">Fail</option></select></Field>
+                <Field label="Communication (0-100)"><input className={input} type="number" min={0} max={100} value={scr.communication} onChange={(e) => setScr({ ...scr, communication: e.target.value })} /></Field>
+                <Field label="Notice period"><input className={input} value={scr.noticePeriod} onChange={(e) => setScr({ ...scr, noticePeriod: e.target.value })} /></Field>
+                <Field label="Current CTC (LPA)"><input className={input} type="number" value={scr.currentCtcLpa} onChange={(e) => setScr({ ...scr, currentCtcLpa: e.target.value })} /></Field>
+                <Field label="Expected CTC (LPA)"><input className={input} type="number" value={scr.expectedCtcLpa} onChange={(e) => setScr({ ...scr, expectedCtcLpa: e.target.value })} /></Field>
+              </div>
+              <Field label="Notes"><textarea className={`${input} mt-2`} rows={2} value={scr.notes} onChange={(e) => setScr({ ...scr, notes: e.target.value })} /></Field>
+              <button className={`${btnPrimary} mt-3`} disabled={busy} onClick={() => run(async () => { await pipelineService.screenSave({ applicationId: id, outcome: scr.outcome, notes: scr.notes, communication: scr.communication, answers: { currentCtcLpa: scr.currentCtcLpa, expectedCtcLpa: scr.expectedCtcLpa, noticePeriod: scr.noticePeriod } }); await reload(); }, 'Screening saved.')}>Save screening</button>
+            </Card>
 
+            <Card title="Assessments">
+              {d.data.assessments.length === 0 && <p className="text-xs text-slate-500">None assigned.</p>}
+              {d.data.assessments.map((x: any) => (
+                <div key={x.id} className="flex items-center justify-between gap-2 border-b border-slate-100 py-2 text-xs">
+                  <div><div className="font-bold text-slate-800">{x.title}</div><div className="text-slate-500">pass mark {x.passScore} / {x.maxScore}{x.dueOn ? ` - due ${x.dueOn}` : ''}</div></div>
+                  {x.status === 'SCORED' ? <Pill tone={x.result === 'PASS' ? 'green' : 'red'}>{x.score} - {x.result.toLowerCase()}</Pill> : (
+                    <form className="flex gap-1" onSubmit={(e) => { e.preventDefault(); const v = (e.currentTarget.elements.namedItem('s') as HTMLInputElement).value; run(async () => { await pipelineService.assessResult({ id: x.id, score: v }); await reload(); }, 'Result saved.'); }}>
+                      <input name="s" type="number" min={0} max={x.maxScore} className={`${input} w-20`} placeholder="Score" /><button className={btnGhost}>Save</button>
+                    </form>
+                  )}
+                </div>
+              ))}
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                <Field label="Title"><input className={input} value={asg.title} onChange={(e) => setAsg({ ...asg, title: e.target.value })} /></Field>
+                <Field label="Type"><select className={input} value={asg.type} onChange={(e) => setAsg({ ...asg, type: e.target.value })}><option>TECHNICAL</option><option>APTITUDE</option><option>ASSIGNMENT</option><option>OTHER</option></select></Field>
+                <Field label="Due date"><input className={input} type="date" value={asg.dueOn} onChange={(e) => setAsg({ ...asg, dueOn: e.target.value })} /></Field>
+                <Field label="Max score"><input className={input} type="number" value={asg.maxScore} onChange={(e) => setAsg({ ...asg, maxScore: e.target.value })} /></Field>
+                <Field label="Pass mark"><input className={input} type="number" value={asg.passScore} onChange={(e) => setAsg({ ...asg, passScore: e.target.value })} /></Field>
+                <Field label="Test link"><input className={input} value={asg.link} onChange={(e) => setAsg({ ...asg, link: e.target.value })} placeholder="https://" /></Field>
+              </div>
+              <button className={`${btnPrimary} mt-3`} disabled={busy || !asg.title} onClick={() => run(async () => { await pipelineService.assessAssign({ applicationId: id, ...asg }); setAsg({ ...asg, title: '', link: '' }); await reload(); }, 'Assigned. The candidate has been emailed.')}>Assign and email</button>
+            </Card>
+            </>
+          )}
+          {view === 'interviews' && (
           <Card title="Interviews">
             {d.data.interviews.map((i: any) => (
               <div key={i.id} className="border-b border-slate-100 py-2 text-xs">
@@ -147,21 +201,15 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
             {conflict && <Notice tone="warn">An interviewer is already booked then. Pick another time, or <button className="underline" onClick={() => schedule(true)}>schedule anyway</button>.</Notice>}
             <button className={`${btnPrimary} mt-3`} disabled={busy || !iv.startLocal || iv.panel.length === 0} onClick={() => schedule(false)}>Schedule and send invites</button>
           </Card>
+          )}
         </div>
       )}
-    </Drawer>
+    </SidePanel>
   );
 };
 
 const PAGE = 10;
-const TONES: Record<string, { tile: string; icon: string }> = {
-  orange: { tile: 'bg-orange-50 border-orange-100', icon: 'bg-orange-100 text-[#FA7014]' },
-  blue: { tile: 'bg-sky-50 border-sky-100', icon: 'bg-sky-100 text-sky-600' },
-  violet: { tile: 'bg-violet-50 border-violet-100', icon: 'bg-violet-100 text-violet-600' },
-  amber: { tile: 'bg-amber-50 border-amber-100', icon: 'bg-amber-100 text-amber-600' },
-  green: { tile: 'bg-emerald-50 border-emerald-100', icon: 'bg-emerald-100 text-emerald-600' },
-};
-const SELECT = 'h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:border-[#FA7014] focus:ring-2 focus:ring-[#FA7014]/20';
+const SELECT = 'h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] focus:outline-none focus:border-[#c2500a]';
 const SOURCE_LABEL: Record<string, string> = { WEBSITE: 'Website', REFERRAL: 'Referral', MANUAL: 'Manual', CSV: 'CSV import' };
 const sourceLabel = (s: string) => SOURCE_LABEL[s] || (s ? s.charAt(0) + s.slice(1).toLowerCase() : '—');
 
@@ -196,14 +244,6 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
   const cur = Math.min(page, pages);
   const shown = rows.slice((cur - 1) * PAGE, cur * PAGE);
   const change = (fn: () => void) => { fn(); setPage(1); };
-  const stageCount = (terms: string[]) => all.filter((r) => terms.some((term) => String(r.status || '').toLowerCase().includes(term))).length;
-  const metrics = [
-    { label: 'Total candidates', value: all.length, tone: 'orange', Icon: Users },
-    { label: 'Screening', value: stageCount(['screen']), tone: 'blue', Icon: FileText },
-    { label: 'Interview', value: stageCount(['interview']), tone: 'violet', Icon: Eye },
-    { label: 'Offer', value: stageCount(['offer', 'selected']), tone: 'amber', Icon: Handshake },
-    { label: 'Joining', value: stageCount(['joining', 'joined', 'hired']), tone: 'green', Icon: UserCheck },
-  ];
   const noScreen = all.filter((r) => live(r) && !r.screening).length;
   const assessPending = all.reduce((n, r) => n + (r.assessmentsPending || 0), 0);
   const upcoming = all.filter((r) => r.nextInterview).length;
@@ -215,14 +255,9 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
   const pageButtons = Array.from({ length: pages }, (_, i) => i + 1).filter((n) => n === 1 || n === pages || Math.abs(n - cur) <= 1);
 
   return <div className="space-y-5">
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">{metrics.map((m) => { const t = TONES[m.tone]; return (
-      <div key={m.label} className={`flex items-center gap-4 rounded-2xl border px-4 py-4 ${t.tile}`}>
-        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${t.icon}`}><m.Icon className="h-6 w-6" /></span>
-        <div className="min-w-0"><div className="truncate text-sm font-semibold text-slate-700">{m.label}</div><div className="text-3xl font-black tabular-nums leading-tight text-slate-900">{board.loading && !board.data ? '—' : m.value}</div></div>
-      </div>); })}</div>
-
-    <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="space-y-4">
       <div className="min-w-0 space-y-4">
+        {actions.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Next actions">{actions.map((x) => <button key={x.key} type="button" aria-pressed={quick === x.key} onClick={() => change(() => setQuick(quick === x.key ? '' : x.key))} className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[13px] ${quick === x.key ? 'border-[#c2500a] bg-[#fdf1e9] font-semibold text-[#8f3a06]' : 'border-[#dfe1e5] text-[#3d434d] hover:border-[#c2500a]'}`}><x.Icon className="h-3.5 w-3.5" />{x.text}</button>)}</div>}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[220px] flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:border-[#FA7014] focus:ring-2 focus:ring-[#FA7014]/20" placeholder="Search candidates by name, email or role..." value={q} onChange={(e) => change(() => setQ(e.target.value))} aria-label="Search candidates" /></div>
           <select className={SELECT} value={role} onChange={(e) => change(() => setRole(e.target.value))} aria-label="Role"><option value="">Role: All</option>{roles.map((x) => <option key={x} value={x}>{x}</option>)}</select>
@@ -233,17 +268,17 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
 
         <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <Loading error={board.error} loading={board.loading} />
-          {!board.loading && rows.length === 0 && <div className="p-5"><EmptyState title="No candidates found" text={all.length ? 'Nothing matches these filters.' : 'Candidates arrive from your website, referrals, manual entry or CSV import (Applications screen).'} /></div>}
-          {rows.length > 0 && <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-600"><tr><th className="px-4 py-3 font-semibold">Candidate</th><th className="px-4 py-3 font-semibold">Role</th><th className="px-4 py-3 font-semibold">Stage</th><th className="px-4 py-3 font-semibold">Screening</th><th className="px-4 py-3 font-semibold">Source</th><th className="px-4 py-3 font-semibold">Next step</th><th className="px-4 py-3 text-right font-semibold">Action</th></tr></thead>
+          {!board.loading && rows.length === 0 && <div className="p-5"><EmptyState title="No candidates found" text={all.length ? 'Nothing matches these filters.' : 'Candidates arrive from your website, referrals, manual entry or CSV import (Applications view).'} /></div>}
+          {rows.length > 0 && <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="border-b border-[#e8e9ec] text-xs text-slate-600"><tr><th className="px-4 py-3 font-semibold">Candidate</th><th className="px-4 py-3 font-semibold">Role</th><th className="px-4 py-3 font-semibold">Stage</th><th className="px-4 py-3 font-semibold">Screening</th><th className="px-4 py-3 font-semibold">Source</th><th className="px-4 py-3 font-semibold">Next step</th><th className="px-4 py-3 text-right font-semibold">Action</th></tr></thead>
             <tbody className="divide-y divide-slate-100">{shown.map((r: any) => { const n = nextStep(r); return (
-              <tr key={r.id} className="transition-colors hover:bg-orange-50/40">
+              <tr key={r.id} className="hover:bg-[#f8f8f9]">
                 <td className="px-4 py-3"><div className="flex items-center gap-3"><Avatar name={r.name || '?'} /><div className="min-w-0"><div className="truncate font-semibold text-slate-900">{r.name}</div><div className="truncate text-xs text-slate-500">{r.email}</div></div></div></td>
                 <td className="px-4 py-3 text-slate-700">{r.designation || '—'}</td>
                 <td className="px-4 py-3"><Pill tone={stageTone(r.status)}>{r.status}</Pill></td>
                 <td className="px-4 py-3">{r.screening ? <Pill tone={r.screening === 'PASS' ? 'green' : r.screening === 'FAIL' ? 'red' : 'amber'}>{r.screening}</Pill> : <span className="text-slate-400">—</span>}</td>
                 <td className="px-4 py-3 text-slate-700">{sourceLabel(r.source)}{r.referredByName ? <div className="text-xs text-slate-500">by {r.referredByName}</div> : null}</td>
                 <td className="px-4 py-3"><div className="font-medium text-slate-800">{n.text}</div><div className="text-xs text-slate-500">{n.sub}</div></td>
-                <td className="px-4 py-3 text-right"><button onClick={() => setOpen(r.id)} className="rounded-lg bg-orange-50 px-4 py-1.5 text-xs font-bold text-[#FA7014] hover:bg-orange-100">View</button></td>
+                <td className="px-4 py-3 text-right"><button onClick={() => setOpen(r.id)} className="cursor-pointer rounded-md border border-[#dfe1e5] px-3.5 py-1.5 text-xs font-semibold text-[#16181d] hover:border-[#c2500a]">View</button></td>
               </tr>); })}</tbody></table></div>}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
             <span>Showing {rows.length === 0 ? 0 : (cur - 1) * PAGE + 1} &ndash; {Math.min(cur * PAGE, rows.length)} of {rows.length} candidate{rows.length === 1 ? '' : 's'}</span>
@@ -256,12 +291,6 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
         </section>
       </div>
 
-      <aside className="space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="flex items-center gap-2 text-base font-bold text-slate-900"><ListFilter className="h-4 w-4" />Pipeline health</h3><p className="mt-1 text-xs text-slate-500">Candidates by current stage.</p>
-          {[['Screening', stageCount(['screen'])], ['Interview', stageCount(['interview'])], ['Offer', stageCount(['offer', 'selected'])], ['Joining', stageCount(['joining', 'joined', 'hired'])]].map(([label, value]) => <div key={label} className="mt-4"><div className="mb-1 flex justify-between text-sm"><span className="text-slate-700">{label}</span><b className="text-slate-900">{value}</b></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#F36B21]" style={{ width: `${all.length ? Math.round(Number(value) / all.length * 100) : 0}%` }} /></div></div>)}</section>
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="flex items-center gap-2 text-base font-bold text-slate-900"><ClipboardList className="h-4 w-4" />Next actions{actions.length ? ` (${actions.length})` : ''}</h3><p className="mt-1 text-xs text-slate-500">Tap one to filter the list.</p>
-          {actions.length === 0 ? <p className="mt-3 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">Nothing is waiting. The pipeline is up to date.</p> : <ul className="mt-3 space-y-1">{actions.map((a) => <li key={a.key}><button type="button" onClick={() => change(() => setQuick(quick === a.key ? '' : a.key))} className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left text-sm font-medium hover:bg-orange-50 ${quick === a.key ? 'bg-orange-50 text-[#FA7014]' : 'text-slate-800'}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-[#FA7014]"><a.Icon className="h-4 w-4" /></span><span className="flex-1">{a.text}</span><ChevronRight className="h-4 w-4 text-slate-300" /></button></li>)}</ul>}</section>
-      </aside>
     </div>
     {open && <CandidateDrawer id={open} users={users} onClose={() => setOpen(null)} onChanged={board.reload} />}
   </div>;

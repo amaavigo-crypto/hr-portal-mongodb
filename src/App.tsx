@@ -41,7 +41,10 @@ import { downloadDocumentWithIntactFormat } from './utils/documentStamper';
 import { FileText, X, Download, ExternalLink, Users, FileSpreadsheet, UserCheck } from 'lucide-react';
 import { StatusBadge } from './components/StatusBadge';
 import { HRAgentShell, HRAgentModule } from './components/HRAgentShell';
-import { TalentHiringWorkspace } from './components/TalentHiringWorkspace';
+import { HiringShell } from './components/hiring/shell/HiringShell';
+import { HiringHome } from './components/hiring/shell/HiringHome';
+import { HiringOnboarding } from './components/hiring/shell/HiringOnboarding';
+import { FLOW_MANAGE_PERMS, isHiringModule, type HiringAccess } from './components/hiring/shell/hiringNav';
 import { lazyPage } from './utils/lazyPage';
 import { hasModulePermission, normalizeAuthorizedModules } from './utils/authorization';
 import { DocumentSuggestion } from './types';
@@ -611,14 +614,6 @@ export default function App() {
             </div>
           )}
 
-          {hrAgentModule === 'talent-hiring' && currentUser && (
-            <TalentHiringWorkspace
-              hasTalentAccess={hasModulePermission(currentUser, 'talent-acquisition')}
-              canCreateRequest={hasAnyPerm(currentUser.perms, ['req.create'])}
-              onNavigate={handleSelectHRAgentModule}
-            />
-          )}
-
           {hrAgentModule === 'policies' && (
             <div className="flex-1 min-w-0 overflow-y-auto">
               <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -816,49 +811,40 @@ export default function App() {
             );
           })()}
 
-          {/* Module: Talent Acquisition Overview Dashboard (HR & Approver) */}
-          {(hrAgentModule === 'talent-acquisition' || hrAgentModule === 'talent-acquisition-overview') && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0">
-              <TalentAcquisitionOverview
-                currentUser={currentUser}
-                onLogout={handleLogout}
-                onOpenRequisitions={() => handleSelectHRAgentModule('talent-acquisition-requisitions')}
-                onOpenOnboarding={() => handleSelectHRAgentModule('talent-acquisition-onboarding')}
-              />
-            </div>
-          )}
-
-          {/* Module: Talent Acquisition - Hiring Requisitions workflow (HR & Approver) */}
-          {hrAgentModule === 'talent-acquisition-requisitions' && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0">
-              {hasModulePermission(currentUser, 'talent-acquisition') ? (
-                <>
-                  <RequisitionsModule currentUser={currentUser} users={allUsers} />
-                </>
-              ) : (
-                <div className="flex-1 overflow-y-auto"><RequisitionsModule currentUser={currentUser} users={allUsers} embedded /></div>
-              )}
-            </div>
-          )}
-
-          {/* Module: Talent Acquisition - Applications (per company) */}
-          {hrAgentModule === 'talent-acquisition-applications' && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0">
-              <ApplicationsModule currentUser={currentUser} />
-            </div>
-          )}
-
-          {hrAgentModule === 'talent-acquisition-pipeline' && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0">
-              <HiringPipelineModule currentUser={currentUser} users={allUsers} onAddCandidate={() => handleSelectHRAgentModule('talent-acquisition-applications')} onOpenRequisitions={() => handleSelectHRAgentModule('talent-acquisition-requisitions')} />
-            </div>
-          )}
-
-          {hrAgentModule === 'my-hiring' && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <MyHiringModule currentUser={currentUser} />
-            </div>
-          )}
+          {/* Hiring: one section for jobs, candidates, onboarding and automation */}
+          {isHiringModule(hrAgentModule) && currentUser && (() => {
+            const access: HiringAccess = {
+              talent: hasModulePermission(currentUser, 'talent-acquisition'),
+              canRequest: hasAnyPerm(currentUser.perms, ['req.create']),
+              manageFlows: !!currentUser.isCompanyAdmin || hasAnyPerm(currentUser.perms, FLOW_MANAGE_PERMS),
+            };
+            const home = <HiringHome currentUser={currentUser} access={access} onNavigate={handleSelectHRAgentModule} />;
+            const m = hrAgentModule;
+            return (
+              <HiringShell active={m} access={access} onNavigate={handleSelectHRAgentModule}>
+                {m === 'talent-hiring' && home}
+                {(m === 'talent-acquisition' || m === 'talent-acquisition-overview') && (access.talent ? (
+                  <TalentAcquisitionOverview
+                    currentUser={currentUser}
+                    onLogout={handleLogout}
+                    onOpenRequisitions={() => handleSelectHRAgentModule('talent-acquisition-requisitions')}
+                    onOpenOnboarding={() => handleSelectHRAgentModule('talent-acquisition-onboarding')}
+                  />
+                ) : home)}
+                {m === 'talent-acquisition-requisitions' && (
+                  access.talent
+                    ? <RequisitionsModule currentUser={currentUser} users={allUsers} />
+                    : <div className="flex-1 overflow-y-auto"><RequisitionsModule currentUser={currentUser} users={allUsers} embedded /></div>
+                )}
+                {(m === 'talent-acquisition-pipeline' || m === 'talent-acquisition-applications') && (access.talent ? (
+                  <HiringPipelineModule currentUser={currentUser} users={allUsers} showApplications={m === 'talent-acquisition-applications'} onShowApplications={(on) => handleSelectHRAgentModule(on ? 'talent-acquisition-applications' : 'talent-acquisition-pipeline')} />
+                ) : home)}
+                {m === 'talent-acquisition-onboarding' && (access.talent ? <HiringOnboarding currentUser={currentUser} /> : home)}
+                {m === 'my-hiring' && <MyHiringModule currentUser={currentUser} />}
+                {m === 'hiring-automation' && (access.manageFlows ? <HiringAutomationModule currentUser={currentUser} /> : home)}
+              </HiringShell>
+            );
+          })()}
 
           {hrAgentModule === 'performance' && currentUser && (
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -872,12 +858,6 @@ export default function App() {
             </div>
           )}
 
-          {hrAgentModule === 'hiring-automation' && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <HiringAutomationModule currentUser={currentUser} onNavigate={(m) => handleSelectHRAgentModule(m)} />
-            </div>
-          )}
-
           {hrAgentModule === 'wellbeing' && currentUser && (
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <WellbeingModule currentUser={currentUser} />
@@ -887,13 +867,6 @@ export default function App() {
           {hrAgentModule === 'hrbp' && currentUser && (
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <HrbpModule currentUser={currentUser} users={allUsers} />
-            </div>
-          )}
-
-          {/* Module: Talent Acquisition - Onboarding (HR) */}
-          {hrAgentModule === 'talent-acquisition-onboarding' && currentUser && (
-            <div className="flex-1 flex flex-col min-w-0">
-              <OnboardingModule currentUser={currentUser} />
             </div>
           )}
         </HRAgentShell>

@@ -96,7 +96,7 @@ export const ApplicationsModule: React.FC<{ currentUser: User }> = ({ currentUse
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-900">Applications</h2>
+        <h2 className="text-base font-semibold text-slate-900">Applications</h2>
         <button className={`${btnCls} border-slate-300 bg-white text-slate-700`} onClick={load}>
           <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>

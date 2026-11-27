@@ -39,49 +39,6 @@ const Marker: React.FC<{ tone: 'start' | 'end'; text: string }> = ({ tone, text 
 );
 const Line: React.FC = () => <div className="w-0.5 h-4 bg-slate-300 mx-auto" aria-hidden />;
 
-// ------------------------------------------------------------------ the flow at a glance
-
-const NODE_TONE: Record<string, string> = {
-  'Check the candidate': 'bg-sky-50 border-sky-300',
-  Decide: 'bg-violet-50 border-violet-300',
-  'Talk to the candidate': 'bg-amber-50 border-amber-300',
-  Finish: 'bg-emerald-50 border-emerald-300',
-};
-
-/** The whole flow as connected boxes, so its shape can be seen in one look. Click a box to open that step below. */
-const FlowMap: React.FC<{ name: string; steps: FlowStep[]; status: React.ReactNode; problems: Problem[]; onPick: (id: string) => void }> = ({ name, steps, status, problems, onPick }) => {
-  const Arrow = () => <span className="text-slate-400 select-none text-lg leading-none self-center" aria-hidden>&rarr;</span>;
-  const End: React.FC<{ text: string; icon: string }> = ({ text, icon }) => (
-    <div className="w-28 shrink-0 rounded-xl border border-emerald-300 bg-emerald-50 px-2 py-3 text-center"><div className="text-xl" aria-hidden>{icon}</div><div className="mt-1 text-xs font-bold text-slate-800">{text}</div></div>
-  );
-  return (
-    <Card>
-      <div className="mb-3 flex flex-wrap items-center gap-2"><h3 className="text-base font-extrabold text-slate-900">Workflow: {name || 'Untitled flow'}</h3>{status}</div>
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4">
-        <div className="flex flex-wrap items-stretch gap-x-2 gap-y-4">
-          <End text="Applicant applies" icon="📥" />
-          {steps.map((st, i) => {
-            const info = STEP_INFO[st.type]; const bad = problems.some((p) => p.stepId === st.id);
-            return (
-              <React.Fragment key={st.id}>
-                <Arrow />
-                <button type="button" onClick={() => onPick(st.id)} title={info?.label} className={`relative w-28 shrink-0 rounded-xl border px-2 py-3 text-center hover:shadow-md transition-shadow cursor-pointer ${bad ? 'border-amber-500 bg-amber-50' : NODE_TONE[info?.group || ''] || 'bg-white border-slate-300'}`}>
-                  <span className="absolute -top-2 -left-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#FA7014] text-[10px] font-extrabold text-white">{i + 1}</span>
-                  <div className="text-xl" aria-hidden>{info?.icon || '•'}</div>
-                  <div className="mt-1 text-xs font-bold leading-tight text-slate-800 line-clamp-2">{st.title}</div>
-                  <div className="mt-0.5 text-[10px] font-semibold text-slate-500">{info?.manual ? 'A person' : 'Automatic'}</div>
-                </button>
-              </React.Fragment>
-            );
-          })}
-          <Arrow />
-          <End text="Hired, or rejected" icon="✅" />
-        </div>
-      </div>
-    </Card>
-  );
-};
-
 // ------------------------------------------------------------------ add-a-step picker
 
 const GROUPS = ['Check the candidate', 'Decide', 'Talk to the candidate', 'Finish'] as const;
@@ -133,11 +90,13 @@ const ChipRow: React.FC<{ onInsert: (t: string) => void }> = ({ onInsert }) => (
 );
 
 interface CardProps {
+  view?: 'card' | 'row' | 'panel';
   step: FlowStep; index: number; flow: Pick<FlowDoc, 'steps'>; people: Person[]; jobTitles?: string[]; editing: boolean; open: boolean; problems: Problem[];
   onToggle: () => void; onChange: (s: FlowStep) => void; onMove: (d: -1 | 1) => void; onDelete: () => void;
 }
 
-const StepCard: React.FC<CardProps> = ({ step, index, flow, people, jobTitles = [], editing, open, problems, onToggle, onChange, onMove, onDelete }) => {
+const StepCard: React.FC<CardProps> = ({ step, index, flow, people, jobTitles = [], editing, open, problems, view = 'card', onToggle, onChange, onMove, onDelete }) => {
+  // 'row' shows only the summary line, 'panel' only the settings (shown beside the list on wide screens).
   const info = STEP_INFO[step.type];
   const later = flow.steps.slice(index + 1);
   const set = (patch: Partial<FlowStep>) => onChange({ ...step, ...patch });
@@ -157,11 +116,16 @@ const StepCard: React.FC<CardProps> = ({ step, index, flow, people, jobTitles = 
   const eff: Record<string, any> = step.type === 'test' ? testSettings(step) : step.settings || {};
 
   return (
-    <div id={`step-${step.id}`} className={`rounded-xl border bg-white ${bad ? 'border-amber-400' : 'border-slate-200'} shadow-sm`}>
-      <div className="flex items-start gap-3 p-3">
+    <div id={view === 'panel' ? undefined : `step-${step.id}`} className={`rounded-[10px] border bg-white ${open && view === 'row' ? 'border-[#c2500a] ring-1 ring-[#c2500a]' : bad ? 'border-amber-400' : 'border-[#e8e9ec]'}`}>
+      {view === 'panel' && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <h4 className="min-w-0 truncate text-sm font-semibold text-slate-900">Step {index + 1}: {step.title || info.label}</h4>
+          <button className={btnGhost} onClick={onToggle}>Done</button>
+        </div>
+      )}
+      {view !== 'panel' && <div className="flex items-start gap-3 p-3">
         <div className="flex flex-col items-center gap-1 shrink-0">
-          <span className="w-8 h-8 rounded-full bg-[#FA7014] text-white text-sm font-extrabold flex items-center justify-center" aria-label={`Step ${index + 1}`}>{index + 1}</span>
-          <span className="text-xl leading-none" aria-hidden>{info.icon}</span>
+          <span className="w-7 h-7 rounded-full bg-[#f1f2f4] text-[#16181d] text-xs font-semibold flex items-center justify-center" aria-label={`Step ${index + 1}`}>{index + 1}</span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -179,10 +143,10 @@ const StepCard: React.FC<CardProps> = ({ step, index, flow, people, jobTitles = 
             <button className={btnGhost} onClick={onToggle} aria-expanded={open}>{open ? 'Done' : 'Change'}</button>
           </div>
         )}
-      </div>
+      </div>}
 
-      {editing && open && (
-        <div className="border-t border-slate-200 bg-slate-50/60 p-4 space-y-3 rounded-b-xl">
+      {editing && open && view !== 'row' && (
+        <div className={`border-t border-slate-200 p-4 space-y-3 rounded-b-[10px] ${view === 'panel' ? 'max-h-[70vh] overflow-y-auto' : 'bg-slate-50/60'}`}>
           {problems.length > 0 && <Notice tone="warn"><ul className="list-disc pl-4">{problems.map((p, i) => <li key={i}>{p.message}</li>)}</ul></Notice>}
           <Field label="Name of this step" hint="This is what your team sees in their task list.">
             <input className={input} value={step.title} maxLength={100} onChange={(e) => set({ title: e.target.value })} />
@@ -331,6 +295,20 @@ const useDebounced = (fn: () => void, deps: unknown[], ms: number, enabled: bool
 interface BodyProps { family: FamilyView; state: FlowState; reload: () => Promise<unknown> | void; onChanged?: () => void }
 
 /** Builds and publishes one flow (the Default flow, or the flow for some designations). */
+/** True when there is room to show a step's settings beside the list. */
+const useWide = () => {
+  const query = '(min-width: 1024px)';
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia?.(query);
+    if (!m) return undefined;
+    const on = () => setWide(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
+};
+
 const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged }) => {
   const fid = family.familyId;
   const { busy, note, setNote, run } = useRunner();
@@ -370,6 +348,7 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
   useDebounced(save, [name, steps], 900, dirty && !!draft);
 
   const finish = async () => { onChanged?.(); await reload(); };
+  const wide = useWide();
   const publishLabel = `Publish as Version ${(Math.max(0, ...family.versions.map((v) => v.version))) + 1}`;
 
   // ---------------- nothing built yet
@@ -439,11 +418,8 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
   ));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] items-start">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] items-start">
       <div className="space-y-3 min-w-0">
-        <FlowMap name={name} steps={steps} problems={problems}
-          status={live && !dirty && !draft ? <Pill tone="green">Version {live.version} is live</Pill> : <Pill tone="amber">Draft</Pill>}
-          onPick={(id) => { setOpen(id); setTimeout(() => document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }} />
         <FixedPart />
         <Card>
           <div className="flex flex-wrap items-end gap-3">
@@ -458,14 +434,14 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
           <p className="text-xs text-slate-500 mt-2"><b>This is a draft.</b> {live ? `Applicants keep following Version ${live.version} until you publish.` : family.isDefault ? 'Nobody follows it until you publish it.' : 'Until you publish it, applicants for these designations follow the Default flow.'}</p>
         </Card>
 
-        <div className="space-y-0">
+        <div className="space-y-0 rounded-[10px] bg-[#fafafa] bg-[radial-gradient(#e3e5e9_1px,transparent_1px)] [background-size:16px_16px] p-4">
           <Marker tone="start" text="Applicant applies" />
           <Line />
           {adder(0)}
           {steps.map((s, i) => (
             <React.Fragment key={s.id}>
               <Line />
-              <StepCard step={s} index={i} flow={flowNow} people={people} jobTitles={family.isDefault ? state.designationOptions : family.designations} editing open={open === s.id} problems={byStep(s.id)}
+              <StepCard step={s} index={i} flow={flowNow} people={people} jobTitles={family.isDefault ? state.designationOptions : family.designations} editing open={open === s.id} problems={byStep(s.id)} view={wide ? 'row' : 'card'}
                 onToggle={() => setOpen(open === s.id ? null : s.id)}
                 onChange={(n) => edit((cur) => cur.map((x) => (x.id === s.id ? n : x)))}
                 onMove={(d) => edit((cur) => { const n = [...cur]; const j = i + d; if (j < 0 || j >= n.length) return cur; [n[i], n[j]] = [n[j], n[i]]; return n; })}
@@ -478,7 +454,17 @@ const FlowEditorBody: React.FC<BodyProps> = ({ family, state, reload, onChanged 
         </div>
       </div>
 
-      <aside className="lg:sticky lg:top-2 space-y-3" aria-label="Is your flow ready?">
+      <aside className="space-y-3" aria-label="Is your flow ready?">
+        {wide && (() => {
+          const i = steps.findIndex((x) => x.id === open);
+          if (i < 0) return <p className="rounded-[10px] border border-dashed border-[#dfe1e5] p-4 text-[13px] text-[#5c626d]">Choose “Change” on a step to see its settings here.</p>;
+          const s = steps[i];
+          return <StepCard key={s.id} view="panel" step={s} index={i} flow={flowNow} people={people} jobTitles={family.isDefault ? state.designationOptions : family.designations} editing open problems={byStep(s.id)}
+            onToggle={() => setOpen(null)}
+            onChange={(n) => edit((cur) => cur.map((x) => (x.id === s.id ? n : x)))}
+            onMove={(d) => edit((cur) => { const n = [...cur]; const j = i + d; if (j < 0 || j >= n.length) return cur; [n[i], n[j]] = [n[j], n[i]]; return n; })}
+            onDelete={() => { edit((cur) => cur.filter((x) => x.id !== s.id).map((x) => ({ ...x, ...(x.onFail === s.id ? { onFail: 'reject' } : {}), ...(x.ifYes === s.id ? { ifYes: 'next' } : {}), ...(x.ifNo === s.id ? { ifNo: 'next' } : {}) }))); setOpen(null); }} />;
+        })()}
         <Card>
           <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">{ready ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-amber-600" />}{ready ? 'Everything looks good' : `${problems.length} thing${problems.length === 1 ? '' : 's'} to fix`}</h3>
           {ready ? <p className="text-xs text-slate-600 mt-1">You can try it out and publish it.</p> : (
@@ -570,11 +556,11 @@ const takenMap = (families: FamilyView[], except?: string) => {
   return m;
 };
 
-const NewFlowForm: React.FC<{ state: FlowState; onCancel: () => void; onCreated: (familyId: string) => void }> = ({ state, onCancel, onCreated }) => {
+const NewFlowForm: React.FC<{ state: FlowState; startFrom?: 'standard' | 'empty'; onCancel: () => void; onCreated: (familyId: string) => void }> = ({ state, startFrom = 'standard', onCancel, onCreated }) => {
   const { busy, note, run } = useRunner();
   const [des, setDes] = useState<string[]>([]);
   const [name, setName] = useState('');
-  const [from, setFrom] = useState<'standard' | 'copy' | 'empty'>('standard');
+  const [from, setFrom] = useState<'standard' | 'copy' | 'empty'>(startFrom);
   const copyable = state.families.filter((f) => f.active || f.draft);
   const [copyFrom, setCopyFrom] = useState(copyable[0]?.familyId || '');
   return (
@@ -648,7 +634,7 @@ const ConfirmButtonLite: React.FC<{ label: string; question: string; onConfirm: 
 
 // ------------------------------------------------------------------ the screen: a list of flows, then one flow
 
-export const FlowBuilder: React.FC<{ onChanged?: () => void; initialFamilyId?: string | null; startAdding?: boolean }> = ({ onChanged, initialFamilyId = null, startAdding = false }) => {
+export const FlowBuilder: React.FC<{ onChanged?: () => void; initialFamilyId?: string | null; startAdding?: boolean; startFrom?: 'standard' | 'empty'; onBack?: () => void }> = ({ onChanged, initialFamilyId = null, startAdding = false, startFrom = 'standard', onBack }) => {
   const { data, error, loading, reload } = useLoad(() => flowService.state(), []);
   const [openId, setOpenId] = useState<string | null>(initialFamilyId);
   const [adding, setAdding] = useState(startAdding);
@@ -656,9 +642,9 @@ export const FlowBuilder: React.FC<{ onChanged?: () => void; initialFamilyId?: s
   if (loading && !st) return <Loading loading />;
   if (error && !st) return <Loading error={error} />;
   if (!st) return null;
-  if (!st.canManage) return <Notice tone="info">Only the people who manage hiring can change the hiring flow. You can see your own tasks under "My tasks".</Notice>;
+  if (!st.canManage) return <Notice tone="info">Only the people who manage hiring can change the hiring flow. Your own tasks are on Hiring Home.</Notice>;
   const open = st.families.find((f) => f.familyId === openId);
-  if (open) return <FlowEditor family={open} state={st} reload={reload} onChanged={onChanged} onBack={() => setOpenId(null)} />;
+  if (open) return <FlowEditor family={open} state={st} reload={reload} onChanged={onChanged} onBack={onBack || (() => setOpenId(null))} />;
 
   const status = (f: FamilyView) => (f.active ? <Pill tone="green">Version {f.active.version} is live</Pill> : f.draft ? <Pill tone="amber">Draft, not published</Pill> : <Pill tone="slate">Not built yet</Pill>);
   return (
@@ -667,7 +653,7 @@ export const FlowBuilder: React.FC<{ onChanged?: () => void; initialFamilyId?: s
         <div><h2 className="text-lg font-extrabold text-slate-900">Your hiring flows</h2><p className="text-sm text-slate-600">The <b>Default flow</b> is for everyone. Make a separate flow for a designation when its hiring works differently (different steps, people or pass marks).</p></div>
         {!adding && <button className={btnPrimary} onClick={() => setAdding(true)}><Plus className="w-4 h-4" />New flow for a designation</button>}
       </div>
-      {adding && <NewFlowForm state={st} onCancel={() => setAdding(false)} onCreated={async (id) => { setAdding(false); onChanged?.(); await reload(); setOpenId(id); }} />}
+      {adding && <NewFlowForm state={st} startFrom={startFrom} onCancel={() => { setAdding(false); if (startAdding) onBack?.(); }} onCreated={async (id) => { setAdding(false); onChanged?.(); await reload(); setOpenId(id); }} />}
       <ul className="space-y-2">
         {st.families.map((f) => (
           <li key={f.familyId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

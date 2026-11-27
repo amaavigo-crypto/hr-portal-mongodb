@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { homeService } from '../services/homeService';
 import { toProfilePhoto } from '../utils/profilePhoto';
 import {
+  Briefcase,
   Layers,
   ListChecks,
   Users,
@@ -43,6 +44,7 @@ import { useLeaveNav, resolveSection as resolveLeaveSection } from './leave/leav
 import { NavBadge } from './NavBadge';
 import { sumOf, useNavBadges } from '../services/navBadges';
 import { ModuleSubNav } from './moduleNav';
+import { FLOW_MANAGE_PERMS, hiringPageLabel, hiringTabs, isHiringModule } from './hiring/shell/hiringNav';
 import { OrgSwitcher } from './OrgSwitcher';
 import { payrollNav } from './payroll/payrollNav';
 import { peopleNav } from './lifecycle/peopleNav';
@@ -50,7 +52,6 @@ import { hrbpNav } from './hrbp/hrbpNav';
 import { wellbeingNav } from './wellbeing/wellbeingNav';
 import { pmNav } from './pm/pmNav';
 import { taskNav } from './tasks/taskNav';
-import { flowNav } from './hiringflow/flowNav';
 import { employeeNav } from './employee/employeeNav';
 import {
   hasModulePermission,
@@ -127,11 +128,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
 
   // Everyone has a Home; the rest of these links follow what the person is allowed to do.
   const canAcknowledge = hasAnyPerm(currentUser.perms, ['doc.acknowledge']);
-  // Department heads are employees who may raise hiring requests; the full Talent module stays hidden from them.
-  const hasRequestOnlyHiring = currentUser.role === UserRole.EMPLOYEE && hasAnyPerm(currentUser.perms, ['req.create']);
 
-  // Talent Acquisition expanded state in left navigation
-  const [isTalentAcquisitionExpanded, setIsTalentAcquisitionExpanded] = useState<boolean>(true);
   const [isLeaveExpanded, setIsLeaveExpanded] = useState<boolean>(true);
   const [isPayrollExpanded, setIsPayrollExpanded] = useState<boolean>(true);
   const [isPeopleExpanded, setIsPeopleExpanded] = useState<boolean>(true);
@@ -139,7 +136,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   const [isHrbpExpanded, setIsHrbpExpanded] = useState<boolean>(true);
   const [isPmExpanded, setIsPmExpanded] = useState<boolean>(true);
   const [isTaskExpanded, setIsTaskExpanded] = useState<boolean>(true);
-  const [isFlowExpanded, setIsFlowExpanded] = useState<boolean>(true);
   const [isWellbeingExpanded, setIsWellbeingExpanded] = useState<boolean>(true);
   // Counts of what is waiting for this person, shown on the module titles and their sections.
   const badges = useNavBadges();
@@ -167,28 +163,29 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     }
   }, [activeModule, hasTalentAccess, hasDocGovAccess, onSelectModule]);
 
+  const hiringAccess = {
+    talent: hasTalentAccess,
+    canRequest: hasAnyPerm(currentUser.perms, ['req.create']),
+    manageFlows: !!currentUser.isCompanyAdmin || hasAnyPerm(currentUser.perms, FLOW_MANAGE_PERMS),
+  };
+
   // Pages this person can open: used for the top bar title and the "go to a page" search.
   const pages: { id: HRAgentModule; label: string }[] = ([
     { id: 'home', label: 'Home', show: true },
-    { id: 'talent-hiring', label: 'Talent & Hiring', show: true },
+    ...hiringTabs(hiringAccess).flatMap((t) => t.pages.map((p) => ({ id: p.module, label: p.module === 'talent-hiring' ? 'Hiring' : `Hiring: ${p.label === 'Automation' || p.label === 'Onboarding' ? t.label : p.label}`, show: true }))),
     { id: 'policies', label: 'My policies', show: canAcknowledge },
-    { id: 'talent-acquisition-requisitions', label: 'Hiring requests', show: hasRequestOnlyHiring },
-    { id: 'talent-acquisition-overview', label: 'Talent Acquisition', show: hasTalentAccess },
     { id: 'document-version-control', label: 'Document Version Control', show: hasDocGovAccess },
     { id: 'leave-management', label: 'Leave & Attendance', show: true },
     { id: 'payroll', label: 'Payroll', show: true },
-    { id: 'my-hiring', label: 'Referrals & interviews', show: true },
     { id: 'hrbp', label: 'HR Business Partner', show: true },
     { id: 'performance', label: 'Performance', show: true },
     { id: 'tasks', label: 'Tasks', show: true },
-    { id: 'hiring-automation', label: 'Hiring Automation', show: true },
     { id: 'wellbeing', label: 'Wellbeing', show: true },
     { id: 'people', label: 'People', show: true },
     { id: 'employee', label: 'Employee', show: true },
     { id: 'administration', label: 'Administration', show: hasAdminAccess },
   ] as { id: HRAgentModule; label: string; show: boolean }[]).filter((p) => p.show);
-  const pageTitle = pages.find((p) => p.id === activeModule)?.label
-    || (activeModule.startsWith('talent-acquisition') ? 'Talent Acquisition' : 'HR Platform');
+  const pageTitle = pages.find((p) => p.id === activeModule)?.label || 'HR Platform';
 
   // Top bar breadcrumb: "Section › Page". The page is whatever is open in that module's sidebar menu.
   const leaveState = useLeaveNav();
@@ -196,7 +193,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   const peopleState = peopleNav.useNav();
   const pmState = pmNav.useNav();
   const taskState = taskNav.useNav();
-  const flowState = flowNav.useNav();
   const hrbpState = hrbpNav.useNav();
   const wellbeingState = wellbeingNav.useNav();
   const employeeState = employeeNav.useNav();
@@ -205,21 +201,9 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     const key = nav.resolve(st.section, st.items);
     return st.items.find((i) => i.key === key)?.label || '';
   };
-  const TA_PAGES: Record<string, string> = {
-    'talent-acquisition': 'Overview',
-    'talent-acquisition-overview': 'Overview',
-    'talent-acquisition-requisitions': 'Requisitions',
-    'talent-acquisition-applications': 'Applications',
-    'talent-acquisition-pipeline': 'Hiring pipeline',
-    'talent-acquisition-onboarding': 'Onboarding',
-  };
   const crumb: { section: string; page: string } | null = (() => {
     if (activeModule === 'home') return null;
-    if (activeModule === 'talent-hiring') return { section: 'Talent & Hiring', page: 'Workspace' };
-    if (activeModule.startsWith('talent-acquisition')) {
-      if (activeModule === 'talent-acquisition-requisitions' && !hasTalentAccess) return { section: pageTitle, page: '' };
-      return { section: 'Talent Acquisition', page: TA_PAGES[activeModule] || '' };
-    }
+    if (isHiringModule(activeModule)) return { section: 'Hiring', page: hiringPageLabel(activeModule).replace(/^Hiring · /, '') };
     let page = '';
     if (activeModule === 'leave-management') {
       page = leaveState.items.find((i) => i.key === resolveLeaveSection(leaveState.section, leaveState.items))?.label || '';
@@ -228,7 +212,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
     else if (activeModule === 'people') page = labelOf(peopleNav, peopleState);
     else if (activeModule === 'performance') page = labelOf(pmNav, pmState);
     else if (activeModule === 'tasks') page = labelOf(taskNav, taskState);
-    else if (activeModule === 'hiring-automation') page = labelOf(flowNav, flowState);
     else if (activeModule === 'hrbp') page = labelOf(hrbpNav, hrbpState);
     else if (activeModule === 'wellbeing') page = labelOf(wellbeingNav, wellbeingState);
     else if (activeModule === 'employee') page = labelOf(employeeNav, employeeState);
@@ -377,9 +360,9 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
         <aside
           id="hr-agent-sidebar"
           className={`
-            fixed lg:static inset-y-0 left-0 z-50 lg:z-30
+            fixed lg:relative inset-y-0 left-0 z-50 lg:z-30
             h-full shrink-0
-            relative overflow-hidden bg-gradient-to-b from-[#1a1b36] via-[#1a1c3b] to-[#171a3f] border-r border-white/5
+            overflow-hidden bg-gradient-to-b from-[#1a1b36] via-[#1a1c3b] to-[#171a3f] border-r border-white/5
             flex flex-col
             transition-all duration-200 ease-in-out
             ${
@@ -435,11 +418,10 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                 {/* HOME: every person's own dashboard */}
                 {([
                   { id: 'home' as const, label: 'Home', hint: 'What needs you today', icon: Home, show: true, badge: 0 },
-                  { id: 'talent-hiring' as const, label: 'Talent & Hiring', hint: 'Recruitment and hiring workflows', icon: Workflow, show: true, badge: 0 },
+                  { id: 'talent-hiring' as const, label: 'Hiring', hint: 'Jobs, candidates, onboarding and automation', icon: Briefcase, show: true, badge: 0 },
                   { id: 'policies' as const, label: 'My policies', hint: 'Read and acknowledge', icon: FileCheck2, show: canAcknowledge, badge: pendingPolicyCount },
-                  { id: 'talent-acquisition-requisitions' as const, label: 'Hiring requests', hint: 'Ask for a new hire', icon: ClipboardList, show: hasRequestOnlyHiring, badge: 0 },
                 ]).filter((n) => n.show).map((n) => {
-                  const active = activeModule === n.id;
+                  const active = n.id === 'talent-hiring' ? isHiringModule(activeModule) : activeModule === n.id;
                   const Icon = n.icon;
                   return (
                     <button
@@ -464,200 +446,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                     </button>
                   );
                 })}
-                {/* ---------------------------------------------------- */}
-                {/* 1. TALENT ACQUISITION (Authorized check)             */}
-                {/* ---------------------------------------------------- */}
-                {hasTalentAccess && (
-                  <div className="rounded-xl overflow-hidden transition-all">
-                    {/* Expandable Category Toggle Button */}
-                    <button
-                      id="nav-category-talent-acquisition"
-                      type="button"
-                      onClick={() => setIsTalentAcquisitionExpanded(!isTalentAcquisitionExpanded)}
-                      className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between text-left hover:bg-white/10 transition-colors cursor-pointer group"
-                    >
-                      <div className="flex items-center space-x-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-transparent text-slate-300 group-hover:text-white flex items-center justify-center shrink-0">
-                          <Users className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-[12px] font-medium text-slate-100 group-hover:text-white block leading-tight">
-                            Talent Acquisition
-                          </span>
-                          
-                        </div>
-                      </div>
-                      <div className="text-slate-400 group-hover:text-slate-200 transition-transform">
-                        {isTalentAcquisitionExpanded ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Subcategories (Overview, Requisition Form & Candidate Onboarding Form) */}
-                    {isTalentAcquisitionExpanded && (
-                      <div className="pl-4 pr-1 pb-1 pt-1 space-y-0.5">
-                        {/* Sub-item 1: Overview Dashboard */}
-                        <button
-                          id="nav-submodule-talent-overview"
-                          type="button"
-                          onClick={() => {
-                            onSelectModule('talent-acquisition-overview');
-                            setIsMobileSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                            activeModule === 'talent-acquisition-overview' || activeModule === 'talent-acquisition'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-slate-300 hover:text-white hover:bg-white/10'
-                          }`}
-                          title="View Talent Acquisition Recruitment Overview Dashboard"
-                        >
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full transition-colors shrink-0 ${
-                                activeModule === 'talent-acquisition-overview' || activeModule === 'talent-acquisition'
-                                  ? 'bg-white'
-                                  : 'bg-white/30'
-                              }`}
-                            />
-                            <LayoutDashboard
-                              className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                                activeModule === 'talent-acquisition-overview' || activeModule === 'talent-acquisition'
-                                  ? 'text-white'
-                                  : 'text-slate-400'
-                              }`}
-                            />
-                            <span className="truncate">Overview</span>
-                          </div>
-                          {(activeModule === 'talent-acquisition-overview' || activeModule === 'talent-acquisition') && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />
-                          )}
-                        </button>
-
-                        {/* Sub-item 2: Requisitions (native hiring workflow) */}
-                        <button
-                          id="nav-submodule-talent-requisitions"
-                          type="button"
-                          onClick={() => {
-                            onSelectModule('talent-acquisition-requisitions');
-                            setIsMobileSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                            activeModule === 'talent-acquisition-requisitions'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-slate-300 hover:text-white hover:bg-white/10'
-                          }`}
-                          title="Hiring requisitions: request, approve and publish new roles"
-                        >
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full transition-colors shrink-0 ${
-                                activeModule === 'talent-acquisition-requisitions' ? 'bg-white' : 'bg-white/30'
-                              }`}
-                            />
-                            <FileSpreadsheet
-                              className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                                activeModule === 'talent-acquisition-requisitions' ? 'text-white' : 'text-slate-400'
-                              }`}
-                            />
-                            <span className="truncate">Requisitions</span>
-                          </div>
-                          {activeModule === 'talent-acquisition-requisitions' && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />
-                          )}
-                        </button>
-
-                        {/* Sub-item: Applications (webhook, manual add, CSV import) */}
-                        <button
-                          id="nav-submodule-talent-applications"
-                          type="button"
-                          onClick={() => {
-                            onSelectModule('talent-acquisition-applications');
-                            setIsMobileSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                            activeModule === 'talent-acquisition-applications'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-slate-300 hover:text-white hover:bg-white/10'
-                          }`}
-                          title="Candidate applications: webhook, manual entry and CSV import"
-                        >
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full transition-colors shrink-0 ${
-                                activeModule === 'talent-acquisition-applications' ? 'bg-white' : 'bg-white/30'
-                              }`}
-                            />
-                            <UserCheck
-                              className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                                activeModule === 'talent-acquisition-applications' ? 'text-white' : 'text-slate-400'
-                              }`}
-                            />
-                            <span className="truncate">Applications</span>
-                          </div>
-                        </button>
-
-                        {/* Sub-item: Hiring pipeline (score, screening, assessments, interviews, postings, referrals) */}
-                        <button
-                          id="nav-submodule-talent-pipeline"
-                          type="button"
-                          onClick={() => {
-                            onSelectModule('talent-acquisition-pipeline');
-                            setIsMobileSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                            activeModule === 'talent-acquisition-pipeline'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-slate-300 hover:text-white hover:bg-white/10'
-                          }`}
-                          title="Candidate scores, screening, assessments, interviews, job postings and referrals"
-                        >
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <span className={`w-1.5 h-1.5 rounded-full transition-colors shrink-0 ${activeModule === 'talent-acquisition-pipeline' ? 'bg-white' : 'bg-white/30'}`} />
-                            <ClipboardList className={`w-3.5 h-3.5 shrink-0 transition-colors ${activeModule === 'talent-acquisition-pipeline' ? 'text-white' : 'text-slate-400'}`} />
-                            <span className="truncate">Hiring pipeline</span>
-                          </div>
-                        </button>
-
-                        {/* Sub-item 3: Onboarding (native workflow, replaces the n8n form) */}
-                        <button
-                          id="nav-submodule-talent-onboarding"
-                          type="button"
-                          onClick={() => {
-                            onSelectModule('talent-acquisition-onboarding');
-                            setIsMobileSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                            activeModule === 'talent-acquisition-onboarding'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-slate-300 hover:text-white hover:bg-white/10'
-                          }`}
-                          title="Onboard selected candidates"
-                        >
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full transition-colors shrink-0 ${
-                                activeModule === 'talent-acquisition-onboarding' ? 'bg-white' : 'bg-white/30'
-                              }`}
-                            />
-                            <UserCheck
-                              className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                                activeModule === 'talent-acquisition-onboarding' ? 'text-white' : 'text-slate-400'
-                              }`}
-                            />
-                            <span className="truncate">Onboarding</span>
-                          </div>
-                          {activeModule === 'talent-acquisition-onboarding' && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* ---------------------------------------------------- */}
                 {/* 2. DOCUMENT VERSION CONTROL (Authorized check)       */}
                 {/* ---------------------------------------------------- */}
@@ -821,11 +609,9 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                 {/* MY HIRING (everyone: refer a candidate, interviews you are on) and HRBP (HR business partners) */}
                 {/* ---------------------------------------------------- */}
                 {([
-                  { key: 'my-hiring' as const, title: 'Referrals & interviews', sub: 'Refer people, give interview feedback', Icon: Users, show: true },
                   { key: 'hrbp' as const, title: 'HR Business Partner', sub: (hasAnyPerm(currentUser.perms, ['hrbp.manage', 'hrbp.view']) || !!currentUser.isCompanyAdmin) ? 'Org, talent, engagement & succession' : 'Surveys, recognition, learning & wellness', Icon: Layers, show: true },
                   { key: 'performance' as const, title: 'Performance', sub: 'Targets, reviews, check-ins & growth', Icon: Check, show: true },
                   { key: 'tasks' as const, title: 'Tasks', sub: 'My tasks, boards & dashboards', Icon: ListChecks, show: true },
-                  { key: 'hiring-automation' as const, title: 'Hiring Automation', sub: 'Your hiring steps, applicants & tasks', Icon: Workflow, show: true },
                   { key: 'wellbeing' as const, title: 'Wellbeing', sub: 'Short games for a break', Icon: Gamepad2, show: true },
                 ]).filter((m) => m.show).map((m) => (
                   <React.Fragment key={m.key}>
@@ -838,11 +624,10 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                       if (m.key === 'hrbp') setIsHrbpExpanded(true);
                       if (m.key === 'performance') setIsPmExpanded(true);
                       if (m.key === 'tasks') setIsTaskExpanded(true);
-                      if (m.key === 'hiring-automation') setIsFlowExpanded(true);
                       if (m.key === 'wellbeing') setIsWellbeingExpanded(true);
                       setIsMobileSidebarOpen(false);
                     }}
-                    className={`w-full ${activeModule === m.key ? (m.key === 'hrbp' || m.key === 'performance' || m.key === 'tasks' || m.key === 'hiring-automation' || m.key === 'wellbeing' ? 'pl-3 pr-10' : 'pl-3 pr-3') : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                    className={`w-full ${activeModule === m.key ? (m.key === 'hrbp' || m.key === 'performance' || m.key === 'tasks' || m.key === 'wellbeing' ? 'pl-3 pr-10' : 'pl-3 pr-3') : 'px-3'} py-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
                       activeModule === m.key ? 'bg-gradient-to-r from-[#6c4de6] to-[#8567f4] border-transparent text-white shadow-lg shadow-black/30' : 'bg-transparent border-transparent text-slate-200 hover:bg-white/10'
                     }`}
                   >
@@ -898,20 +683,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                       {isTaskExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                   )}
-                  {m.key === 'hiring-automation' && activeModule !== 'hiring-automation' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                  {m.key === 'hiring-automation' && activeModule === 'hiring-automation' && (
-                    <button
-                      id="nav-module-hiring-automation-toggle"
-                      type="button"
-                      onClick={() => setIsFlowExpanded((v) => !v)}
-                      aria-expanded={isFlowExpanded}
-                      aria-label={isFlowExpanded ? 'Hide Hiring Automation sections' : 'Show Hiring Automation sections'}
-                      title={isFlowExpanded ? 'Hide sections' : 'Show sections'}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/10 cursor-pointer"
-                    >
-                      {isFlowExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
                   {m.key === 'wellbeing' && activeModule !== 'wellbeing' && <ChevronRight aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                   {m.key === 'wellbeing' && activeModule === 'wellbeing' && (
                     <button
@@ -932,9 +703,6 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                   )}
                   {m.key === 'tasks' && activeModule === 'tasks' && isTaskExpanded && (
                     <ModuleSubNav nav={taskNav} label="Tasks sections" variant="sidebar" idPrefix="nav-submodule-tasks" onNavigate={() => setIsMobileSidebarOpen(false)} />
-                  )}
-                  {m.key === 'hiring-automation' && activeModule === 'hiring-automation' && isFlowExpanded && (
-                    <ModuleSubNav nav={flowNav} label="Hiring Automation sections" variant="sidebar" idPrefix="nav-submodule-hiring-automation" onNavigate={() => setIsMobileSidebarOpen(false)} />
                   )}
                   {m.key === 'hrbp' && activeModule === 'hrbp' && isHrbpExpanded && (
                     <ModuleSubNav nav={hrbpNav} label="HR Business Partner sections" variant="sidebar" idPrefix="nav-submodule-hrbp" onNavigate={() => setIsMobileSidebarOpen(false)} />
@@ -1192,7 +960,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
             id="hr-agent-right-workspace"
             className="flex-1 min-h-0 min-w-0 overflow-y-auto bg-[#F8FAFC]"
             // Home and Hiring Pipeline are already built at the compact size; every other screen is scaled to match them.
-            style={activeModule === 'home' || activeModule === 'talent-acquisition-pipeline' ? undefined : { zoom: 0.86 }}
+            style={activeModule === 'home' || isHiringModule(activeModule) ? undefined : { zoom: 0.86 }}
           >
             {children}
           </main>

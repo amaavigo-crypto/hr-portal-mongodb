@@ -546,8 +546,8 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
       {/* ---------------------------------------------------- */}
       {/* 1. HEADER SECTION                                     */}
       {/* ---------------------------------------------------- */}
-      <div className="bg-transparent rounded-2xl py-1 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-        <div>
+      <div className="bg-transparent rounded-2xl py-1 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 hx-bar">
+        <div className="hx-title">
           <h1 className="text-[28px] leading-tight font-bold text-slate-900 tracking-tight">
             Talent Acquisition Overview
           </h1>
@@ -561,29 +561,6 @@ export const TalentAcquisitionOverview: React.FC<TalentAcquisitionOverviewProps>
           <select value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Period" className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none">
             {PERIODS.map((p) => <option key={p.days} value={p.days}>{p.label}</option>)}
           </select>
-          {/* External Form Shortcuts */}
-          <div className="hidden sm:flex items-center space-x-2 border-r border-slate-200 pr-3 mr-1">
-            <button
-              type="button"
-              onClick={onOpenRequisitions}
-              className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-orange-50 hover:text-[#FA7014] border border-slate-200 transition-all cursor-pointer"
-              title="Open hiring requisitions"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400" />
-              <span>Requisitions</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenOnboarding}
-              className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-orange-50 hover:text-[#FA7014] border border-slate-200 transition-all cursor-pointer"
-              title="Open Onboarding"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-              <span>Onboarding</span>
-            </button>
-          </div>
-
           {/* Refresh Button */}
           <button
             id="btn-refresh-recruitment-data"

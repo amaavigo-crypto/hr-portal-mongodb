@@ -100,17 +100,17 @@ export const FlowRuns: React.FC<{ people: FlowState['people']; onChanged?: () =>
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-lg font-extrabold text-slate-900">Who is where</h2><p className="text-sm text-slate-600">Every applicant in your hiring flow. The app moves them on by itself when the work is done.</p></div>
+        <div><p className="max-w-xl text-[13px] text-slate-600">Every applicant in your hiring flow. The app moves them on by itself when the work is done.</p></div>
         <div className="flex gap-2">
           <button className={btnGhost} onClick={() => setAdding(true)}><UserPlus className="w-4 h-4" />Add earlier applicants</button>
           <button className={btnPrimary} disabled={busy} onClick={() => run(async () => { const r = await flowService.checkNow(); refresh(); setNote({ tone: 'ok', text: r.enrolled ? `Checked everyone. ${r.enrolled} new applicant${r.enrolled === 1 ? ' was' : 's were'} added to the flow.` : 'Checked everyone. No new applicants were waiting.' }); })}><RefreshCw className="w-4 h-4" />Check everyone now</button>
         </div>
       </div>
       {note && <Notice tone={note.tone === 'ok' ? 'ok' : 'error'}>{note.text}</Notice>}
-      {(counts.STUCK || 0) > 0 && <Notice tone="error"><b>{counts.STUCK} applicant{counts.STUCK === 1 ? ' needs' : 's need'} you.</b> They are at the top. Open one to see what to do.</Notice>}
+      {(counts.STUCK || 0) > 0 && <p className="text-[13px] font-semibold text-[#b42318]">{counts.STUCK} applicant{counts.STUCK === 1 ? ' needs' : 's need'} you. They are at the top.</p>}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <button key={f.key} onClick={() => setFilter(f.key)} className={`px-3 py-1.5 rounded-full text-xs font-bold border ${filter === f.key ? 'bg-[#FA7014] border-[#FA7014] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
+          <button key={f.key} onClick={() => setFilter(f.key)} aria-pressed={filter === f.key} className={`h-8 cursor-pointer rounded-full border px-3 text-[13px] ${filter === f.key ? 'border-[#c2500a] bg-[#fdf1e9] font-semibold text-[#8f3a06]' : 'border-[#dfe1e5] text-[#3d434d] hover:border-[#c2500a]'}`}>
             {f.label} {f.key ? `(${counts[f.key] || 0})` : `(${rows.length})`}
           </button>
         ))}
@@ -123,11 +123,11 @@ export const FlowRuns: React.FC<{ people: FlowState['people']; onChanged?: () =>
       {shown.length === 0 ? (
         <Card><p className="text-sm text-slate-500 text-center py-6">{rows.length === 0 ? 'Nobody is in the flow yet. New applicants join it automatically once you publish a flow.' : 'Nobody here.'}</p></Card>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-[#eef0f2] border-y border-[#eef0f2]">
           {shown.map((r) => (
-            <li key={r.id} className={`rounded-xl border bg-white p-3 shadow-sm ${r.status === 'STUCK' ? 'border-rose-300' : 'border-slate-200'}`}>
+            <li key={r.id} className={`px-2 py-3.5 ${r.status === 'STUCK' ? 'shadow-[inset_3px_0_0_#b42318] pl-4' : ''}`}>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <button className="text-sm font-extrabold text-slate-900 hover:underline text-left" onClick={() => setView(r)}>{r.candidateName}</button>
+                <button className="cursor-pointer text-left text-sm font-semibold text-slate-900 hover:underline" onClick={() => setView(r)}>{r.candidateName}</button>
                 <span className="text-xs text-slate-500">{r.designation}</span>
                 <Pill tone={TONE[r.status] || 'slate'}>{RUN_STATUS_WORDS[r.status] || r.status}</Pill>
                 {r.late && <Pill tone="red"><AlertTriangle className="w-3 h-3 mr-1" />Late</Pill>}

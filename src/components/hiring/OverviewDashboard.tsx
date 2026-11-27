@@ -29,7 +29,7 @@ const Tile: React.FC<{ label: string; value: React.ReactNode; tone: keyof typeof
   </div>
 );
 
-const SHADES = ['#6d4cf0', '#8b6cf3', '#a99af6', '#c4baf9', '#ddd6fc'];
+const SHADES = ['#2f343c', '#555b66', '#7d838e', '#a9aeb7', '#d1d4da'];
 const Card: React.FC<{ title: string; right?: React.ReactNode; className?: string; children: React.ReactNode }> = ({ title, right, className = '', children }) => (
   <section className={`min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold text-slate-950">{title}</h2>{right}</div>{children}</section>
 );
@@ -46,10 +46,10 @@ const TthChart: React.FC<{ series: { month: string; averageDays: number | null; 
   return (
     <div className="mt-3">
       <svg viewBox={`0 0 ${W} ${H + 16}`} className="h-28 w-full" role="img" aria-label={`Average days to hire by month: ${pts.map((p) => `${monthName(p.month)} ${p.averageDays}`).join(', ')}`}>
-        <defs><linearGradient id="tth-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6d4cf0" stopOpacity="0.28" /><stop offset="1" stopColor="#6d4cf0" stopOpacity="0" /></linearGradient></defs>
+        <defs><linearGradient id="tth-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c2500a" stopOpacity="0.28" /><stop offset="1" stopColor="#c2500a" stopOpacity="0" /></linearGradient></defs>
         <path d={`${line} L${x(pts[pts.length - 1].i)},${H - 8} L${x(pts[0].i)},${H - 8} Z`} fill="url(#tth-fill)" />
-        <path d={line} fill="none" stroke="#6d4cf0" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        {pts.map((p) => <circle key={p.month} cx={x(p.i)} cy={y(p.averageDays!)} r="3.5" fill="#fff" stroke="#6d4cf0" strokeWidth="2"><title>{`${monthName(p.month)}: ${p.averageDays} days (${p.hires} hire${p.hires === 1 ? '' : 's'})`}</title></circle>)}
+        <path d={line} fill="none" stroke="#c2500a" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {pts.map((p) => <circle key={p.month} cx={x(p.i)} cy={y(p.averageDays!)} r="3.5" fill="#fff" stroke="#c2500a" strokeWidth="2"><title>{`${monthName(p.month)}: ${p.averageDays} days (${p.hires} hire${p.hires === 1 ? '' : 's'})`}</title></circle>)}
         {series.map((m, i) => <text key={m.month} x={x(i)} y={H + 10} textAnchor="middle" fontSize="10" fill="#64748b">{monthName(m.month)}</text>)}
       </svg>
     </div>

@@ -1,15 +1,6 @@
-import { createModuleNav, NavItem } from '../moduleNav';
+import { createModuleNav } from '../moduleNav';
 
-export type FlowSection = 'workflows' | 'tasks' | 'flow' | 'runs';
+/** Views inside the Hiring > Automation tab. "flow" is the builder, opened from the list of flows. */
+export type FlowSection = 'workflows' | 'flow' | 'runs' | 'activity';
 
-/** Sidebar sections of "Hiring Automation". Everyone gets My tasks; the people who manage hiring also build the flow and watch applicants. */
-export const flowNav = createModuleNav('amaavigo_flow_tab', ['workflows', 'tasks', 'flow', 'runs'], 'workflows', {});
-
-export const flowNavItems = (manage: boolean, badges: { tasks?: number; stuck?: number } = {}): NavItem[] => [
-  ...(manage ? [{ key: 'workflows', label: 'Workflows', group: 'Hiring Automation' }] : []),
-  { key: 'tasks', label: 'My tasks', group: 'Hiring Automation', ...(badges.tasks ? { badge: badges.tasks } : {}) },
-  ...(manage ? [
-    { key: 'flow', label: 'Hiring flow', group: 'Hiring Automation' },
-    { key: 'runs', label: 'Who is where', group: 'Hiring Automation', ...(badges.stuck ? { badge: badges.stuck } : {}) },
-  ] : []),
-];
+export const flowNav = createModuleNav('amaavigo_flow_tab', ['workflows', 'flow', 'runs', 'activity'], 'workflows', {});

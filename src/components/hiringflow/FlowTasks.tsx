@@ -68,9 +68,9 @@ export const FlowTasks: React.FC<{ onOpenTab?: (tab: string) => void; onChanged?
   const open = data?.open || []; const recent = data?.recent || [];
   const done = () => { onChanged?.(); reload(); };
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <div><h2 className="text-lg font-extrabold text-slate-900">My hiring tasks</h2><p className="text-sm text-slate-600">Things the hiring flow is waiting on you for. Late ones are at the top of your mind, in red.</p></div>
+        <div><h2 className="text-base font-semibold text-slate-900">Hiring tasks</h2><p className="text-[13px] text-slate-600">What the hiring flow is waiting on you for. Late tasks are marked in red.</p></div>
         <button className={btnGhost} onClick={reload}>Refresh</button>
       </div>
       {open.length === 0 ? (

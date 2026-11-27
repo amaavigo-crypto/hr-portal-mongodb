@@ -1,148 +1,98 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, Clock, Layers, MoreVertical, Play, Plus, Search, Users, Workflow, Zap } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Search } from 'lucide-react';
 import { flowService, type FamilyView } from '../../services/flowService';
 import { STEP_INFO, STEP_ORDER, type FlowStep } from '../../../shared/flowEngine';
 import { Loading, useLoad } from '../common/loadUi';
-import { niceDate } from '../leave/ui';
+import { whenIst } from './when';
 
-export type AutomationTab = 'workflows' | 'templates' | 'activity';
-
-const when = (iso?: string) => (iso ? `${niceDate(iso.slice(0, 10))}, ${new Date(iso).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })}` : '—');
-
-const Tile: React.FC<{ label: string; value: React.ReactNode; tone: string; icon: string; Icon: React.FC<{ className?: string }>; hint?: string }> = ({ label, value, tone, icon, Icon, hint }) => (
-  <div className={`flex items-center gap-4 rounded-2xl border border-white px-5 py-4 ${tone}`} title={hint}>
-    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${icon}`}><Icon className="h-6 w-6" /></span>
-    <span><span className="block text-3xl font-bold leading-tight tabular-nums text-slate-950">{value}</span><span className="block text-sm text-slate-700">{label}</span></span>
-  </div>
-);
-
-const stepsText = (steps: FlowStep[] | undefined) => {
-  if (!steps?.length) return '—';
+const Steps: React.FC<{ steps?: FlowStep[] }> = ({ steps }) => {
+  if (!steps?.length) return <span className="text-[#5c626d]">No steps yet</span>;
   const names = steps.map((s) => s.title || STEP_INFO[s.type]?.label || s.type);
-  return names.length > 3 ? `${names.slice(0, 3).join(' → ')} +${names.length - 3}` : names.join(' → ');
+  return (
+    <span className="flex items-center gap-2" title={names.join(' → ')}>
+      <span className="flex items-center" aria-hidden>
+        {steps.slice(0, 8).map((s, i) => <React.Fragment key={s.id}>{i > 0 && <span className="h-px w-2.5 bg-[#c9ccd2]" />}<span className="h-2 w-2 rounded-full bg-[#3d434d]" /></React.Fragment>)}
+      </span>
+      <span className="whitespace-nowrap text-xs text-[#5c626d]">{steps.length} step{steps.length === 1 ? '' : 's'}</span>
+    </span>
+  );
 };
 
-interface Props { onOpenFlow: (familyId: string) => void; onCreate: () => void }
+const StatusPill: React.FC<{ f: FamilyView }> = ({ f }) => {
+  const [text, cls] = f.active ? [`Live · v${f.active.version}`, 'bg-[#e7f6ee] text-[#05603a]'] : f.draft ? ['Draft', 'bg-[#fdf1dc] text-[#8a5300]'] : ['Not built', 'bg-[#f0f1f3] text-[#4b515c]'];
+  return <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>;
+};
 
-/** The front page of Hiring Automation: how many flows are live, how applicants are moving through them, and a list of flows. */
-export const AutomationHome: React.FC<Props> = ({ onOpenFlow, onCreate }) => {
+interface Props { onOpenFlow: (familyId: string) => void; onCreate: (from: 'standard' | 'empty') => void; onShowStuck: () => void }
+
+/** The list of hiring flows, with anything stuck called out first. */
+export const AutomationHome: React.FC<Props> = ({ onOpenFlow, onCreate, onShowStuck }) => {
   const st = useLoad(() => flowService.state(), []);
   const runs = useLoad(() => flowService.runs(), []);
-  const [tab, setTab] = useState<AutomationTab>('workflows');
-  const [filter, setFilter] = useState<'all' | 'active' | 'draft'>('all');
   const [q, setQ] = useState('');
-  const activity = useLoad(() => (tab === 'activity' ? flowService.activity(100) : Promise.resolve(null)), [tab]);
-
   const families: FamilyView[] = (st.data as any)?.families || [];
   const items = runs.data?.items || [];
+  const stuck = items.filter((r) => r.status === 'STUCK').length;
   const lastRun = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of items) if (!m.get(r.familyId) || r.updatedAt > m.get(r.familyId)!) m.set(r.familyId, r.updatedAt);
     return m;
   }, [items]);
-  const live = families.filter((f) => f.active).length;
-  const engaged = new Set(items.map((r) => r.applicationId)).size;
-  const notStuck = items.length ? Math.round((items.filter((r) => r.status !== 'STUCK').length / items.length) * 100) : null;
-
-  const rows = families.filter((f) => (filter === 'all' || (filter === 'active' ? !!f.active : !!f.draft && !f.active))
-    && (!q || `${f.name} ${f.designations.join(' ')}`.toLowerCase().includes(q.toLowerCase())));
+  const rows = families.filter((f) => !q || `${f.name} ${f.designations.join(' ')}`.toLowerCase().includes(q.toLowerCase()));
 
   if (st.loading && !st.data) return <Loading loading />;
   if (st.error && !st.data) return <Loading error={st.error} />;
 
   return (
-    <div className="space-y-5">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Automation summary">
-        <Tile label="Active Workflows" value={live} tone="bg-gradient-to-br from-violet-100/80 to-indigo-50" icon="bg-violet-100 text-violet-600" Icon={Zap} />
-        <Tile label="Automations Run" value={runs.loading && !runs.data ? '—' : items.length} tone="bg-gradient-to-br from-sky-100/80 to-blue-50" icon="bg-sky-100 text-sky-600" Icon={Play} hint="Applicants who have entered a hiring flow" />
-        <Tile label="Candidates Engaged" value={runs.loading && !runs.data ? '—' : engaged} tone="bg-gradient-to-br from-emerald-100/70 to-green-50" icon="bg-emerald-100 text-emerald-600" Icon={Users} />
-        <Tile label="Not Stuck" value={notStuck === null ? '—' : `${notStuck}%`} tone="bg-gradient-to-br from-emerald-100/70 to-green-50" icon="bg-emerald-100 text-emerald-600" Icon={Clock} hint="Share of applicants in a flow who are not waiting for HR to fix something" />
+    <div className="space-y-6">
+      {stuck > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-[10px] bg-[#fdeceb] px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-[#b42318]" aria-hidden />
+          <p className="min-w-0 flex-1 text-sm text-[#16181d]"><b className="font-semibold">{stuck} applicant{stuck === 1 ? ' is' : 's are'} stuck.</b> They wait until someone in HR moves them on.</p>
+          <button type="button" onClick={onShowStuck} className="h-8 cursor-pointer rounded-md border border-[#f3c1bc] bg-white px-3.5 text-[13px] font-semibold text-[#b42318]">Review</button>
+        </div>
+      )}
+      {runs.error && <p className="text-sm text-rose-700" role="alert">Could not load applicant progress: {runs.error}</p>}
+
+      <section>
+        {families.length > 5 && <div className="relative mb-3 max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search flows" aria-label="Search flows" className="h-9 w-full rounded-lg border border-[#dfe1e5] bg-white pl-9 pr-3 text-[13px] outline-none focus:border-[#c2500a]" /></div>}
+        {rows.length === 0 ? <p className="py-8 text-center text-sm text-[#5c626d]">{families.length ? 'No flows match.' : 'No flow yet. Start one below.'}</p> : (
+          <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm">
+            <thead><tr className="border-b border-[#e8e9ec] text-xs text-[#5c626d]">{['Flow', 'Used for', 'Steps', 'In flow now', 'Status', 'Last activity', ''].map((h, i) => <th key={i} className="px-2 py-2.5 font-medium">{h}</th>)}</tr></thead>
+            <tbody>
+              {rows.map((f) => (
+                <tr key={f.familyId} className="cursor-pointer border-b border-[#eef0f2] hover:bg-[#f8f8f9]" onClick={() => onOpenFlow(f.familyId)}>
+                  <td className="px-2 py-4"><button type="button" onClick={(e) => { e.stopPropagation(); onOpenFlow(f.familyId); }} className="cursor-pointer text-left font-semibold text-[#16181d]">{f.name}</button>{f.draft && f.active && <span className="block text-xs text-[#8a5300]">Unpublished changes</span>}</td>
+                  <td className="max-w-[15rem] truncate px-2 py-4 text-[#3d434d]" title={f.isDefault ? 'Every role without its own flow' : f.designations.join(', ')}>{f.isDefault ? 'All other roles' : f.designations.join(', ') || '—'}</td>
+                  <td className="px-2 py-4"><Steps steps={(f.active || f.draft)?.steps} /></td>
+                  <td className="px-2 py-4 tabular-nums">{f.inFlight}</td>
+                  <td className="px-2 py-4"><StatusPill f={f} /></td>
+                  <td className="px-2 py-4 text-[13px] text-[#5c626d]">{whenIst(lastRun.get(f.familyId))}</td>
+                  <td className="px-2 py-4 text-right"><ChevronRight className="inline h-4 w-4 text-[#8a909b]" aria-hidden /></td>
+                </tr>
+              ))}
+            </tbody></table></div>
+        )}
       </section>
 
-      <nav className="inline-flex flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm" role="tablist" aria-label="Automation sections">
-        {([['workflows', 'Workflows', Workflow], ['templates', 'Templates', Layers], ['activity', 'Activity Log', Clock]] as const).map(([k, l, I]) => (
-          <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold ${tab === k ? 'bg-violet-200 text-violet-900' : 'text-slate-700 hover:bg-slate-50'}`}><I className="h-4 w-4" />{l}</button>
-        ))}
-      </nav>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] items-start">
-        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          {tab === 'workflows' && <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="inline-flex items-center gap-2 text-xl font-bold text-slate-950"><Workflow className="h-5 w-5" />Automation Workflows</h2>
-              <div className="flex flex-wrap items-center gap-2">
-                <select value={filter} onChange={(e) => setFilter(e.target.value as any)} aria-label="Show" className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none"><option value="all">All Workflows</option><option value="active">Active</option><option value="draft">Draft</option></select>
-                <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search workflows..." aria-label="Search workflows" className="h-10 w-56 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-[#4f46e5]" /></div>
-              </div>
-            </div>
-            {rows.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">{families.length ? 'No workflows match.' : 'No workflow yet. Create one to start.'}</p> : (
-              <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="bg-slate-50 text-xs text-slate-600"><tr>{['Workflow Name', 'Trigger', 'Actions', 'Status', 'Last Run', ''].map((h) => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}</tr></thead>
-                <tbody className="divide-y divide-slate-100">
-                  {rows.map((f) => {
-                    const doc = f.active || f.draft;
-                    const lr = lastRun.get(f.familyId);
-                    return (
-                      <tr key={f.familyId} className="cursor-pointer hover:bg-violet-50/40" onClick={() => onOpenFlow(f.familyId)}>
-                        <td className="px-3 py-3.5"><span className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600"><Workflow className="h-5 w-5" /></span><span className="min-w-0"><span className="block truncate font-bold text-slate-900">{f.name}</span><span className="block text-xs text-slate-500">{f.inFlight} applicant{f.inFlight === 1 ? '' : 's'} in it now</span></span></span></td>
-                        <td className="px-3 py-3.5"><span className="inline-block max-w-[16rem] truncate rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700" title={f.isDefault ? 'Every role without its own flow' : f.designations.join(', ')}>{f.isDefault ? 'All other roles' : f.designations.join(', ') || '—'}</span></td>
-                        <td className="px-3 py-3.5 text-slate-800">{stepsText(doc?.steps)}</td>
-                        <td className="px-3 py-3.5">{f.active ? <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">Active · v{f.active.version}</span> : f.draft ? <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Draft</span> : <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Not built</span>}{f.draft && f.active && <span className="ml-1 text-[11px] font-semibold text-amber-800">unpublished changes</span>}</td>
-                        <td className="px-3 py-3.5 text-slate-700">{lr ? when(lr) : '—'}</td>
-                        <td className="px-3 py-3.5 text-right"><button type="button" aria-label={`Open ${f.name}`} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><MoreVertical className="h-4 w-4" /></button></td>
-                      </tr>
-                    );
-                  })}
-                </tbody></table></div>
-            )}
-          </>}
-
-          {tab === 'templates' && <>
-            <h2 className="mb-1 inline-flex items-center gap-2 text-xl font-bold text-slate-950"><Layers className="h-5 w-5" />Templates</h2>
-            <p className="mb-4 text-sm text-slate-600">The steps you can put in a hiring flow. Create a workflow, then add any of these.</p>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {STEP_ORDER.map((t) => (
-                <li key={t} className="flex items-start gap-3 rounded-xl border border-slate-200 p-3.5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-lg" aria-hidden>{STEP_INFO[t].icon}</span>
-                  <span className="min-w-0"><span className="block font-bold text-slate-900">{STEP_INFO[t].label}</span><span className="block text-xs text-slate-600">{STEP_INFO[t].does}</span></span>
-                </li>
-              ))}
-            </ul>
-          </>}
-
-          {tab === 'activity' && <>
-            <h2 className="mb-4 inline-flex items-center gap-2 text-xl font-bold text-slate-950"><Clock className="h-5 w-5" />Activity Log</h2>
-            {activity.loading && !activity.data ? <Loading loading /> : activity.error ? <Loading error={activity.error} /> : (activity.data?.items.length ? (
-              <ol className="divide-y divide-slate-100">
-                {activity.data.items.map((a, i) => (
-                  <li key={i} className="flex items-start gap-3 py-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-50 text-violet-600"><Zap className="h-4 w-4" /></span>
-                    <span className="min-w-0 flex-1"><span className="block text-sm text-slate-900"><b>{a.candidateName}</b>{a.designation ? ` · ${a.designation}` : ''}</span><span className="block text-sm text-slate-700">{a.text}</span><span className="block text-xs text-slate-500">{a.flowName} · {a.by}</span></span>
-                    <span className="shrink-0 text-xs text-slate-500">{when(a.at)}</span>
-                  </li>
-                ))}
-              </ol>
-            ) : <p className="py-8 text-center text-sm text-slate-500">Nothing has happened in a flow yet.</p>)}
-          </>}
-        </section>
-
-        <aside className="space-y-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 text-lg font-bold text-slate-950"><Zap className="h-5 w-5" />Create Automation</h3>
-            <p className="mt-2 text-sm text-slate-600">Build a hiring flow for a role, with the steps and people you choose.</p>
-            <button type="button" onClick={onCreate} className="mt-4 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-violet-300 bg-violet-100 text-sm font-semibold text-violet-900 hover:bg-violet-200"><Plus className="h-4 w-4" />Create Workflow</button>
-          </section>
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 text-lg font-bold text-slate-950"><Layers className="h-5 w-5" />Popular Templates</h3>
-            <ul className="mt-3 divide-y divide-slate-100">
-              {(['screen', 'interview', 'email', 'offer', 'onboard'] as const).map((t) => (
-                <li key={t}><button type="button" onClick={() => setTab('templates')} className="flex w-full cursor-pointer items-center gap-3 py-2.5 text-left text-sm text-slate-800"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50" aria-hidden>{STEP_INFO[t].icon}</span><span className="flex-1 truncate">{STEP_INFO[t].label}</span><ArrowRight className="h-4 w-4 text-slate-500" /></button></li>
-              ))}
-            </ul>
-            <button type="button" onClick={() => setTab('templates')} className="mt-3 cursor-pointer text-sm font-bold text-[#4f46e5] hover:underline">View All Templates <ArrowRight className="inline h-3.5 w-3.5" /></button>
-          </section>
-        </aside>
-      </div>
+      <section>
+        <h2 className="text-base font-semibold text-[#16181d]">Start a new flow</h2>
+        <p className="mt-0.5 text-[13px] text-[#5c626d]">For roles that are hired differently from everyone else.</p>
+        <div className="mt-3 grid max-w-3xl gap-3 sm:grid-cols-2">
+          {([['standard', 'Use the standard process', 'Score, phone screen, interview, offer and joining. Change any step.'], ['empty', 'Start with a blank flow', 'Add only the steps you want.']] as const).map(([k, title, text]) => (
+            <button key={k} type="button" onClick={() => onCreate(k)} className="cursor-pointer rounded-[10px] border border-[#dfe1e5] p-4 text-left hover:border-[#c2500a]">
+              <span className="block text-sm font-semibold text-[#16181d]">{title}</span>
+              <span className="mt-1 block text-[13px] text-[#5c626d]">{text}</span>
+            </button>
+          ))}
+        </div>
+        <details className="mt-4 max-w-3xl">
+          <summary className="cursor-pointer text-[13px] font-semibold text-[#3d434d]">Steps you can use in a flow</summary>
+          <ul className="mt-2 grid gap-x-8 sm:grid-cols-2">
+            {STEP_ORDER.map((t) => <li key={t} className="border-b border-[#eef0f2] py-2.5"><span className="block text-[13px] font-semibold text-[#16181d]">{STEP_INFO[t].label}</span><span className="block text-xs text-[#5c626d]">{STEP_INFO[t].does}</span></li>)}
+          </ul>
+        </details>
+      </section>
     </div>
   );
 };

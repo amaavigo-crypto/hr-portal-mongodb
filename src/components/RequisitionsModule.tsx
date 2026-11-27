@@ -134,8 +134,8 @@ export const RequisitionsModule: React.FC<Props> = ({ currentUser, users, embedd
 
   return (
     <div className={`flex-1 min-w-0 ${embedded ? 'space-y-4 p-3 sm:p-4' : 'space-y-5 bg-[#F7F8FA] p-4 sm:p-6 xl:p-8'}`}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <div className="hx-bar flex flex-wrap items-start justify-between gap-4">
+        <div className="hx-title">
           <h1 className={`${embedded ? 'text-lg' : 'text-3xl'} font-bold tracking-tight text-slate-950`}>{embedded ? 'Hiring requests' : 'Requisitions'}</h1>
           <p className="mt-1 text-sm text-slate-600">{embedded ? 'Review and manage your department hiring requests.' : 'Create, track and manage hiring requisitions across your organization.'}</p>
         </div>
