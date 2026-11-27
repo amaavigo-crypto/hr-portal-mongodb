@@ -63,6 +63,7 @@ import { AskHrPanel, openAskHr } from './assistant/AskHrPanel';
 
 export type HRAgentModule =
   | 'home'
+  | 'talent-hiring'
   | 'policies'
   | 'document-version-control'
   | 'talent-acquisition'
@@ -169,6 +170,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   // Pages this person can open: used for the top bar title and the "go to a page" search.
   const pages: { id: HRAgentModule; label: string }[] = ([
     { id: 'home', label: 'Home', show: true },
+    { id: 'talent-hiring', label: 'Talent & Hiring', show: true },
     { id: 'policies', label: 'My policies', show: canAcknowledge },
     { id: 'talent-acquisition-requisitions', label: 'Hiring requests', show: hasRequestOnlyHiring },
     { id: 'talent-acquisition-overview', label: 'Talent Acquisition', show: hasTalentAccess },
@@ -213,6 +215,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
   };
   const crumb: { section: string; page: string } | null = (() => {
     if (activeModule === 'home') return null;
+    if (activeModule === 'talent-hiring') return { section: 'Talent & Hiring', page: 'Workspace' };
     if (activeModule.startsWith('talent-acquisition')) {
       if (activeModule === 'talent-acquisition-requisitions' && !hasTalentAccess) return { section: pageTitle, page: '' };
       return { section: 'Talent Acquisition', page: TA_PAGES[activeModule] || '' };
@@ -432,6 +435,7 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
                 {/* HOME: every person's own dashboard */}
                 {([
                   { id: 'home' as const, label: 'Home', hint: 'What needs you today', icon: Home, show: true, badge: 0 },
+                  { id: 'talent-hiring' as const, label: 'Talent & Hiring', hint: 'Recruitment and hiring workflows', icon: Workflow, show: true, badge: 0 },
                   { id: 'policies' as const, label: 'My policies', hint: 'Read and acknowledge', icon: FileCheck2, show: canAcknowledge, badge: pendingPolicyCount },
                   { id: 'talent-acquisition-requisitions' as const, label: 'Hiring requests', hint: 'Ask for a new hire', icon: ClipboardList, show: hasRequestOnlyHiring, badge: 0 },
                 ]).filter((n) => n.show).map((n) => {

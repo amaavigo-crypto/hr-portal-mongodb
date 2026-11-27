@@ -41,6 +41,7 @@ import { downloadDocumentWithIntactFormat } from './utils/documentStamper';
 import { FileText, X, Download, ExternalLink, Users, FileSpreadsheet, UserCheck } from 'lucide-react';
 import { StatusBadge } from './components/StatusBadge';
 import { HRAgentShell, HRAgentModule } from './components/HRAgentShell';
+import { TalentHiringWorkspace } from './components/TalentHiringWorkspace';
 import { lazyPage } from './utils/lazyPage';
 import { hasModulePermission, normalizeAuthorizedModules } from './utils/authorization';
 import { DocumentSuggestion } from './types';
@@ -608,6 +609,14 @@ export default function App() {
             <div className="flex-1 min-w-0 overflow-y-auto">
               <HomePage fallbackName={currentUser.name} onOpen={openDashboardTarget} />
             </div>
+          )}
+
+          {hrAgentModule === 'talent-hiring' && currentUser && (
+            <TalentHiringWorkspace
+              hasTalentAccess={hasModulePermission(currentUser, 'talent-acquisition')}
+              canCreateRequest={hasAnyPerm(currentUser.perms, ['req.create'])}
+              onNavigate={handleSelectHRAgentModule}
+            />
           )}
 
           {hrAgentModule === 'policies' && (
