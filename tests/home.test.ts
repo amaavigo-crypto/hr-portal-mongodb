@@ -64,8 +64,17 @@ assert.equal(JSON.stringify(wishes.json).includes('1991'), false);
 
 // company numbers and Hiring Pipeline on Home: HR and administrators only, with the default roles
 const overview = async (headers: any) => ((await call(headers, 'layout')).json as any).can.companyOverview;
+const PORTAL: Record<string, string> = { hr: 'CREATOR', 'hr-head': 'CREATOR', employee: 'EMPLOYEE', 'department-head': 'EMPLOYEE', approver: 'REVIEWER' };
+for (const [slug, role] of Object.entries(PORTAL)) fdb.seed('employees', `u_${slug}`, { companyId: 'c1', authUid: `u_${slug}`, name: slug, role, active: true });
 for (const slug of ['hr', 'hr-head']) assert.equal(await overview(tok(`u_${slug}`, perms(slug))), true, `${slug} sees the company overview`);
 assert.equal(await overview(tok('u_adm', [], 'c1', true)), true, 'company admin sees the company overview');
 for (const slug of ['employee', 'department-head', 'approver']) assert.equal(await overview(tok(`u_${slug}`, perms(slug))), false, `${slug} does not see the company overview`);
+// an HR permission given to a non-HR role (or to the person directly) is not enough
+for (const slug of ['employee', 'department-head', 'approver']) {
+  assert.equal(await overview(tok(`u_${slug}`, [...perms(slug), 'leave.manage', 'req.hr_decide', 'users.manage', 'lifecycle.manage'])), false, `${slug} with HR permissions still does not see it`);
+}
+// an HR-portal role without any HR permission does not see it either, nor does someone with no employee record
+assert.equal(await overview(tok('u_hr', ['doc.create'])), false, 'HR portal without HR permissions');
+assert.equal(await overview(tok('u_ghost', perms('hr'))), false, 'no employee record');
 
 console.log('home tests passed');

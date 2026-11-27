@@ -261,11 +261,13 @@ export function canSeeLoginSummary(perms: string[], isAdmin: boolean) {
 }
 /**
  * The company numbers and the Hiring Pipeline card on Home are for HR and administrators only.
- * Role names can be changed by each company, so "HR" means holding a permission that only HR roles get by default.
+ * "HR" means both: the person's roles open the HR portal (portal CREATOR, as Head HR and HR do) AND they hold a
+ * permission that only HR roles get by default. A permission granted to an approver, a department head or an
+ * employee (by role or personally) is not enough on its own.
  */
 export const HR_OVERVIEW_PERMS = ['req.hr_decide', 'leave.manage', 'lifecycle.manage', 'users.manage'];
-export function canSeeCompanyOverview(perms: string[], isAdmin: boolean) {
-  return isAdmin || hasAnyPerm(perms, HR_OVERVIEW_PERMS);
+export function canSeeCompanyOverview(perms: string[], isAdmin: boolean, portal?: string | null) {
+  return isAdmin || (portal === 'CREATOR' && hasAnyPerm(perms, HR_OVERVIEW_PERMS));
 }
 export function canSeeMoodSummary(perms: string[], isAdmin: boolean) {
   return isAdmin || hasAnyPerm(perms, ['users.manage', 'leave.manage']);

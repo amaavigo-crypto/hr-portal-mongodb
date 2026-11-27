@@ -97,8 +97,18 @@ async function loadHomeSettings(cid: string): Promise<HomeSettings> {
   };
 }
 
+/** The portal the person's roles open (stored on their employee record when their roles are saved). */
+async function portalOf(w: Who): Promise<string | null> {
+  const person = await personByUid(w.cid, w.ctx.uid);
+  if (!person) return null;
+  const e = await db().collection('employees').doc(person.docId).get();
+  const x = e.exists ? (e.data() as any) : null;
+  return x && x.companyId === w.cid && x.active !== false ? String(x.role || '') || null : null;
+}
+
 async function layout(w: Who): Promise<Result> {
-  const s = await loadHomeSettings(w.cid);
+  const admin = w.isAdmin || w.ctx.isPlatformAdmin;
+  const [s, portal] = await Promise.all([loadHomeSettings(w.cid), admin ? Promise.resolve(null) : portalOf(w)]);
   const links = visibleQuickLinks(s.quickLinks ?? DEFAULT_QUICK_LINKS, w.perms, w.isAdmin);
   return ok({
     today: istToday(),
@@ -110,7 +120,7 @@ async function layout(w: Who): Promise<Result> {
       manageHome: canManageHome(w.perms, w.isAdmin),
       loginSummary: canSeeLoginSummary(w.perms, w.isAdmin),
       moodSummary: canSeeMoodSummary(w.perms, w.isAdmin),
-      companyOverview: canSeeCompanyOverview(w.perms, w.isAdmin || w.ctx.isPlatformAdmin),
+      companyOverview: canSeeCompanyOverview(w.perms, admin, portal),
       people: w.isAdmin || hasPerm(w.perms, 'users.manage'),
       acknowledge: w.isAdmin || hasPerm(w.perms, 'doc.acknowledge'),
     },
