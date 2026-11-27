@@ -72,7 +72,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin main; git checkout -q -f -B main '$COMMIT_SHA'; PM2_APP=hr-portal-staging APP_PORT=3001 PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
+            "set -e; cd '$DEPLOY_PATH'; PREV_SHA=\$(git rev-parse HEAD); git fetch --quiet origin main; git checkout -q -f -B main '$COMMIT_SHA'; PM2_APP=hr-staging APP_PORT=3001 PREV_SHA=\$PREV_SHA bash scripts/deploy.sh"
 
       - name: Clean up SSH key
         if: always()
