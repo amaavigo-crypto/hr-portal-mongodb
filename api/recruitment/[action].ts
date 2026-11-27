@@ -21,6 +21,14 @@ export default async function handler(req: any, res: any) {
       headers: req.headers,
       origin,
     });
+    if (json && typeof json === 'object' && json.__file) {
+      // An uploaded resume: always downloaded as a file, never run by the browser.
+      res.setHeader('Content-Type', json.__file.mime);
+      res.setHeader('Content-Disposition', `attachment; filename="${String(json.__file.name).replace(/[^A-Za-z0-9._ -]/g, '_')}"`);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'private, no-store');
+      return res.status(200).send(Buffer.from(json.__file.base64, 'base64'));
+    }
     if (json && typeof json === 'object' && json.__redirect) return res.redirect(302, String(json.__redirect));
     return res.status(status).json(json);
   } catch (err: any) {

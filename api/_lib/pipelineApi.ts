@@ -289,6 +289,8 @@ async function resumeExtract(ctx: AuthContext, b: any): Promise<Result> {
   const facts = extractResumeFacts(read.text, skillList(req?.keySkills));
   const it: Item = { id: prior?.id || newId(), companyId: cid, kind: 'resume', applicationId: a.id, text: read.text.slice(0, 20000), facts, extractedAt: nowIso() };
   await putItem(it);
+  // Quick rules that look at the resume could not decide until now.
+  await (await import('./quickRulesApi.js')).quickRulesHook(cid, a.id);
   return ok({ facts, characters: read.text.length });
 }
 

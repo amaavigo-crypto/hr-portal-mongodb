@@ -7,6 +7,7 @@ import { auditService } from './src/services/audit';
 import { defaultStorageProvider } from './src/services/storage';
 import { defaultEmailProvider } from './src/services/email';
 import { routeEmail } from './api/_lib/emailGate';
+import { runFollowUpsAll } from './api/_lib/followUpApi';
 import { routeHiring } from './api/_lib/hiringRouter.js';
 import { routeApply } from './api/_lib/applicationsApi';
 import { routeHrbp } from './api/_lib/hrbpApi.js';
@@ -45,6 +46,8 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   // The public application webhook takes small JSON or form posts only (parsed before the large-upload parsers below).
+  // Public careers form: room for a 5 MB resume (about 7 MB once encoded) and nothing like the general limit.
+  app.use('/api/recruitment/careers-public-apply', express.json({ limit: '7500kb' }));
   app.use('/api/apply', express.json({ limit: '200kb' }), express.urlencoded({ extended: true, limit: '200kb' }));
 
   // Support up to 100MB payload for video and high-resolution document uploads
@@ -152,6 +155,14 @@ async function startServer() {
         headers: req.headers as Record<string, any>,
         origin,
       });
+      if (json && typeof json === 'object' && json.__file) {
+        // An uploaded resume: always downloaded as a file, never run by the browser.
+        res.setHeader('Content-Type', json.__file.mime);
+        res.setHeader('Content-Disposition', `attachment; filename="${String(json.__file.name).replace(/[^A-Za-z0-9._ -]/g, '_')}"`);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cache-Control', 'private, no-store');
+        return res.status(200).send(Buffer.from(json.__file.base64, 'base64'));
+      }
       if (json && typeof json === 'object' && json.__redirect) return res.redirect(302, String(json.__redirect));
       res.status(status).json(json);
     } catch (err: any) {
@@ -1070,6 +1081,13 @@ async function startServer() {
         console.warn('[Scheduler] Daily re-review check error:', err);
       }
     }, 24 * 60 * 60 * 1000);
+
+    // Hiring follow-ups: only companies that switched them on, only in working hours, once a day per person per task.
+    setInterval(() => {
+      runFollowUpsAll()
+        .then((r) => { if (r.sent || r.failed) console.log(`[Scheduler] Follow-ups: ${r.sent} sent, ${r.failed} failed.`); })
+        .catch((err) => console.warn('[Scheduler] Follow-up pass error:', err?.message || err));
+    }, 30 * 60 * 1000);
   });
 
   const handleShutdown = (signal: string) => {

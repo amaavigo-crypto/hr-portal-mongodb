@@ -848,6 +848,10 @@ async function activityRoute(ctx: AuthContext, q: any): Promise<Res> {
   for (const r of runs) for (const h of r.history || []) {
     items.push({ at: h.at, text: h.text, by: h.by, runId: r.id, candidateName: r.candidateName, designation: r.designation, flowName: r.flowName || 'Default flow' });
   }
+  // Follow-up reminders (followUpApi.ts) belong in the same record: who was reminded, and why.
+  for (const l of await listItems(ctx.companyId!, 'followupLog')) {
+    items.push({ at: l.at, text: `${l.status === 'SENT' ? 'Reminder sent to' : l.status === 'FAILED' ? 'Reminder could not be sent to' : 'Reminder being sent to'} ${l.toName || l.toEmail}: ${l.why}`, by: 'Automation', runId: '', candidateName: l.candidateName, designation: l.designation || '', flowName: 'Follow-ups' });
+  }
   items.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   return ok({ items: items.slice(0, limit) });
 }

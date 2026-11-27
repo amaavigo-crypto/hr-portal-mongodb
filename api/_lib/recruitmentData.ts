@@ -28,7 +28,7 @@ export function usesLegacySource(companyId: string | null | undefined): boolean 
 
 export const APPLICATION_STAGES = ['New Applicant', 'Shortlisted', 'Interview Scheduled', 'Interviewed', 'Selected', 'On Hold', 'Rejected'] as const;
 
-export type ApplicationSource = 'WEBHOOK' | 'MANUAL' | 'CSV' | 'REFERRAL';
+export type ApplicationSource = 'WEBHOOK' | 'MANUAL' | 'CSV' | 'REFERRAL' | 'CAREERS';
 
 export interface ApplicationDoc {
   id: string;
@@ -65,6 +65,10 @@ export interface ApplicationDoc {
   totalExperienceYears?: number;
   employersCount?: number;
   referredByName?: string;
+  /** Careers page: which link the person used (careers-page, or the name given to a copied link). */
+  sourceLabel?: string;
+  consent?: { at: string; text: string; retentionMonths: number };
+  tags?: string[];
 }
 
 export interface OpeningDoc {
@@ -221,7 +225,15 @@ export function normalizeApplicationInput(input: unknown): { value?: NormalizedA
 export async function createApplication(
   companyId: string,
   n: NormalizedApplication,
-  source: ApplicationSource
+  source: ApplicationSource,
+  opts: {
+    /** Extra fields stored on a new application. */
+    fields?: Partial<ApplicationDoc>;
+    /** Saves things that belong to the new application (its resume) before the hiring flow and quick rules look at it. */
+    prepare?: (id: string) => Promise<Partial<ApplicationDoc>>;
+    /** For public forms: anyone can type someone else's email, so an earlier application is never overwritten. */
+    protectExisting?: boolean;
+  } = {}
 ): Promise<{ id: string; duplicate: boolean }> {
   const emailLower = n.email.toLowerCase();
   const key = designationKey(n.designation);
@@ -232,9 +244,11 @@ export async function createApplication(
   const same = existing.docs.find((d) => d.get('designationKey') === key);
   if (same) {
     const patch: Record<string, any> = { reappliedAt: now, updatedAt: now };
-    if (n.resumeUrl) patch.resumeUrl = n.resumeUrl;
-    if (n.message) patch.message = n.message;
-    if (n.mobile) patch.mobile = n.mobile;
+    if (!opts.protectExisting) {
+      if (n.resumeUrl) patch.resumeUrl = n.resumeUrl;
+      if (n.message) patch.message = n.message;
+      if (n.mobile) patch.mobile = n.mobile;
+    }
     await same.ref.update(patch);
     return { id: same.id, duplicate: true };
   }
@@ -254,10 +268,13 @@ export async function createApplication(
     createdAt: now,
     receivedAt: now,
     updatedAt: now,
+    ...(opts.fields || {}),
   };
+  if (opts.prepare) Object.assign(doc, await opts.prepare(ref.id));
   await ref.set(clean(doc));
   // A company's hiring flow (if it has published one) takes the new applicant from here. Never blocks or fails the application.
   try { await (await import('./flowApi.js')).flowStartHook(companyId, ref.id); } catch { /* the daily job picks it up */ }
+  try { await (await import('./quickRulesApi.js')).quickRulesHook(companyId, ref.id); } catch { /* rules never block an application */ }
   return { id: ref.id, duplicate: false };
 }
 
@@ -311,6 +328,7 @@ export async function deleteApplication(companyId: string, id: string): Promise<
   const a = await getApplication(companyId, id);
   if (!a) return false;
   await db().collection('applications').doc(id).delete();
+  await (await import('./resumeFiles.js')).deleteResumeFiles(companyId, id);
   return true;
 }
 

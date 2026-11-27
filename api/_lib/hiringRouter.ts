@@ -18,6 +18,9 @@
  *   hiring-daily, integrations                                          the one daily cron job, and which outside connections are switched on
  *   google-*                                                           per-company Google Calendar / Meet connection (googleCalendar.ts)
  *   hdash                                                               founder hiring dashboard (analyticsApi.ts)
+ *   followup-*                                                          automatic reminders, off until switched on (followUpApi.ts)
+ *   qrule-*                                                             quick rules for new applications (quickRulesApi.ts)
+ *   careers-state, careers-save, careers-public-*, careers-resume-file  public careers page, off until published (careersPageApi.ts)
  *   flow-*                                                              hiring flow builder: custom steps from applicant to onboarding, tasks, stuck applicants (flowApi.ts)
  *   offer-*, hcost-*                                                    salary approval, offer pack, acceptance, hiring costs (offerApi.ts)
  *
@@ -39,6 +42,9 @@ import { routeAnalytics } from './analyticsApi.js';
 import { routeAiHiring } from './aiHiringApi.js';
 import { routeScreeningLink, sweepScreeningLinks } from './screeningLinkApi.js';
 import { routeFlow, sweepFlows } from './flowApi.js';
+import { routeFollowUps, runFollowUpsAll } from './followUpApi.js';
+import { routeQuickRules } from './quickRulesApi.js';
+import { routeCareersPage } from './careersPageApi.js';
 import { sweepOffers } from './offerApi.js';
 import { sweepProbation, sweepQuarterly } from './talentCycleApi.js';
 import { sendDueReminders } from './interviewApi.js';
@@ -104,7 +110,7 @@ export async function routeHiring(r: HiringRequest): Promise<HiringResult> {
     const auth = String(r.headers?.authorization || r.headers?.Authorization || '');
     if (!secret || auth !== `Bearer ${secret}`) return { status: 401, json: { success: false, error: 'Not allowed.' } };
     const out: Record<string, any> = {};
-    for (const [name, fn] of [['offers', sweepOffers], ['probation', sweepProbation], ['quarterly', sweepQuarterly], ['interviews', () => sendDueReminders()], ['screeningLinks', sweepScreeningLinks], ['websiteCandidates', sweepWebsiteApplications], ['hiringFlows', sweepFlows]] as const) {
+    for (const [name, fn] of [['offers', sweepOffers], ['probation', sweepProbation], ['quarterly', sweepQuarterly], ['interviews', () => sendDueReminders()], ['screeningLinks', sweepScreeningLinks], ['websiteCandidates', sweepWebsiteApplications], ['hiringFlows', sweepFlows], ['followUps', runFollowUpsAll]] as const) {
       try { out[name] = await (fn as () => Promise<any>)(); } catch (e: any) { out[name] = { error: e?.message || 'failed' }; }
     }
     return { status: 200, json: { success: true, ...out } };
@@ -148,6 +154,12 @@ export async function routeHiring(r: HiringRequest): Promise<HiringResult> {
   const pipe = { method: r.method, action, query: r.query, body: r.body, headers: r.headers, origin: r.origin };
   const flow = await routeFlow(pipe);
   if (flow) return flow;
+  const followUps = await routeFollowUps(pipe);
+  if (followUps) return followUps;
+  const quickRules = await routeQuickRules(pipe);
+  if (quickRules) return quickRules;
+  const careersPage = await routeCareersPage(pipe);
+  if (careersPage) return careersPage;
   const stest = await routeSkillTest(pipe);
   if (stest) return stest;
   const pipeline = (await routePipeline(pipe)) || (await routeInterview(pipe)) || (await routeOffer(pipe)) || (await routeJoining(pipe)) || (await routeAnalytics(pipe)) || (await routeAiHiring(pipe)) || (await routeScreeningLink(pipe));

@@ -104,6 +104,8 @@ export async function routeApplications(r: ApplicationsRequest): Promise<Result>
         message: a.message,
         resumeUrl: a.resumeUrl,
         source: a.source,
+        sourceLabel: a.sourceLabel || '',
+        tags: a.tags || [],
         createdAt: a.createdAt,
         reappliedAt: a.reappliedAt || null,
         extra: a.extra,

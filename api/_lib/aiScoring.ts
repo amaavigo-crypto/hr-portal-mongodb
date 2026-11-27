@@ -16,6 +16,7 @@
  *      AI_SCORING_BATCH, AI_SCORING_MAX_CANDIDATES (default 30), AI_SCORING_RESUME_CHARS (default 6000),
  *      RESUME_ALLOWED_HOSTS (comma list, default "amaavigo.com").
  */
+import { loadStoredResume } from './resumeFiles.js';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
 import { adminDb } from './firebaseAdmin.js';
@@ -197,6 +198,8 @@ export async function readResume(url: string): Promise<ResumeRead> {
  * Same download rules as readResume: share links are converted, only public addresses are fetched, 6 MB at most.
  */
 export async function fetchResumeFile(url: string): Promise<{ buf?: Buffer; mime?: string; error?: string }> {
+  const stored = await loadStoredResume(url);
+  if (stored) return stored.mime === 'application/pdf' ? { buf: stored.buf, mime: stored.mime } : { error: 'Only PDF, JPG and PNG resumes can be read by AI.' };
   let u: URL;
   try {
     u = new URL(normalizeResumeUrl(url));
@@ -277,6 +280,9 @@ async function downloadResume(target: URL, trusted: boolean): Promise<{ buf?: Bu
 }
 
 async function readResumeUncached(url: string): Promise<ResumeRead> {
+  // Files uploaded on the careers page are kept in the database, so there is nothing to download.
+  const stored = await loadStoredResume(url);
+  if (stored) return textFromResumeBuffer(stored.buf, 'careers upload');
   let u: URL;
   try {
     u = new URL(normalizeResumeUrl(url));
@@ -310,6 +316,12 @@ async function readResumeUncached(url: string): Promise<ResumeRead> {
     return why(lastError);
   }
 
+  return textFromResumeBuffer(buf, host);
+}
+
+/** The text of a resume file (PDF or Word). `from` only names the source in error messages. */
+export async function textFromResumeBuffer(buf: Buffer, from = 'upload'): Promise<ResumeRead> {
+  const why = (msg: string): ResumeRead => ({ error: `${msg} [${from}]` });
   try {
     let text = '';
     if (buf.slice(0, 4).toString('latin1') === '%PDF') text = await pdfText(buf);
@@ -323,7 +335,7 @@ async function readResumeUncached(url: string): Promise<ResumeRead> {
     if (text.length < 80) return why('No readable text in the resume (it may be a scanned image).');
     return { text: text.slice(0, num('AI_SCORING_RESUME_CHARS', 6000)) };
   } catch (err: any) {
-    console.warn(`[Resume] ${host}: could not read the file: ${err?.message || err}`);
+    console.warn(`[Resume] ${from}: could not read the file: ${err?.message || err}`);
     return why(`Could not read the resume file: ${err?.message || err}`);
   }
 }
