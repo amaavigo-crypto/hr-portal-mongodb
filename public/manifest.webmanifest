@@ -29,6 +29,13 @@
   ],
   "shortcuts": [
     {
+      "name": "Hiring",
+      "short_name": "Hiring",
+      "description": "Interview feedback, offers and candidates",
+      "url": "/?app=hiring",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "Quick claim",
       "short_name": "Quick claim",
       "description": "Photograph a bill and send a claim",

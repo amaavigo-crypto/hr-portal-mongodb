@@ -8,6 +8,8 @@ import { AutomationActivity } from './hiringflow/AutomationActivity';
 import { FlowBuilder } from './hiringflow/FlowBuilder';
 import { FlowRuns } from './hiringflow/FlowRuns';
 import { Segmented } from './hiring/shell/Segmented';
+import { FollowUps } from './hiringflow/FollowUps';
+import { QuickRules } from './hiringflow/QuickRules';
 import { ToastProvider } from './leave/ui';
 
 export type NewFlowStart = 'standard' | 'empty';
@@ -34,12 +36,14 @@ export const HiringAutomationModule: React.FC<{ currentUser: User }> = () => {
       <div className="min-w-0 flex-1 space-y-5 overflow-y-auto px-4 pb-10 pt-4 sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Segmented<FlowSection> label="Automation views" value={view === 'flow' ? 'workflows' : view} onChange={(v) => flowNav.setSection(v)} options={[
-            { value: 'workflows', label: 'Flows' }, { value: 'runs', label: 'Applicant progress', badge: flow?.counts?.STUCK }, { value: 'activity', label: 'Activity' },
+            { value: 'workflows', label: 'Flows' }, { value: 'rules', label: 'Quick rules' }, { value: 'followups', label: 'Follow-ups' }, { value: 'runs', label: 'Applicant progress', badge: flow?.counts?.STUCK }, { value: 'activity', label: 'Activity' },
           ]} />
-          {view !== 'flow' && <button type="button" onClick={() => toBuilder(null, true)} className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#4C3EB0] px-4 text-[13px] font-semibold text-white hover:bg-[#3F3393]"><Plus className="h-4 w-4" />New flow</button>}
+          {view === 'workflows' && <button type="button" onClick={() => toBuilder(null, true)} className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#4C3EB0] px-4 text-[13px] font-semibold text-white hover:bg-[#3F3393]"><Plus className="h-4 w-4" />New flow</button>}
         </div>
         {view === 'workflows' && <AutomationHome onOpenFlow={(id) => toBuilder(id, false)} onCreate={(from) => toBuilder(null, true, from)} onShowStuck={() => flowNav.setSection('runs')} />}
         {view === 'flow' && <FlowBuilder key={target.n} onChanged={load} initialFamilyId={target.id} startAdding={target.adding} startFrom={target.from} onBack={toList} />}
+        {view === 'rules' && <QuickRules />}
+        {view === 'followups' && <FollowUps onShowActivity={() => flowNav.setSection('activity')} />}
         {view === 'runs' && <FlowRuns people={flow?.people || []} onChanged={load} />}
         {view === 'activity' && <AutomationActivity />}
       </div>

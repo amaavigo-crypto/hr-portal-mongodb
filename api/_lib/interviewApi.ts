@@ -528,7 +528,7 @@ async function pipeBoard(cid: string, q: any): Promise<Result> {
     const next = ints.filter((i) => i.status === 'SCHEDULED').sort((x, y) => String(x.startIso).localeCompare(String(y.startIso)))[0];
     const as = assessments.filter((x) => x.applicationId === a.id);
     return {
-      id: a.id, name: a.name, email: a.email, designation: a.designation, status: a.status, source: a.source, referredByName: a.referredByName || '', createdAt: a.createdAt,
+      id: a.id, name: a.name, email: a.email, designation: a.designation, status: a.status, source: a.source, referredByName: a.referredByName || '', createdAt: a.createdAt, sourceLabel: a.sourceLabel || '', tags: a.tags || [],
       screening: screening.find((s) => s.applicationId === a.id)?.outcome || '', assessmentsPending: as.filter((x) => x.status === 'ASSIGNED').length, assessmentsFailed: as.filter((x) => x.result === 'FAIL').length,
       nextInterview: next ? next.startIso : '', interviewsDone: ints.filter((i) => i.status === 'COMPLETED').length,
     };

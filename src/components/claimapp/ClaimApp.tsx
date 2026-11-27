@@ -1,18 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Camera, CheckCircle2, ClipboardList, Loader2, LogOut, Send, ShieldCheck, WifiOff, AlertTriangle } from 'lucide-react';
+import { Briefcase, Camera, CheckCircle2, ClipboardList, Loader2, LogOut, Send, ShieldCheck, WifiOff, AlertTriangle } from 'lucide-react';
 import { payrollService } from '../../services/payrollService';
 import { flushQueue, onQueueChange, queued, startAutoSend } from '../../services/claimQueue';
 import { QuickClaim } from '../payroll/QuickClaim';
 import { Thumb } from '../payroll/ClaimsTab';
 import { isInstalled } from '../../services/installApp';
+import type { User } from '../../types';
+import { RecruiterView, useHiringWork } from './RecruiterView';
 
 /**
- * The installed phone app. It only does claims: snap a bill and send, see your claims, and (if you are an approver) approve.
- * Everyone sees the same three tabs for now; the server still decides who may approve what.
+ * The installed phone app: snap a bill and send, see your claims, and (if you are an approver) approve.
+ * People with hiring work also get a Hiring tab. The server still decides who may do what.
  */
-export const claimAppMode = (): boolean => isInstalled() || new URLSearchParams(window.location.search).get('app') === 'claims';
+const appParam = () => new URLSearchParams(window.location.search).get('app');
+export const claimAppMode = (): boolean => isInstalled() || appParam() === 'claims' || appParam() === 'hiring';
 
-type Tab = 'claim' | 'mine' | 'approve';
+type Tab = 'claim' | 'mine' | 'approve' | 'hiring';
 const inr = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const claimNo = (id: string) => `CLM-${String(id).replace(/[^a-z0-9]/gi, '').slice(-4).toUpperCase()}`;
 const stamp = (iso?: string) => {
@@ -114,9 +117,13 @@ const ApproveList: React.FC = () => {
   );
 };
 
-export const ClaimApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const [tab, setTab] = useState<Tab>('claim');
-  const [snap, setSnap] = useState(true); // opens straight to the camera
+export const ClaimApp: React.FC<{ onLogout: () => void; currentUser: User; users: User[] }> = ({ onLogout, currentUser, users }) => {
+  const toHiring = appParam() === 'hiring';
+  const [tab, setTab] = useState<Tab>(toHiring ? 'hiring' : 'claim');
+  const [snap, setSnap] = useState(!toHiring); // opens straight to the camera
+  const hiring = useHiringWork(currentUser);
+  const showHiring = toHiring || hiring.talent || hiring.interviews.length > 0 || hiring.tasks.length > 0 || hiring.offers.length > 0;
+  const waiting = hiring.feedback.length + hiring.tasks.length + hiring.offers.length;
   const [version, setVersion] = useState(0);
   const [offline, setOffline] = useState(!navigator.onLine);
   useEffect(() => {
@@ -126,11 +133,11 @@ export const ClaimApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
   }, []);
   const bump = () => setVersion((v) => v + 1);
-  const TABS: { id: Tab; label: string; Icon: typeof Camera }[] = [{ id: 'claim', label: 'New claim', Icon: Camera }, { id: 'mine', label: 'My claims', Icon: ClipboardList }, { id: 'approve', label: 'Approve', Icon: ShieldCheck }];
+  const TABS: { id: Tab; label: string; Icon: typeof Camera }[] = [{ id: 'claim', label: 'New claim', Icon: Camera }, { id: 'mine', label: 'My claims', Icon: ClipboardList }, { id: 'approve', label: 'Approve', Icon: ShieldCheck }, ...(showHiring ? [{ id: 'hiring' as const, label: waiting ? `Hiring (${waiting})` : 'Hiring', Icon: Briefcase }] : [])];
   return (
     <div className="fixed inset-0 flex flex-col bg-slate-50">
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-        <span className="font-extrabold text-slate-900">Claims</span>
+        <span className="font-extrabold text-slate-900">{tab === 'hiring' ? 'Hiring' : 'Claims'}</span>
         <button onClick={onLogout} aria-label="Sign out" className="rounded-lg p-2 text-slate-500 active:bg-slate-100"><LogOut className="h-5 w-5" /></button>
       </header>
       {offline && <div className="flex items-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-900"><WifiOff className="h-4 w-4 shrink-0" />No signal. New claims are saved on your phone.</div>}
@@ -144,8 +151,9 @@ export const ClaimApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         )}
         {tab === 'mine' && <div className="space-y-4"><Waiting onSent={bump} /><MyClaimsList version={version} /></div>}
         {tab === 'approve' && <ApproveList />}
+        {tab === 'hiring' && <RecruiterView work={hiring} users={users} />}
       </main>
-      <nav className="grid grid-cols-3 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]">
+      <nav className={`grid ${showHiring ? 'grid-cols-4' : 'grid-cols-3'} border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]`}>
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setTab(id)} className={`flex flex-col items-center gap-1 py-3 text-xs font-bold ${tab === id ? 'text-[#6d4cf0]' : 'text-slate-500'}`}><Icon className="h-6 w-6" />{label}</button>
         ))}

@@ -9,6 +9,7 @@ export const HIRING_KINDS = [
   'posting', 'jdTemplate', 'referral', 'resume', 'scoreSettings', 'rating', 'position', 'assessment', 'screening',
   'interview', 'offer', 'offerTpl', 'kitTemplate', 'flow', 'flowFamily', 'flowRun', 'flowTask', 'skillTest', 'scrlink',
   'google', 'data', 'mapping', 'policy',
+  'followupSettings', 'followupLog', 'quickRule', 'quickRun', 'careersPage', 'careersQuota',
 ] as const;
 
 export const HRBP_KINDS = [
@@ -70,6 +71,9 @@ export const hiring = {
       [[{ companyId: 1, emailLower: 1 }], [{ companyId: 1, designationKey: 1 }]],
     ),
   ),
+
+  resumeFiles: collection('Server-only: resumes uploaded on the public careers page, in parts. Opened only through a signed link.', defineSchema({ ...tenant, applicationId: reqStr, fileId: reqStr, part: Number, parts: Number, name: String, mime: String, data: String, createdAt: String }, [[{ companyId: 1, applicationId: 1 }]])),
+  emailQuota: collection('Server-only: how many emails a person has sent from the browser this hour.', defineSchema({ ...tenant, uid: String, hour: Mixed, used: Number })),
 
   candidateEvaluations: collection('AI / resume-match evaluation of a candidate against a job description.', defineSchema({ ...tenant, applicationId: String, updatedAt: String })),
 

@@ -6,7 +6,7 @@
 export type HiringModuleId =
   | 'talent-hiring' | 'talent-acquisition' | 'talent-acquisition-overview' | 'my-hiring'
   | 'talent-acquisition-requisitions' | 'talent-acquisition-applications' | 'talent-acquisition-pipeline'
-  | 'talent-acquisition-onboarding' | 'hiring-automation';
+  | 'talent-acquisition-onboarding' | 'talent-acquisition-careers' | 'hiring-automation';
 
 export interface HiringAccess {
   /** Has the Talent Acquisition module. */
@@ -35,7 +35,7 @@ export function hiringTabs(a: HiringAccess): HiringTab[] {
         { module: 'my-hiring', label: 'Referrals & interviews' },
       ],
     },
-    { key: 'jobs', label: 'Jobs', pages: a.talent || a.canRequest ? [{ module: 'talent-acquisition-requisitions', label: a.talent ? 'Requisitions' : 'Hiring requests' }] : [] },
+    { key: 'jobs', label: 'Jobs', pages: a.talent || a.canRequest ? [{ module: 'talent-acquisition-requisitions', label: a.talent ? 'Requisitions' : 'Hiring requests' }, ...(a.manageFlows && a.talent ? [{ module: 'talent-acquisition-careers' as const, label: 'Careers page' }] : [])] : [] },
     // Applications is a view inside the candidate screen, next to the board and list.
     { key: 'candidates', label: 'Candidates', pages: a.talent ? [{ module: 'talent-acquisition-pipeline', label: 'Candidates' }] : [] },
     { key: 'onboarding', label: 'Onboarding', pages: a.talent ? [{ module: 'talent-acquisition-onboarding', label: 'Onboarding' }] : [] },
@@ -46,7 +46,7 @@ export function hiringTabs(a: HiringAccess): HiringTab[] {
 
 /** The tab a screen belongs to. */
 export function tabOfModule(m: string): HiringTabKey {
-  if (m === 'talent-acquisition-requisitions') return 'jobs';
+  if (m === 'talent-acquisition-requisitions' || m === 'talent-acquisition-careers') return 'jobs';
   if (m === 'talent-acquisition-pipeline' || m === 'talent-acquisition-applications') return 'candidates';
   if (m === 'talent-acquisition-onboarding') return 'onboarding';
   if (m === 'hiring-automation') return 'automation';

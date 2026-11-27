@@ -92,7 +92,7 @@ export const PipelineBoard: React.FC<{ d: PipelineData; onOpenCandidate: (id: st
         <div className="relative min-w-[220px] max-w-sm flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden /><input className="h-9 w-full rounded-lg border border-[#dfe1e5] bg-white pl-9 pr-3 text-[13px] outline-none focus:border-[#4C3EB0]" placeholder="Search by name, email or role" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search candidates" /></div>
         <select className={SELECT} value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role"><option value="">All roles</option>{roles.map((x) => <option key={x} value={x}>{x}</option>)}</select>
         {depts.length > 0 && <select className={SELECT} value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department"><option value="">All departments</option>{depts.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
-        <select className={SELECT} value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source"><option value="">All sources</option>{sources.map((x) => <option key={x} value={x}>{x}</option>)}</select>
+        <select className={SELECT} value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source"><option value="">All sources</option>{sources.map((x) => <option key={x} value={x}>{x === 'CAREERS' ? 'Careers page' : x}</option>)}</select>
         {filtered && <button type="button" className="h-9 cursor-pointer px-2 text-[13px] font-semibold text-[#3F3393] hover:underline" onClick={() => { setRole(''); setDept(''); setSource(''); setQ(''); }}>Clear filters</button>}
       </div>
       {d.error && <p className="rounded-lg bg-[#fdeceb] px-4 py-3 text-sm text-[#b42318]" role="alert">{d.error}</p>}
@@ -115,6 +115,7 @@ export const PipelineBoard: React.FC<{ d: PipelineData; onOpenCandidate: (id: st
                         <Avatar name={r.name || '?'} />
                         <div className="min-w-0"><div className="truncate text-[13px] font-semibold text-[#16181d]">{r.name}</div><div className="truncate text-xs text-[#5c626d]">{r.designation || '—'}</div></div>
                       </div>
+                      {r.tags?.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{r.tags.map((t: string) => <span key={t} className="rounded-full bg-[#F1EFFC] px-2 py-0.5 text-[11px] font-semibold text-[#3F3393]">{t}</span>)}</div>}
                       <div className="mt-2.5 flex items-center gap-1.5 text-xs text-[#5c626d]">
                         {i >= 3 ? <><CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#05603a]" /><span className="truncate">{r.status}</span></>
                           : i === 2 && r.nextInterview ? <><CalendarDays className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{new Date(r.nextInterview).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span></>

@@ -241,7 +241,7 @@ export const ApplicationsModule: React.FC<{ currentUser: User }> = ({ currentUse
                   {a.resumeUrl && <a className="text-[#6050D0] underline" href={a.resumeUrl} target="_blank" rel="noopener noreferrer">Resume</a>}
                 </td>
                 <td className="p-2">{a.designation}</td>
-                <td className="p-2">{a.source}</td>
+                <td className="p-2">{a.source === 'CAREERS' ? 'Careers page' : a.source}{a.sourceLabel && a.sourceLabel !== 'careers-page' ? <div className="text-slate-500">link: {a.sourceLabel}</div> : null}{a.tags?.length ? <div className="mt-1 text-[#3F3393]">{a.tags.join(', ')}</div> : null}</td>
                 <td className="p-2">{a.createdAt.slice(0, 10)}</td>
                 <td className="p-2">
                   <select

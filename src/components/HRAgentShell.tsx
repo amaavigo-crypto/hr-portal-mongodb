@@ -73,6 +73,7 @@ export type HRAgentModule =
   | 'talent-acquisition-applications'
   | 'talent-acquisition-pipeline'
   | 'talent-acquisition-onboarding'
+  | 'talent-acquisition-careers'
   | 'my-hiring'
   | 'hrbp'
   | 'performance'
@@ -155,7 +156,8 @@ export const HRAgentShell: React.FC<HRAgentShellProps> = ({
         activeModule === 'talent-acquisition-requisitions' ||
         activeModule === 'talent-acquisition-applications' ||
         activeModule === 'talent-acquisition-pipeline' ||
-        activeModule === 'talent-acquisition-onboarding') &&
+        activeModule === 'talent-acquisition-onboarding' ||
+        activeModule === 'talent-acquisition-careers') &&
       !hasTalentAccess &&
       hasDocGovAccess
     ) {

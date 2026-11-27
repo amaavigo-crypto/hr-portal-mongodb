@@ -60,6 +60,7 @@ const TalentAcquisitionOverview = lazyPage(() => import('./components/TalentAcqu
 const RequisitionsModule = lazyPage(() => import('./components/RequisitionsModule').then((m) => m.RequisitionsModule));
 const OnboardingModule = lazyPage(() => import('./components/OnboardingModule').then((m) => m.OnboardingModule));
 const HiringPipelineModule = lazyPage(() => import('./components/HiringPipelineModule').then((m) => m.HiringPipelineModule));
+const CareersAdmin = lazyPage(() => import('./components/hiring/CareersAdmin').then((m) => m.CareersAdmin));
 const MyHiringModule = lazyPage(() => import('./components/MyHiringModule').then((m) => m.MyHiringModule));
 const HiringAutomationModule = lazyPage(() => import('./components/HiringAutomationModule').then((m) => m.HiringAutomationModule));
 const PerformanceModule = lazyPage(() => import('./components/PerformanceModule').then((m) => m.PerformanceModule));
@@ -119,7 +120,8 @@ export default function App() {
       module === 'talent-acquisition-requisitions' ||
       module === 'talent-acquisition-applications' ||
       module === 'talent-acquisition-pipeline' ||
-      module === 'talent-acquisition-onboarding';
+      module === 'talent-acquisition-onboarding' ||
+      module === 'talent-acquisition-careers';
     const hasTalent = hasModulePermission(currentUser, 'talent-acquisition');
     const hasDocGov = hasModulePermission(currentUser, 'document-version-control');
     // A department head (an employee who may raise hiring requests) gets only the requisitions screen of Talent Acquisition.
@@ -592,8 +594,8 @@ export default function App() {
       ) : !currentUser || session.kind === 'signedOut' ? (
         <AuthScreen />
       ) : session.kind === 'ready' && claimAppMode() ? (
-        /* The installed phone app only does claims. */
-        <ClaimApp onLogout={handleLogout} />
+        /* The installed phone app: claims, plus hiring for those who have hiring work. */
+        <ClaimApp onLogout={handleLogout} currentUser={currentUser!} users={allUsers} />
       ) : (
         /* Every signed-in person uses the same shell; what it shows follows their permissions. */
         <HRAgentShell
@@ -840,6 +842,7 @@ export default function App() {
                   <HiringPipelineModule currentUser={currentUser} users={allUsers} showApplications={m === 'talent-acquisition-applications'} onShowApplications={(on) => handleSelectHRAgentModule(on ? 'talent-acquisition-applications' : 'talent-acquisition-pipeline')} />
                 ) : home)}
                 {m === 'talent-acquisition-onboarding' && (access.talent ? <HiringOnboarding currentUser={currentUser} /> : home)}
+                {m === 'talent-acquisition-careers' && (access.talent && access.manageFlows ? <CareersAdmin /> : home)}
                 {m === 'my-hiring' && <MyHiringModule currentUser={currentUser} />}
                 {m === 'hiring-automation' && (access.manageFlows ? <HiringAutomationModule currentUser={currentUser} /> : home)}
               </HiringShell>

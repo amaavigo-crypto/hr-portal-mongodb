@@ -9,7 +9,7 @@ export const AutomationActivity: React.FC = () => {
   if (activity.loading && !activity.data) return <Loading loading />;
   if (activity.error && !activity.data) return <Loading error={activity.error} />;
   const items = activity.data?.items || [];
-  if (!items.length) return <p className="py-10 text-center text-sm text-[#5c626d]">Nothing has happened in a flow yet.</p>;
+  if (!items.length) return <p className="py-10 text-center text-sm text-[#5c626d]">Nothing has happened yet.</p>;
   return (
     <ol className="max-w-4xl divide-y divide-[#eef0f2] border-y border-[#eef0f2]">
       {items.map((a, i) => (

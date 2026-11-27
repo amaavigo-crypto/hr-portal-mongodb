@@ -15,6 +15,8 @@ export interface ApplicationItem {
   message: string;
   resumeUrl: string;
   source: string;
+  sourceLabel?: string;
+  tags?: string[];
   createdAt: string;
   reappliedAt: string | null;
   extra: Record<string, string>;

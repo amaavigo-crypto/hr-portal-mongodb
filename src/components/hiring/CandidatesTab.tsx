@@ -210,7 +210,7 @@ export const CandidateDrawer: React.FC<{ id: string; users: User[]; onClose: () 
 
 const PAGE = 10;
 const SELECT = 'h-9 rounded-lg border border-[#dfe1e5] bg-white px-3 text-[13px] text-[#16181d] focus:outline-none focus:border-[#4C3EB0]';
-const SOURCE_LABEL: Record<string, string> = { WEBSITE: 'Website', REFERRAL: 'Referral', MANUAL: 'Manual', CSV: 'CSV import' };
+const SOURCE_LABEL: Record<string, string> = { WEBSITE: 'Website', REFERRAL: 'Referral', MANUAL: 'Manual', CSV: 'CSV import', CAREERS: 'Careers page' };
 const sourceLabel = (s: string) => SOURCE_LABEL[s] || (s ? s.charAt(0) + s.slice(1).toLowerCase() : '—');
 
 /** What needs doing next for one candidate, from what the board already knows. */
@@ -272,11 +272,11 @@ export const CandidatesTab: React.FC<{ users: User[] }> = ({ users }) => {
           {rows.length > 0 && <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="border-b border-[#e8e9ec] text-xs text-slate-600"><tr><th className="px-4 py-3 font-semibold">Candidate</th><th className="px-4 py-3 font-semibold">Role</th><th className="px-4 py-3 font-semibold">Stage</th><th className="px-4 py-3 font-semibold">Screening</th><th className="px-4 py-3 font-semibold">Source</th><th className="px-4 py-3 font-semibold">Next step</th><th className="px-4 py-3 text-right font-semibold">Action</th></tr></thead>
             <tbody className="divide-y divide-slate-100">{shown.map((r: any) => { const n = nextStep(r); return (
               <tr key={r.id} className="hover:bg-[#f8f8f9]">
-                <td className="px-4 py-3"><div className="flex items-center gap-3"><Avatar name={r.name || '?'} /><div className="min-w-0"><div className="truncate font-semibold text-slate-900">{r.name}</div><div className="truncate text-xs text-slate-500">{r.email}</div></div></div></td>
+                <td className="px-4 py-3"><div className="flex items-center gap-3"><Avatar name={r.name || '?'} /><div className="min-w-0"><div className="truncate font-semibold text-slate-900">{r.name}</div><div className="truncate text-xs text-slate-500">{r.email}</div>{r.tags?.length > 0 && <div className="mt-1 flex flex-wrap gap-1">{r.tags.map((t: string) => <span key={t} className="rounded-full bg-[#F1EFFC] px-2 py-0.5 text-[11px] font-semibold text-[#3F3393]">{t}</span>)}</div>}</div></div></td>
                 <td className="px-4 py-3 text-slate-700">{r.designation || '—'}</td>
                 <td className="px-4 py-3"><Pill tone={stageTone(r.status)}>{r.status}</Pill></td>
                 <td className="px-4 py-3">{r.screening ? <Pill tone={r.screening === 'PASS' ? 'green' : r.screening === 'FAIL' ? 'red' : 'amber'}>{r.screening}</Pill> : <span className="text-slate-400">—</span>}</td>
-                <td className="px-4 py-3 text-slate-700">{sourceLabel(r.source)}{r.referredByName ? <div className="text-xs text-slate-500">by {r.referredByName}</div> : null}</td>
+                <td className="px-4 py-3 text-slate-700">{sourceLabel(r.source)}{r.referredByName ? <div className="text-xs text-slate-500">by {r.referredByName}</div> : null}{r.sourceLabel && r.sourceLabel !== 'careers-page' ? <div className="text-xs text-slate-500">link: {r.sourceLabel}</div> : null}</td>
                 <td className="px-4 py-3"><div className="font-medium text-slate-800">{n.text}</div><div className="text-xs text-slate-500">{n.sub}</div></td>
                 <td className="px-4 py-3 text-right"><button onClick={() => setOpen(r.id)} className="cursor-pointer rounded-md border border-[#dfe1e5] px-3.5 py-1.5 text-xs font-semibold text-[#16181d] hover:border-[#4C3EB0]">View</button></td>
               </tr>); })}</tbody></table></div>}
